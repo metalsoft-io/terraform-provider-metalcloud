@@ -4,7 +4,7 @@ import "log"
 import "errors"
 import "fmt"
 import (
-	"github.com/bigstepinc/metal-cloud-go-sdk"
+	"github.com/bigstepinc/metal-cloud-sdk-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -41,7 +41,7 @@ func resourceDriveArray() *schema.Resource {
 	}
 }
 
-func resourceDriveArrayCreate(infrastructureID float64, instanceArrayID float64, d map[string]interface{}, meta interface{}) error {
+func resourceDriveArrayCreate(infrastructureID int64, instanceArrayID int64, d map[string]interface{}, meta interface{}) error {
 
 	client := meta.(*metalcloud.MetalCloudClient)
 
@@ -62,7 +62,7 @@ func resourceDriveArrayCreate(infrastructureID float64, instanceArrayID float64,
 		return err
 	}
 
-	var volumeTemplateID float64 = -1
+	var volumeTemplateID int64 = -1
 	var possibleVolumeTemplateLabels []string
 
 	for _, volumeTemplate := range *availableVolumeTemplates {

@@ -2,7 +2,7 @@ package metalcloud
 
 import "log"
 import (
-	"github.com/bigstepinc/metal-cloud-go-sdk"
+	"github.com/bigstepinc/metal-cloud-sdk-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -26,13 +26,13 @@ func resourceInstanceArray() *schema.Resource {
 	}
 }
 
-func resourceInstanceArrayCreate(infrastructureID float64, d map[string]interface{}, meta interface{}) error {
+func resourceInstanceArrayCreate(infrastructureID int64, d map[string]interface{}, meta interface{}) error {
 
 	client := meta.(*metalcloud.MetalCloudClient)
 
 	instanceArray := metalcloud.InstanceArray{
 		InstanceArrayLabel:         d["instance_array_label"].(string),
-		InstanceArrayInstanceCount: float64(d["instance_array_instance_count"].(int)),
+		InstanceArrayInstanceCount: d["instance_array_instance_count"].(int),
 	}
 
 	createdInstanceArray, err := client.InstanceArrayCreate(infrastructureID, instanceArray)
@@ -42,7 +42,7 @@ func resourceInstanceArrayCreate(infrastructureID float64, d map[string]interfac
 
 	driveArrays := d["drive_array"].(*schema.Set)
 
-	log.Printf("Created InstanceArray %d", int(createdInstanceArray.InstanceArrayID))
+	log.Printf("Created InstanceArray %d", createdInstanceArray.InstanceArrayID)
 
 	for _, driveArray := range driveArrays.List() {
 		err := resourceDriveArrayCreate(infrastructureID,

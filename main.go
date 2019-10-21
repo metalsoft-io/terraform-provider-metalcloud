@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/bigstepinc/metal-cloud-go-sdk"
+	"github.com/bigstepinc/metal-cloud-sdk-go"
 	"github.com/terraform-providers/terraform-provider-metalcloud/metalcloud"
 )
 
