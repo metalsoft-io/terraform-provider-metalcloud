@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceInfrastructure() *schema.Resource {
+func ResourceInfrastructure() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceInfrastructureCreate,
 		Read:   resourceInfrastructureRead,

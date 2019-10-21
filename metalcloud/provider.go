@@ -15,7 +15,7 @@ func Provider() *schema.Provider {
 
 func providerResources() map[string]*schema.Resource {
 	return map[string]*schema.Resource{
-		"metalcloud_infrastructure": resourceInfrastructure(),
+		"metalcloud_infrastructure": ResourceInfrastructure(),
 	}
 }
 
