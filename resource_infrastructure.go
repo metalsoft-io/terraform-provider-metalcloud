@@ -84,12 +84,12 @@ func resourceInfrastructureRead(d *schema.ResourceData, meta interface{}) error 
 
 	client := meta.(*metalcloud.MetalCloudClient)
 
-	infrastructureID, err := strconv.ParseFloat(d.Id(), 64)
+	infrastructureID, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return err
 	}
 
-	infrastructure, err := client.InfrastructureGet(infrastructureID)
+	infrastructure, err := client.InfrastructureGet(int64(infrastructureID))
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func resourceInfrastructureRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("datacenter_name", infrastructure.DatacenterName)
 
 	var instanceArraysList []interface{}
-	instanceArrays, err := client.InstanceArrays(infrastructureID)
+	instanceArrays, err := client.InstanceArrays(int64(infrastructureID))
 	if err != nil {
 		return err
 	}
@@ -131,14 +131,14 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 
 	client := meta.(*metalcloud.MetalCloudClient)
 
-	infrastructureID, err := strconv.ParseFloat(d.Id(), 64)
+	infrastructureID, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return err
 	}
 
 	if d.HasChange("infrastructure_label") || d.HasChange("datacenter_name") {
 
-		infrastructure, err := client.InfrastructureGet(infrastructureID)
+		infrastructure, err := client.InfrastructureGet(int64(infrastructureID))
 		if err != nil {
 			return err
 		}
@@ -147,7 +147,7 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 		operation.InfrastructureLabel = d.Get("infrastructure_label").(string)
 		operation.DatacenterName = d.Get("datacenter_name").(string)
 
-		_, err = client.InfrastructureEdit(infrastructureID, operation)
+		_, err = client.InfrastructureEdit(int64(infrastructureID), operation)
 		if err != nil {
 			return err
 		}

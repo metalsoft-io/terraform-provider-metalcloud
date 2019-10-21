@@ -32,7 +32,7 @@ func resourceInstanceArrayCreate(infrastructureID int64, d map[string]interface{
 
 	instanceArray := metalcloud.InstanceArray{
 		InstanceArrayLabel:         d["instance_array_label"].(string),
-		InstanceArrayInstanceCount: d["instance_array_instance_count"].(int),
+		InstanceArrayInstanceCount: d["instance_array_instance_count"].(int64),
 	}
 
 	createdInstanceArray, err := client.InstanceArrayCreate(infrastructureID, instanceArray)
@@ -64,7 +64,7 @@ func resourceInstanceArrayRead(instanceArray metalcloud.InstanceArray, meta inte
 	var instanceArrayMap = make(map[string]interface{})
 
 	instanceArrayMap["instance_array_label"] = instanceArray.InstanceArrayLabel
-	instanceArrayMap["instance_array_instance_count"] = int(instanceArray.InstanceArrayInstanceCount)
+	instanceArrayMap["instance_array_instance_count"] = int64(instanceArray.InstanceArrayInstanceCount)
 
 	var driveArraysOfThisInstanceArray []interface{}
 	driveArrays, err := client.DriveArrays(instanceArray.InfrastructureID)
