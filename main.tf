@@ -5,19 +5,22 @@ provider "metalcloud" {
 }
 
 
-resource "metalcloud_infrastructure" "my-infra28" {
+resource "metalcloud_infrastructure" "my-infra35" {
   
-  infrastructure_label = "my-terraform-infra47"
+  infrastructure_label = "my-terraform-infra57"
   datacenter_name = "us-santaclara"
 
-  instance_array {
+  instance_arrays = [
+    "test1" : {
       instance_array_label = "test1"
       instance_array_instance_count = 2
       drive_array {
+        drive_array_storage_type = "iscsi_hdd"
         volume_template_label = "centos7-6"
         drive_size_mbytes_default = 40960
       }
-  }
+  
+  ]
 
   instance_array {
       instance_array_label = "test2"
@@ -25,8 +28,9 @@ resource "metalcloud_infrastructure" "my-infra28" {
       drive_array {
         drive_array_storage_type = "iscsi_hdd"
         volume_template_label = "centos7-6"
-        drive_size_mbytes_default = 40960
+        drive_size_mbytes_default = 40961
       }
   }
-  
+
+ 
 }

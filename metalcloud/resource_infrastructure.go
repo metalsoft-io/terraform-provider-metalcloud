@@ -28,9 +28,9 @@ func ResourceInfrastructure() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"instance_array": {
-				Type:     schema.TypeSet,
-				Optional: true,
+			"instance_arrays": {
+				Type:     schema.TypeList
+				Required: true
 				Elem:     resourceInstanceArray(),
 			},
 		},
@@ -89,7 +89,7 @@ func resourceInfrastructureRead(d *schema.ResourceData, meta interface{}) error 
 		return err
 	}
 
-	infrastructure, err := client.InfrastructureGet(int64(infrastructureID))
+	infrastructure, err := client.InfrastructureGet(int(infrastructureID))
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func resourceInfrastructureRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("datacenter_name", infrastructure.DatacenterName)
 
 	var instanceArraysList []interface{}
-	instanceArrays, err := client.InstanceArrays(int64(infrastructureID))
+	instanceArrays, err := client.InstanceArrays(int(infrastructureID))
 	if err != nil {
 		return err
 	}
@@ -138,7 +138,7 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 
 	if d.HasChange("infrastructure_label") || d.HasChange("datacenter_name") {
 
-		infrastructure, err := client.InfrastructureGet(int64(infrastructureID))
+		infrastructure, err := client.InfrastructureGet(int(infrastructureID))
 		if err != nil {
 			return err
 		}
@@ -147,13 +147,33 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 		operation.InfrastructureLabel = d.Get("infrastructure_label").(string)
 		operation.DatacenterName = d.Get("datacenter_name").(string)
 
-		_, err = client.InfrastructureEdit(int64(infrastructureID), operation)
+		_, err = client.InfrastructureEdit(int(infrastructureID), operation)
 		if err != nil {
 			return err
 		}
 	}
 
-	//if d.HasChange("instance_array")
+	if d.HasChange("instance_array") {
+		//take each instance array and apply changes
+		instanceArrays, err2 := client.InstanceArrays(infrastructureID)
+		if err2 != nil {
+			return err2
+		}
+		for _, instanceArray := range *instanceArrays {
+			instanceArrayMap, err := resourceInstanceArrayRead(instanceArray, meta)
+			if err != nil {
+				return err
+			}
+
+			err3 := resourceInstanceArrayUpdate(
+				instanceArray.InstanceArrayID,
+				*instanceArrayMap,
+				meta)
+			if err3 != nil {
+				return err3
+			}
+		}
+	}
 
 	d.Partial(false)
 

@@ -26,13 +26,13 @@ func resourceInstanceArray() *schema.Resource {
 	}
 }
 
-func resourceInstanceArrayCreate(infrastructureID int64, d map[string]interface{}, meta interface{}) error {
+func resourceInstanceArrayCreate(infrastructureID int, d map[string]interface{}, meta interface{}) error {
 
 	client := meta.(*metalcloud.MetalCloudClient)
 
 	instanceArray := metalcloud.InstanceArray{
 		InstanceArrayLabel:         d["instance_array_label"].(string),
-		InstanceArrayInstanceCount: d["instance_array_instance_count"].(int64),
+		InstanceArrayInstanceCount: d["instance_array_instance_count"].(int),
 	}
 
 	createdInstanceArray, err := client.InstanceArrayCreate(infrastructureID, instanceArray)
@@ -64,7 +64,7 @@ func resourceInstanceArrayRead(instanceArray metalcloud.InstanceArray, meta inte
 	var instanceArrayMap = make(map[string]interface{})
 
 	instanceArrayMap["instance_array_label"] = instanceArray.InstanceArrayLabel
-	instanceArrayMap["instance_array_instance_count"] = int64(instanceArray.InstanceArrayInstanceCount)
+	instanceArrayMap["instance_array_instance_count"] = int(instanceArray.InstanceArrayInstanceCount)
 
 	var driveArraysOfThisInstanceArray []interface{}
 	driveArrays, err := client.DriveArrays(instanceArray.InfrastructureID)
@@ -86,4 +86,37 @@ func resourceInstanceArrayRead(instanceArray metalcloud.InstanceArray, meta inte
 		driveArraysOfThisInstanceArray)
 
 	return &instanceArrayMap, nil
+}
+
+func resourceInstanceArrayUpdate(instanceArrayID int, d map[string]interface{}, meta interface{}) error {
+
+	client := meta.(*metalcloud.MetalCloudClient)
+
+	infrastructureID := d["infrastructure_id"].(int)
+
+	instanceArray := metalcloud.InstanceArray{
+		InstanceArrayLabel:         d["instance_array_label"].(string),
+		InstanceArrayInstanceCount: d["instance_array_instance_count"].(int),
+	}
+
+	createdInstanceArray, err := client.InstanceArrayCreate(infrastructureID, instanceArray)
+	if err != nil || createdInstanceArray == nil {
+		return err
+	}
+
+	driveArrays := d["drive_array"].(*schema.Set)
+
+	log.Printf("Created InstanceArray %d", createdInstanceArray.InstanceArrayID)
+
+	for _, driveArray := range driveArrays.List() {
+		err := resourceDriveArrayCreate(infrastructureID,
+			createdInstanceArray.InstanceArrayID,
+			driveArray.(map[string]interface{}),
+			meta)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

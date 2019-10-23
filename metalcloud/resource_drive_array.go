@@ -26,7 +26,7 @@ func resourceDriveArray() *schema.Resource {
 				Optional: true,
 				Default:  "auto",
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if old == "auto" {
+					if new == "auto" {
 						return true
 					}
 					return false
@@ -41,7 +41,7 @@ func resourceDriveArray() *schema.Resource {
 	}
 }
 
-func resourceDriveArrayCreate(infrastructureID int64, instanceArrayID int64, d map[string]interface{}, meta interface{}) error {
+func resourceDriveArrayCreate(infrastructureID int, instanceArrayID int, d map[string]interface{}, meta interface{}) error {
 
 	client := meta.(*metalcloud.MetalCloudClient)
 
@@ -57,12 +57,12 @@ func resourceDriveArrayCreate(infrastructureID int64, instanceArrayID int64, d m
 
 	//find the template id for the given volume_template_label and also build a list of possible values
 	//in case we need to report it to the user
-	availableVolumeTemplates, err := client.AvailableVolumeTemplatesGet()
+	availableVolumeTemplates, err := client.VolumeTemplates()
 	if err != nil {
 		return err
 	}
 
-	var volumeTemplateID int64 = -1
+	var volumeTemplateID int = -1
 	var possibleVolumeTemplateLabels []string
 
 	for _, volumeTemplate := range *availableVolumeTemplates {
@@ -84,6 +84,8 @@ func resourceDriveArrayCreate(infrastructureID int64, instanceArrayID int64, d m
 				possibleVolumeTemplateLabels,
 			))
 	}
+
+	log.Printf("VolumeTemplateID = %d", volumeTemplateID)
 
 	driveArray := metalcloud.DriveArray{
 		DriveArrayLabel:       d["drive_array_label"].(string),
