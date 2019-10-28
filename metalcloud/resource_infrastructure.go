@@ -595,7 +595,7 @@ func waitForInfrastructureFinished(infrastructureID int, d *schema.ResourceData,
 			"finished",
 		},
 		Refresh: func() (interface{}, string, error) {
-			log.Printf("calling InfrastructureGet() ...")
+			log.Printf("calling InfrastructureGet(%d) ...", infrastructureID)
 			resp, err := client.InfrastructureGet(infrastructureID)
 			if err != nil {
 				return 0, "", err
