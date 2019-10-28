@@ -13,15 +13,6 @@ Requirements
 -	[Terraform](https://www.terraform.io/downloads.html) 0.12.x
 -	[Go](https://golang.org/doc/install) 1.11 (to build the provider plugin)
 
-Usage
----------------------
-
-```
-# For example, restrict template version in 0.1.x
-provider "template" {
-  version = "~> 0.1"
-}
-```
 
 Building The Provider
 ---------------------
