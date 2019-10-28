@@ -1,21 +1,29 @@
 package metalcloud
 
 import (
-	"github.com/bigstepinc/metal-cloud-sdk-go"
+	metalcloud "github.com/bigstepinc/metal-cloud-sdk-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
+//Provider of Bistep Metal Cloud resources
 func Provider() *schema.Provider {
 	return &schema.Provider{
-		Schema:        providerSchema(),
-		ResourcesMap:  providerResources(),
-		ConfigureFunc: providerConfigure,
+		Schema:         providerSchema(),
+		ResourcesMap:   providerResources(),
+		DataSourcesMap: providerDataSources(),
+		ConfigureFunc:  providerConfigure,
 	}
 }
 
 func providerResources() map[string]*schema.Resource {
 	return map[string]*schema.Resource{
 		"metalcloud_infrastructure": ResourceInfrastructure(),
+	}
+}
+
+func providerDataSources() map[string]*schema.Resource {
+	return map[string]*schema.Resource{
+		"metalcloud_volume_template": DataSourceVolumeTemplate(),
 	}
 }
 
@@ -47,6 +55,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		d.Get("user").(string),
 		d.Get("api_key").(string),
 		d.Get("endpoint").(string),
+		false,
 	)
 	if err != nil {
 		return nil, err
