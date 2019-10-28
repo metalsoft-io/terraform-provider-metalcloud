@@ -20,7 +20,7 @@ terraform apply
 
 To delete the infrastrucure:
 ```bash
-terraform destry
+terraform destroy
 ```
 
 
