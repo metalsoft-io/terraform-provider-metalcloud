@@ -16,7 +16,6 @@ install:
 - bash scripts/gogetcookie.sh
 
 script:
-- go get -u
 - make test
 - make vet
 branches:

@@ -1,10 +1,11 @@
 package metalcloud
 
 import (
-	metalcloud "github.com/bigstepinc/metal-cloud-sdk-go"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"reflect"
 	"testing"
+
+	metalcloud "github.com/bigstepinc/metal-cloud-sdk-go"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func TestFlattenExpandInstanceArray(t *testing.T) {
@@ -28,7 +29,6 @@ func TestExpandInstanceArrayComplete(t *testing.T) {
 	origIAMap := map[string]interface{}{
 		"instance_array_label":                "as111",
 		"instance_array_instance_count":       1,
-		"instance_array_subdomain":            "asd1",
 		"instance_array_boot_method":          "pxe_iscsi",
 		"instance_array_ram_gbytes":           1,
 		"instance_array_processor_count":      1,
@@ -42,11 +42,20 @@ func TestExpandInstanceArrayComplete(t *testing.T) {
 	}
 
 	ia := expandInstanceArray(origIAMap)
+	if ia.InstanceArrayFirewallRules == nil {
+		t.Errorf("expandInstanceArray with non-null")
+	}
 
 	flattenedIAMap := flattenInstanceArray(ia)
 
+	//we don't compare firewall rule as it's a pointer
+	delete(origIAMap, "firewall_rule")
+	delete(flattenedIAMap, "firewall_rule")
+	delete(flattenedIAMap, "instance_array_id")
+	//also it's ok if the flattenIAMap has no firewall rules
+
 	if !reflect.DeepEqual(origIAMap, flattenedIAMap) {
-		t.Errorf("flatten & expand DriveArray doesn't return same values for %v and %v via %v", origIAMap, flattenedIAMap, ia)
+		t.Errorf("flatten & expand Instance Array (w/ FW rules) doesn't return same values for %v and %v via %v", origIAMap, flattenedIAMap, ia)
 	}
 
 }
