@@ -11,7 +11,7 @@ data "metalcloud_volume_template" "centos76" {
 resource "metalcloud_infrastructure" "my-infra97" {
   
   infrastructure_label = "my-terraform-infra97"
-  datacenter_name = "us-santaclara"
+  datacenter_name = var.datacenter
 
   instance_array {
         instance_array_label = "testia2"
