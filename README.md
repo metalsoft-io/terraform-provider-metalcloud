@@ -137,5 +137,10 @@ In order to run the full suite of Acceptance tests, run `make testacc`.
 *Note:* Acceptance tests create real resources, and often cost money to run.
 
 ```sh
-$ make testacc
+export METALCLOUD_DATACENTER="uk-reading"
+export METALCLOUD_API_KEY="<api-key>"
+export METALCLOUD_USER="user"
+export METALCLOUD_ENDPOINT="https://your-endpoint"
+
+make testacc
 ```
