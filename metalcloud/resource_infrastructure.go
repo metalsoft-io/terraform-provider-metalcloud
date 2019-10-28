@@ -8,6 +8,7 @@ import (
 	"time"
 
 	metalcloud "github.com/bigstepinc/metal-cloud-sdk-go"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -40,9 +41,40 @@ func ResourceInfrastructure() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"hard_shutdown_after_timeout": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+			},
+			"attempt_soft_shutdown": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+			},
+			"soft_shutdown_timeout_seconds": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  180,
+			},
+			"allow_data_loss": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+			},
+			"skip_ansible": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+			"await_deploy_finished": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+			},
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(45 * time.Minute),
+			Update: schema.DefaultTimeout(45 * time.Minute),
 		},
 	}
 }
@@ -268,10 +300,17 @@ func resourceInfrastructureCreate(d *schema.ResourceData, meta interface{}) erro
 	d.SetId(fmt.Sprintf("%d", createdInfra.InfrastructureID))
 
 	if preventDeploy, ok := d.GetOk("prevent_deploy"); !ok || preventDeploy == false {
-		client.InfrastructureDeploy(createdInfra.InfrastructureID, metalcloud.ShutdownOptions{}, true, false)
+		if err := deployInfrastructure(createdInfra.InfrastructureID, d, meta); err != nil {
+			return err
+		}
+	}
+
+	if d.Get("await_deploy_finished").(bool) {
+		return waitForInfrastructureFinished(createdInfra.InfrastructureID, d, meta, d.Timeout(schema.TimeoutCreate))
 	}
 
 	return resourceInfrastructureRead(d, meta)
+
 }
 
 //resourceInfrastructureRead reads the serverside status of elements
@@ -381,6 +420,7 @@ func resourceInfrastructureRead(d *schema.ResourceData, meta interface{}) error 
 	return nil
 }
 
+//resourceInfrastructureUpdate applies changes on the serverside
 func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	d.Partial(true)
@@ -446,13 +486,44 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 
 	if needsDeploy {
 		if preventDeploy, ok := d.GetOk("prevent_deploy"); !ok || preventDeploy == false {
-			client.InfrastructureDeploy(infrastructureID, metalcloud.ShutdownOptions{}, true, false)
+			if err := deployInfrastructure(infrastructureID, d, meta); err != nil {
+				return err
+			}
+
 		}
 	}
 
 	d.Partial(false)
 
+	if d.Get("await_deploy_finished").(bool) {
+		return waitForInfrastructureFinished(infrastructureID, d, meta, d.Timeout(schema.TimeoutUpdate))
+	}
+
 	return resourceInfrastructureRead(d, meta)
+}
+
+//does not wait for a deploy to finish.
+func resourceInfrastructureDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*metalcloud.MetalCloudClient)
+
+	infrastructureID, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return err
+	}
+
+	if err := client.InfrastructureDelete(infrastructureID); err != nil {
+		return err
+	}
+
+	if preventDeploy, ok := d.GetOk("prevent_deploy"); !ok || preventDeploy == false {
+		if err := deployInfrastructure(infrastructureID, d, meta); err != nil {
+			return err
+		}
+	}
+
+	d.SetId("")
+	return nil
 }
 
 func createOrUpdateInstanceArray(infrastructureID int, ia metalcloud.InstanceArray, client *metalcloud.MetalCloudClient) (*metalcloud.InstanceArray, error) {
@@ -510,17 +581,53 @@ func createOrUpdateDriveArray(infrastructureID int, da metalcloud.DriveArray, cl
 	return driveArrayToReturn, nil
 }
 
-func resourceInfrastructureDelete(d *schema.ResourceData, meta interface{}) error {
+//waitForInfrastructureFinished awaits for the "finished" status in the specified infrastructure
+func waitForInfrastructureFinished(infrastructureID int, d *schema.ResourceData, meta interface{}, timeout time.Duration) error {
 
 	client := meta.(*metalcloud.MetalCloudClient)
 
-	infrastructureID, err := strconv.Atoi(d.Id())
-	if err != nil {
-		return err
+	createStateConf := &resource.StateChangeConf{
+		Pending: []string{
+			"not_started",
+			"ongoing",
+		},
+		Target: []string{
+			"finished",
+		},
+		Refresh: func() (interface{}, string, error) {
+			log.Printf("calling InfrastructureGet() ...")
+			resp, err := client.InfrastructureGet(infrastructureID)
+			if err != nil {
+				return 0, "", err
+			}
+			return resp, resp.InfrastructureOperation.InfrastructureDeployStatus, nil
+		},
+		Timeout:                   timeout,
+		Delay:                     30 * time.Second,
+		MinTimeout:                30 * time.Second,
+		ContinuousTargetOccurence: 1,
 	}
 
-	client.InfrastructureDelete(infrastructureID)
+	if _, err := createStateConf.WaitForState(); err != nil {
+		return fmt.Errorf("Error waiting for example instance (%s) to be created: %s", d.Id(), err)
+	}
 
-	d.SetId("")
-	return nil
+	return resourceInfrastructureRead(d, meta)
+}
+
+//deployInfrastructure starts a deploy
+func deployInfrastructure(infrastructureID int, d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*metalcloud.MetalCloudClient)
+
+	shutDownOptions := metalcloud.ShutdownOptions{
+		HardShutdownAfterTimeout:   d.Get("hard_shutdown_after_timeout").(bool),
+		AttemptSoftShutdown:        d.Get("attempt_soft_shutdown").(bool),
+		SoftShutdownTimeoutSeconds: d.Get("soft_shutdown_timeout_seconds").(int),
+	}
+
+	return client.InfrastructureDeploy(
+		infrastructureID, shutDownOptions,
+		d.Get("allow_data_loss").(bool),
+		d.Get("skip_ansible").(bool),
+	)
 }

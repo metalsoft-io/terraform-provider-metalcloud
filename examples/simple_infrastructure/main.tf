@@ -4,23 +4,26 @@ provider "metalcloud" {
    endpoint = var.endpoint
 }
 
-data "metalcloud_volume_template" "centos75" {
-  volume_template_label = "centos7-5"
+data "metalcloud_volume_template" "centos76" {
+  volume_template_label = "centos7-6"
 }
 
-resource "metalcloud_infrastructure" "my-infra97" {
+resource "metalcloud_infrastructure" "my-infra102" {
   
-  infrastructure_label = "my-terraform-infra97"
-  datacenter_name = "us-santaclara"
+  infrastructure_label = "my-terraform-infra102"
+  datacenter_name = var.datacenter
 
   instance_array {
         instance_array_label = "testia"
-        instance_array_instance_count = 2
+        instance_array_instance_count = 1
+        instance_array_ram_gbytes = 8
+        instance_array_processor_count = 1
+        instance_array_processor_core_count = 8
 
         drive_array{
           drive_array_storage_type = "iscsi_hdd"
           drive_size_mbytes_default = 49000
-          volume_template_id = tonumber(data.metalcloud_volume_template.centos75.id)
+          volume_template_id = tonumber(data.metalcloud_volume_template.centos76.id)
         }
 
         firewall_rule {
