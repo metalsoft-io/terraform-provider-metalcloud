@@ -421,6 +421,7 @@ func resourceInfrastructureRead(d *schema.ResourceData, meta interface{}) error 
 }
 
 //resourceInfrastructureUpdate applies changes on the serverside
+//attempts to merge serverside changes into the current state
 func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	d.Partial(true)
