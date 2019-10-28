@@ -2,10 +2,12 @@
 
 Set key & api variables:
 
-``bash
+```bash
 export TF_VAR_api_key="<yourkey>"
 export TF_VAR_user="test@test.com"
-``
+export TF_VAR_endpoint="https://api.bigstep.com/metal-cloud"
+```
+
 The plan phase:
 ```bash
 terraform plan
