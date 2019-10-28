@@ -1,6 +1,7 @@
 Bigstep Metalcloud Terraform Provider
 ==================
 This is a terraform plugin for controlling Bigstep Metalcloud resources.
+[![Build Status](https://travis-ci.org/bigstepinc/terraform-provider-metalcloud.svg?branch=master)](https://travis-ci.org/bigstepinc/terraform-provider-metalcloud)
 
 Maintainers
 -----------
