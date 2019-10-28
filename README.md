@@ -30,11 +30,6 @@ Enter the provider directory and build the provider
 $ cd $GOPATH/src/github.com/bigstepinc/terraform-provider-metalcloud
 $ make build
 ```
-
-Using the provider
-----------------------
-## Fill in for each provider
-
 Developing the Provider
 ---------------------------
 
