@@ -36,6 +36,10 @@ func ResourceInfrastructure() *schema.Resource {
 				Required: true,
 				Elem:     resourceInstanceArray(),
 			},
+			"prevent_deploy": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(45 * time.Minute),
@@ -263,6 +267,10 @@ func resourceInfrastructureCreate(d *schema.ResourceData, meta interface{}) erro
 
 	d.SetId(fmt.Sprintf("%d", createdInfra.InfrastructureID))
 
+	if preventDeploy, ok := d.GetOk("prevent_deploy"); !ok || preventDeploy == false {
+		client.InfrastructureDeploy(createdInfra.InfrastructureID, metalcloud.ShutdownOptions{}, true, false)
+	}
+
 	return resourceInfrastructureRead(d, meta)
 }
 
@@ -384,6 +392,8 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 		return err
 	}
 
+	needsDeploy := false
+
 	if d.HasChange("infrastructure_label") || d.HasChange("datacenter_name") {
 
 		infrastructure, err := client.InfrastructureGet(int(infrastructureID))
@@ -398,6 +408,8 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 		if _, err = client.InfrastructureEdit(int(infrastructureID), operation); err != nil {
 			return err
 		}
+
+		needsDeploy = true
 	}
 
 	if d.HasChange("instance_array") {
@@ -425,7 +437,16 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 				if _, err := createOrUpdateDriveArray(infrastructureID, da, client); err != nil {
 					return err
 				}
+				needsDeploy = true
 			}
+
+			needsDeploy = true
+		}
+	}
+
+	if needsDeploy {
+		if preventDeploy, ok := d.GetOk("prevent_deploy"); !ok || preventDeploy == false {
+			client.InfrastructureDeploy(infrastructureID, metalcloud.ShutdownOptions{}, true, false)
 		}
 	}
 
