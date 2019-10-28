@@ -1,10 +1,8 @@
 package metalcloud
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
-
 	metalcloud "github.com/bigstepinc/metal-cloud-sdk-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -22,7 +20,7 @@ func TestFlattenExpandInstanceArray(t *testing.T) {
 	expandedIA := expandInstanceArray(flattenIA)
 
 	if !reflect.DeepEqual(origIA, expandedIA) {
-		fmt.Errorf("flatten & expand instanceArray doesn't return same values for %v and %v via %v", origIA, expandedIA, flattenIA)
+		t.Errorf("flatten & expand instanceArray doesn't return same values for %v and %v via %v", origIA, expandedIA, flattenIA)
 	}
 }
 
@@ -48,7 +46,7 @@ func TestExpandInstanceArrayComplete(t *testing.T) {
 	flattenedIAMap := flattenInstanceArray(ia)
 
 	if !reflect.DeepEqual(origIAMap, flattenedIAMap) {
-		fmt.Errorf("flatten & expand DriveArray doesn't return same values for %v and %v via %v", origIAMap, flattenedIAMap, ia)
+		t.Errorf("flatten & expand DriveArray doesn't return same values for %v and %v via %v", origIAMap, flattenedIAMap, ia)
 	}
 
 }
@@ -65,7 +63,7 @@ func TestFlattenExpandDriveArray(t *testing.T) {
 	expandedDA := expandDriveArray(flattenDA)
 
 	if !reflect.DeepEqual(origDA, expandedDA) {
-		fmt.Errorf("flatten & expand DriveArray doesn't return same values for %v and %v via %v", origDA, expandedDA, flattenDA)
+		t.Errorf("flatten & expand DriveArray doesn't return same values for %v and %v via %v", origDA, expandedDA, flattenDA)
 	}
 }
 
@@ -95,7 +93,7 @@ func TestFlattenExpandInstanceArrayWithDriveArrays(t *testing.T) {
 	expandedIA, expandedDAList := expandInstanceArrayWithDriveArrays(flattenIAWithDrives)
 
 	if !reflect.DeepEqual(origIA, expandedIA) || !reflect.DeepEqual(origDAList, expandedDAList) {
-		fmt.Errorf("flatten & expand instanceArray doesn't return same values for %v and %v via %v", origIA, expandedIA, flattenIAWithDrives)
+		t.Errorf("flatten & expand instanceArray doesn't return same values for %v and %v via %v", origIA, expandedIA, flattenIAWithDrives)
 	}
 }
 
@@ -113,6 +111,6 @@ func TestInstanceArrayToOperation(t *testing.T) {
 	copyInstanceArrayToOperation(origIA, origIA.InstanceArrayOperation)
 
 	if origIA.InstanceArrayOperation.InstanceArrayLabel != origIA.InstanceArrayLabel {
-		fmt.Errorf("Copying didn't do anything")
+		t.Errorf("Copying didn't do anything")
 	}
 }
