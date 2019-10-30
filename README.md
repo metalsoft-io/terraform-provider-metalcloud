@@ -67,6 +67,9 @@ resource "metalcloud_infrastructure" "my-infra216" {
   instance_array {
     instance_array_label = "exmaple-master"
     instance_array_instance_count = 2
+    instance_array_ram_gbytes = 8
+    instance_array_processor_count = 1
+    instance_array_processor_core_count = 8
 
     interface{
         interface_index = 0
@@ -104,6 +107,9 @@ resource "metalcloud_infrastructure" "my-infra216" {
   instance_array {
     instance_array_label = "example-slave"  
     instance_array_instance_count = 1
+    instance_array_ram_gbytes = 8
+    instance_array_processor_count = 1
+    instance_array_processor_core_count = 8
 
     drive_array{
       drive_array_label = "example-slave-os-drive"
@@ -123,6 +129,7 @@ resource "metalcloud_infrastructure" "my-infra216" {
     }
   }
 }
+
 
 ```
 
