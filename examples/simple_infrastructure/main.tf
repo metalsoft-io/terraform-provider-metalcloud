@@ -1,5 +1,5 @@
 provider "metalcloud" {
-   user = var.user
+   user_email = var.user_email
    api_key = var.api_key 
    endpoint = var.endpoint
 }
@@ -13,6 +13,7 @@ resource "metalcloud_infrastructure" "my-infra102" {
   infrastructure_label = "my-terraform-infra102"
   datacenter_name = var.datacenter
 
+  
   instance_array {
         instance_array_label = "testia"
         instance_array_instance_count = 1
@@ -21,6 +22,7 @@ resource "metalcloud_infrastructure" "my-infra102" {
         instance_array_processor_core_count = 8
 
         drive_array{
+          drive_array_label = "testia-os-drive"
           drive_array_storage_type = "iscsi_hdd"
           drive_size_mbytes_default = 49000
           volume_template_id = tonumber(data.metalcloud_volume_template.centos76.id)

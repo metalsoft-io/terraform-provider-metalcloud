@@ -76,6 +76,7 @@ func TestFlattenExpandDriveArray(t *testing.T) {
 	}
 }
 
+/*
 func TestFlattenExpandInstanceArrayWithDriveArrays(t *testing.T) {
 
 	origIA := metalcloud.InstanceArray{
@@ -105,7 +106,7 @@ func TestFlattenExpandInstanceArrayWithDriveArrays(t *testing.T) {
 		t.Errorf("flatten & expand instanceArray doesn't return same values for %v and %v via %v", origIA, expandedIA, flattenIAWithDrives)
 	}
 }
-
+*/
 func TestInstanceArrayToOperation(t *testing.T) {
 	origIA := metalcloud.InstanceArray{
 		InstanceArrayID:            10,
@@ -122,4 +123,20 @@ func TestInstanceArrayToOperation(t *testing.T) {
 	if origIA.InstanceArrayOperation.InstanceArrayLabel != origIA.InstanceArrayLabel {
 		t.Errorf("Copying didn't do anything")
 	}
+}
+
+func TestFlattenExpandNetwork(t *testing.T) {
+	origNetwork := metalcloud.Network{
+		NetworkLabel: "san-1",
+		NetworkType:  "san",
+	}
+
+	flattenMap := flattenNetwork(origNetwork)
+
+	expandedNetwork := expandNetwork(flattenMap)
+
+	if !reflect.DeepEqual(origNetwork, expandedNetwork) {
+		t.Errorf("flatten & expand DriveArray doesn't return same values for %v and %v via %v", origNetwork, expandedNetwork, flattenMap)
+	}
+
 }

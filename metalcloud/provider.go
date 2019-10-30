@@ -38,9 +38,9 @@ func providerSchema() map[string]*schema.Schema {
 			Type:        schema.TypeString,
 			Optional:    true,
 			Description: "The URL to the API",
-			Default:     metalcloud.DEFAULT_ENDPOINT,
+			Default:     metalcloud.DefaultEndpoint(),
 		},
-		"user": &schema.Schema{
+		"user_email": &schema.Schema{
 			Type:        schema.TypeString,
 			Required:    true,
 			Description: "User email",
@@ -52,7 +52,7 @@ func providerSchema() map[string]*schema.Schema {
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 
 	client, err := metalcloud.GetMetalcloudClient(
-		d.Get("user").(string),
+		d.Get("user_email").(string),
 		d.Get("api_key").(string),
 		d.Get("endpoint").(string),
 		false,

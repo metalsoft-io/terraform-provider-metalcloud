@@ -16,7 +16,7 @@ func testAccInfrastructureResourceFixture1(infrastructureLabel string, instanceA
 
 	datacenter := os.Getenv("METALCLOUD_DATACENTER")
 	apiKey := os.Getenv("METALCLOUD_API_KEY")
-	user := os.Getenv("METALCLOUD_USER")
+	user := os.Getenv("METALCLOUD_USER_EMAIL")
 	endpoint := os.Getenv("METALCLOUD_ENDPOINT")
 
 	return fmt.Sprintf(
@@ -30,50 +30,85 @@ func testAccInfrastructureResourceFixture1(infrastructureLabel string, instanceA
 			infrastructure_label = "my-terraform-infra-%s"
 			datacenter_name = "%s"	
 
-			instance_array {
-				instance_array_label = "as111"
-				instance_array_instance_count = %d
+			prevent_deploy = true
 
-				firewall_rule {
-					firewall_rule_description = "test fw rule"
-					firewall_rule_port_range_start = 22
-					firewall_rule_port_range_end = 22
-					firewall_rule_source_ip_address_range_start="0.0.0.0"
-					firewall_rule_source_ip_address_range_end="0.0.0.0"
-					firewall_rule_protocol="tcp"
-					firewall_rule_ip_address_type="ipv4"
-				}
-
-				drive_array{
-					drive_array_storage_type = "iscsi_hdd"
-					drive_size_mbytes_default = 49000
-					volume_template_id = data.metalcloud_volume_template.centos76.id
-				}
+			network{
+			  network_type = "san"
+			  network_label = "san"
 			}
-
+		  
+			network{
+			  network_type = "wan"
+			  network_label = "internet"
+			}
+		  
+			network{
+			  network_type = "lan"
+			  network_label = "private"
+			}
+		  
+		  
 			instance_array {
-				instance_array_label = "asd2"  
-				instance_array_instance_count = %d
-				drive_array{
+				  instance_array_label = "master"
+				  instance_array_instance_count = %d
+		  
+				  interface{
+					  interface_index = 0
+					  network_label = "san"
+				  }
+		  
+				  interface{
+					  interface_index = 1
+					  network_label = "internet"
+				  }
+		  
+				  interface{
+					  interface_index = 2
+					  network_label = "private"
+				  }
+				  
+				  drive_array{
+					drive_array_label = "testia2-centos"
 					drive_array_storage_type = "iscsi_hdd"
 					drive_size_mbytes_default = 49000
-					volume_template_id = data.metalcloud_volume_template.centos76.id
-				}
-
-				firewall_rule {
-					firewall_rule_description = "test fw rule"
-					firewall_rule_port_range_start = 22
-					firewall_rule_port_range_end = 22
-					firewall_rule_source_ip_address_range_start="0.0.0.0"
-					firewall_rule_source_ip_address_range_end="0.0.0.0"
-					firewall_rule_protocol="tcp"
-					firewall_rule_ip_address_type="ipv4"
-				}
+					volume_template_id = tonumber(data.metalcloud_volume_template.centos76.id)
+				  }
+		  
+				  firewall_rule {
+							  firewall_rule_description = "test fw rule"
+							  firewall_rule_port_range_start = 22
+							  firewall_rule_port_range_end = 22
+							  firewall_rule_source_ip_address_range_start="0.0.0.0"
+							  firewall_rule_source_ip_address_range_end="0.0.0.0"
+							  firewall_rule_protocol="tcp"
+							  firewall_rule_ip_address_type="ipv4"
+						  }
+			}
+		  
+			instance_array {
+				  instance_array_label = "slave"  
+				  instance_array_instance_count = %d
+		  
+				  drive_array{
+					drive_array_label="asd2-centos"
+					drive_array_storage_type = "iscsi_hdd"
+					drive_size_mbytes_default = 49000
+					volume_template_id = tonumber(data.metalcloud_volume_template.centos76.id)
+				  }
+		  
+						  firewall_rule {
+							  firewall_rule_description = "test fw rule"
+							  firewall_rule_port_range_start = 22
+							  firewall_rule_port_range_end = 22
+							  firewall_rule_source_ip_address_range_start="0.0.0.0"
+							  firewall_rule_source_ip_address_range_end="0.0.0.0"
+							  firewall_rule_protocol="tcp"
+							  firewall_rule_ip_address_type="ipv4"
+						  }
 			}
 		}
-		
 		provider "metalcloud" {
-			user = "%s"
+			user_email = "%s"
 			api_key = "%s"
 			endpoint = "%s"
 			}
@@ -91,31 +126,28 @@ func TestAccInfrastructureResource_basic(t *testing.T) {
 
 	rName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	///////at create
-	var expectedIAs1 []interface{}
+	expectedIAsAfterCreate := []interface{}{
+		map[string]interface{}{
+			"instance_array_label":          "master",
+			"instance_array_instance_count": 1,
+		},
+		map[string]interface{}{
+			"instance_array_label":          "slave",
+			"instance_array_instance_count": 1,
+		},
+	}
 
-	var ia1 = make(map[string]interface{})
-	ia1["instance_array_label"] = "as111"
-	ia1["instance_array_instance_count"] = 1
-	ia1["instance_array_subdomain"] = "test"
-
-	expectedIAs1 = append(expectedIAs1, ia1)
-
-	var ia2 = make(map[string]interface{})
-	ia2["instance_array_label"] = "asd2"
-	ia2["instance_array_instance_count"] = 1
-	ia2["instance_array_subdomain"] = "test"
-
-	expectedIAs1 = append(expectedIAs1, ia2)
 	///////after update
-	var expectedIAs2 []interface{}
-
-	expectedIAs2 = append(expectedIAs2, ia1)
-
-	var ia2Modif = make(map[string]interface{})
-	ia2Modif["instance_array_label"] = "asd2"
-	ia2Modif["instance_array_instance_count"] = 2
-
-	expectedIAs2 = append(expectedIAs2, ia2Modif)
+	expectedIAsAfterUpdate := []interface{}{
+		map[string]interface{}{
+			"instance_array_label":          "master",
+			"instance_array_instance_count": 1,
+		},
+		map[string]interface{}{
+			"instance_array_label":          "slave",
+			"instance_array_instance_count": 2,
+		},
+	}
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
@@ -130,7 +162,7 @@ func TestAccInfrastructureResource_basic(t *testing.T) {
 					testAccCheckResourceExists("metalcloud_infrastructure.foo"),
 					// verify remote values
 					testAccCheckInfrastructureExists("metalcloud_infrastructure.foo"),
-					testAccCheckInstanceArray("metalcloud_infrastructure.foo", expectedIAs1),
+					testAccCheckInstanceArray("metalcloud_infrastructure.foo", expectedIAsAfterCreate),
 					// verify local values
 					resource.TestCheckResourceAttr("metalcloud_infrastructure.foo", "infrastructure_label", "my-terraform-infra-"+rName),
 					testAccCheckVolumeTemplate("data.metalcloud_volume_template.centos76"),
@@ -145,7 +177,7 @@ func TestAccInfrastructureResource_basic(t *testing.T) {
 					testAccCheckResourceExists("metalcloud_infrastructure.foo"),
 					// verify remote values
 					testAccCheckInfrastructureExists("metalcloud_infrastructure.foo"),
-					testAccCheckInstanceArray("metalcloud_infrastructure.foo", expectedIAs2),
+					testAccCheckInstanceArray("metalcloud_infrastructure.foo", expectedIAsAfterUpdate),
 
 					// verify local values
 					resource.TestCheckResourceAttr("metalcloud_infrastructure.foo", "infrastructure_label", "my-terraform-infra-"+rName),
@@ -168,7 +200,7 @@ func testAccCheckVolumeTemplate(n string) resource.TestCheckFunc {
 			return err
 		}
 
-		client := testAccProvider.Meta().(*metalcloud.MetalCloudClient)
+		client := testAccProvider.Meta().(*metalcloud.Client)
 
 		vt, err := client.VolumeTemplateGet(volumeTemplateID)
 		if err != nil || vt.VolumeTemplateLabel != rs.Primary.Attributes["volume_template_label"] {
@@ -204,7 +236,7 @@ func testAccCheckInfrastructureExists(n string) resource.TestCheckFunc {
 			return err
 		}
 
-		client := testAccProvider.Meta().(*metalcloud.MetalCloudClient)
+		client := testAccProvider.Meta().(*metalcloud.Client)
 
 		infra, err := client.InfrastructureGet(infraID)
 
@@ -230,7 +262,7 @@ func testAccCheckInstanceArray(n string, expectedIAs []interface{}) resource.Tes
 			return err
 		}
 
-		client := testAccProvider.Meta().(*metalcloud.MetalCloudClient)
+		client := testAccProvider.Meta().(*metalcloud.Client)
 
 		realIAs, err := client.InstanceArrays(infraID)
 		if err != nil {
@@ -239,16 +271,19 @@ func testAccCheckInstanceArray(n string, expectedIAs []interface{}) resource.Tes
 
 		for _, e := range expectedIAs {
 			expectedIA := e.(map[string]interface{})
-			var verified = false
+			verified := false
 			for _, r := range *realIAs {
-				if expectedIA["instance_array_label"] == r.InstanceArrayLabel &&
-					expectedIA["instance_array_instance_count"] == r.InstanceArrayInstanceCount {
+				if expectedIA["instance_array_label"] == r.InstanceArrayLabel {
+
+					if expectedIA["instance_array_instance_count"] != r.InstanceArrayInstanceCount {
+						return fmt.Errorf("%s instance array's instance_array_instance_count filed is wrong: %d and expected %d", r.InstanceArrayLabel, r.InstanceArrayInstanceCount, expectedIA["instance_array_instance_count"])
+					}
+
 					verified = true
-					break
 				}
 			}
 			if !verified {
-				return fmt.Errorf("Instance array with label %s not provisioned correctly", expectedIA["instance_array_label"])
+				return fmt.Errorf("Instance array expected %s but was not found", expectedIA["instance_array_label"])
 			}
 		}
 
@@ -259,8 +294,8 @@ func testAccCheckInstanceArray(n string, expectedIAs []interface{}) resource.Tes
 // testAccPreCheck validates the necessary test API keys exist
 // in the testing environment
 func testAccPreCheck(t *testing.T) {
-	if v := os.Getenv("METALCLOUD_USER"); v == "" {
-		t.Fatal("METALCLOUD_USER must be set for acceptance tests")
+	if v := os.Getenv("METALCLOUD_USER_EMAIL"); v == "" {
+		t.Fatal("METALCLOUD_USER_EMAIL must be set for acceptance tests")
 	}
 	if v := os.Getenv("METALCLOUD_API_KEY"); v == "" {
 		t.Fatal("METALCLOUD_API_KEY must be set for acceptance tests")

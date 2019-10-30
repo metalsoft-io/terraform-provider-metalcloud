@@ -12,9 +12,8 @@ func flattenInstanceArray(instanceArray metalcloud.InstanceArray) map[string]int
 	d["instance_array_id"] = instanceArray.InstanceArrayID
 	d["instance_array_label"] = instanceArray.InstanceArrayLabel
 	d["instance_array_instance_count"] = instanceArray.InstanceArrayInstanceCount
-	//d["instance_array_subdomain"] = instanceArray.InstanceArraySubdomain
 	d["instance_array_boot_method"] = instanceArray.InstanceArrayBootMethod
-	d["instance_array_ram_gbytes"] = instanceArray.InstanceArrayRamGbytes
+	d["instance_array_ram_gbytes"] = instanceArray.InstanceArrayRAMGbytes
 	d["instance_array_processor_count"] = instanceArray.InstanceArrayProcessorCount
 	d["instance_array_processor_core_mhz"] = instanceArray.InstanceArrayProcessorCoreMHZ
 	d["instance_array_processor_core_count"] = instanceArray.InstanceArrayProcessorCoreCount
@@ -49,7 +48,7 @@ func expandInstanceArray(d map[string]interface{}) metalcloud.InstanceArray {
 	//ia.InstanceArraySubdomain = d["instance_array_subdomain"].(string)
 
 	ia.InstanceArrayBootMethod = d["instance_array_boot_method"].(string)
-	ia.InstanceArrayRamGbytes = d["instance_array_ram_gbytes"].(int)
+	ia.InstanceArrayRAMGbytes = d["instance_array_ram_gbytes"].(int)
 	ia.InstanceArrayProcessorCount = d["instance_array_processor_count"].(int)
 	ia.InstanceArrayProcessorCoreMHZ = d["instance_array_processor_core_mhz"].(int)
 	ia.InstanceArrayProcessorCoreCount = d["instance_array_processor_core_count"].(int)
@@ -136,6 +135,7 @@ func expandDriveArray(d map[string]interface{}) metalcloud.DriveArray {
 	return da
 }
 
+/*
 func flattenInstanceArrayWithDriveArrays(instanceArray metalcloud.InstanceArray, driveArrays []metalcloud.DriveArray) map[string]interface{} {
 	var d = flattenInstanceArray(instanceArray)
 	var daList []interface{}
@@ -158,14 +158,14 @@ func expandInstanceArrayWithDriveArrays(d map[string]interface{}) (metalcloud.In
 	}
 	return ia, das
 }
-
+*/
 func copyInstanceArrayToOperation(ia metalcloud.InstanceArray, iao *metalcloud.InstanceArrayOperation) {
 
 	iao.InstanceArrayID = ia.InstanceArrayID
 	iao.InstanceArrayLabel = ia.InstanceArrayLabel
 	iao.InstanceArrayBootMethod = ia.InstanceArrayBootMethod
 	iao.InstanceArrayInstanceCount = ia.InstanceArrayInstanceCount
-	iao.InstanceArrayRamGbytes = ia.InstanceArrayRamGbytes
+	iao.InstanceArrayRAMGbytes = ia.InstanceArrayRAMGbytes
 	iao.InstanceArrayProcessorCount = ia.InstanceArrayProcessorCount
 	iao.InstanceArrayProcessorCoreMHZ = ia.InstanceArrayProcessorCoreMHZ
 	iao.InstanceArrayDiskCount = ia.InstanceArrayDiskCount
@@ -184,4 +184,66 @@ func copyDriveArrayToOperation(da metalcloud.DriveArray, dao *metalcloud.DriveAr
 	dao.DriveArrayStorageType = da.DriveArrayStorageType
 	dao.DriveSizeMBytesDefault = da.DriveSizeMBytesDefault
 	dao.InstanceArrayID = da.InstanceArrayID
+}
+
+func copyInstanceArrayInterfaceToOperation(i metalcloud.InstanceArrayInterface, io *metalcloud.InstanceArrayInterfaceOperation) {
+	io.InstanceArrayInterfaceLAGGIndexes = i.InstanceArrayInterfaceLAGGIndexes
+	io.InstanceArrayInterfaceIndex = i.InstanceArrayInterfaceIndex
+	io.NetworkID = i.NetworkID
+}
+
+func flattenNetwork(network metalcloud.Network) map[string]interface{} {
+	var d = make(map[string]interface{})
+
+	d["network_id"] = network.NetworkID
+	d["network_label"] = network.NetworkLabel
+	d["network_type"] = network.NetworkType
+	//d["infrastructure_id"] = network.InfrastructureID
+	d["network_lan_autoallocate_ips"] = network.NetworkLANAutoAllocateIPs
+
+	return d
+}
+
+func expandNetwork(d map[string]interface{}) metalcloud.Network {
+	var n metalcloud.Network
+
+	if d["network_id"] != nil {
+		n.NetworkID = d["network_id"].(int)
+	}
+	n.NetworkLabel = d["network_label"].(string)
+	n.NetworkType = d["network_type"].(string)
+	//n.InfrastructureID = d["infrastructure_id"].(int)
+	n.NetworkLANAutoAllocateIPs = d["network_lan_autoallocate_ips"].(bool)
+
+	return n
+}
+
+func flattenInstanceArrayInterface(i metalcloud.InstanceArrayInterface) map[string]interface{} {
+	var d = make(map[string]interface{})
+
+	d["instance_array_interface_id"] = i.InstanceArrayInterfaceID
+	d["instance_array_interface_label"] = i.InstanceArrayInterfaceLabel
+	d["instance_array_interface_lagg_indexes"] = i.InstanceArrayInterfaceLAGGIndexes
+	d["instance_array_interface_index"] = i.InstanceArrayInterfaceIndex
+	d["instance_array_interface_service_status"] = i.InstanceArrayInterfaceServiceStatus
+	d["network_id"] = i.NetworkID
+
+	return d
+}
+
+func expandInstanceArrayInterface(d map[string]interface{}) metalcloud.InstanceArrayInterface {
+
+	var i metalcloud.InstanceArrayInterface
+
+	if d["instance_array_interface_id"] != nil {
+		i.InstanceArrayInterfaceID = d["instance_array_interface_id"].(int)
+	}
+
+	i.InstanceArrayInterfaceLabel = d["instance_array_interface_label"].(string)
+	i.InstanceArrayInterfaceLAGGIndexes = d["instance_array_interface_lagg_indexes"].([]interface{})
+	i.InstanceArrayInterfaceIndex = d["instance_array_interface_index"].(int)
+	i.InstanceArrayInterfaceServiceStatus = d["instance_array_interface_service_status"].(string)
+	i.NetworkID = d["network_id"].(int)
+
+	return i
 }

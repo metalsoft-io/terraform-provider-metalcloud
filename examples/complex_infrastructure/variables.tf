@@ -1,4 +1,4 @@
-variable "user" {
+variable "user_email" {
   default = ""
 }
 

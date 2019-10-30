@@ -26,7 +26,7 @@ func DataSourceVolumeTemplate() *schema.Resource {
 }
 
 func dataSourceVolumeTemplateRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*metalcloud.MetalCloudClient)
+	client := meta.(*metalcloud.Client)
 
 	volumeTemplateLabel := d.Get("volume_template_label").(string)
 	//find the template id for the given volume_template_label and also build a list of possible values
