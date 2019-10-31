@@ -39,7 +39,7 @@ func ResourceInfrastructure() *schema.Resource {
 			},
 			"network": {
 				Type:     schema.TypeList,
-				Required: true,
+				Optional: true,
 				Elem:     resourceNetwork(),
 			},
 			"prevent_deploy": {

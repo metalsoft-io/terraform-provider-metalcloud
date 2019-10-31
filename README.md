@@ -164,7 +164,7 @@ Clone repository to: `$GOPATH/src/github.com/bigstepinc/terraform-provider-metal
 
 ```sh
 $ mkdir -p $GOPATH/src/github.com/bigstepinc; cd $GOPATH/src/github.com/bigstepinc
-$ git clone git@github.com/bigstepinc/terraform-provider-metalcloud
+$ git clone git@github.com:bigstepinc/terraform-provider-metalcloud.git
 ```
 
 Enter the provider directory and build the provider
@@ -200,7 +200,7 @@ In order to run the full suite of Acceptance tests, run `make testacc`.
 ```sh
 export METALCLOUD_DATACENTER="uk-reading"
 export METALCLOUD_API_KEY="<api-key>"
-export METALCLOUD_USER="user"
+export METALCLOUD_USER_EMAIL="user"
 export METALCLOUD_ENDPOINT="https://your-endpoint"
 
 make testacc
