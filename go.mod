@@ -3,7 +3,7 @@ module github.com/bigstepinc/terraform-provider-metalcloud
 go 1.12
 
 require (
-	github.com/bigstepinc/metal-cloud-sdk-go v0.0.0-20191101102828-827e57f571fa
+	github.com/bigstepinc/metal-cloud-sdk-go v0.0.0-20191101140001-9bd5df605557
 	github.com/hashicorp/terraform-plugin-sdk v1.1.1
 	github.com/onsi/ginkgo v1.10.3 // indirect
 	github.com/onsi/gomega v1.7.1 // indirect

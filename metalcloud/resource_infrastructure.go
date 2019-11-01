@@ -145,6 +145,7 @@ func resourceInstanceArray() *schema.Resource {
 				Optional: true,
 				Default:  true,
 			},
+
 			"firewall_rule": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -160,6 +161,11 @@ func resourceInstanceArray() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem:     resourceInstanceArrayInterface(),
+			},
+			"keep_detaching_drives": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 		},
 	}
@@ -687,7 +693,10 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 
 			ia.InstanceArrayInterfaces = intList
 
-			retIA, err := createOrUpdateInstanceArray(infrastructureID, ia, client)
+			bkeepDetachingDrives := d.Get(fmt.Sprintf("instance_array.%d.keep_detaching_drives", i)).(bool)
+			bSwapExistingInstancesHardware := false
+
+			retIA, err := createOrUpdateInstanceArray(infrastructureID, ia, client, &bSwapExistingInstancesHardware, &bkeepDetachingDrives, nil, nil)
 			if err != nil {
 				return err
 			}
@@ -752,7 +761,7 @@ func resourceInfrastructureDelete(d *schema.ResourceData, meta interface{}) erro
 	return nil
 }
 
-func createOrUpdateInstanceArray(infrastructureID int, ia metalcloud.InstanceArray, client *metalcloud.Client) (*metalcloud.InstanceArray, error) {
+func createOrUpdateInstanceArray(infrastructureID int, ia metalcloud.InstanceArray, client *metalcloud.Client, bSwapExistingInstancesHardware *bool, bKeepDetachingDrives *bool, objServerTypeMatches *[]metalcloud.ServerType, arrInstancesToBeDeleted *[]int) (*metalcloud.InstanceArray, error) {
 	var instanceArrayID = ia.InstanceArrayID
 
 	var iaToReturn *metalcloud.InstanceArray
@@ -784,7 +793,7 @@ func createOrUpdateInstanceArray(infrastructureID int, ia metalcloud.InstanceArr
 		//update the main operation object
 		copyInstanceArrayToOperation(ia, retIA.InstanceArrayOperation)
 
-		retIA2, err2 := client.InstanceArrayEdit(retIA.InstanceArrayID, *retIA.InstanceArrayOperation)
+		retIA2, err2 := client.InstanceArrayEdit(retIA.InstanceArrayID, *retIA.InstanceArrayOperation, bSwapExistingInstancesHardware, bKeepDetachingDrives, objServerTypeMatches, arrInstancesToBeDeleted)
 		if err2 != nil {
 			return nil, err2
 		}

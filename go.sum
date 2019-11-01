@@ -67,6 +67,8 @@ github.com/bigstepinc/metal-cloud-sdk-go v0.0.0-20191030142401-c2bb502d83f5 h1:h
 github.com/bigstepinc/metal-cloud-sdk-go v0.0.0-20191030142401-c2bb502d83f5/go.mod h1:azxXXG6UPYs49ZEXqcC1GeYdSBe1R5Wbg7Xgmntb5Jk=
 github.com/bigstepinc/metal-cloud-sdk-go v0.0.0-20191101102828-827e57f571fa h1:pf/0ThAhXJYL4lfW/x7bEBHzNe9QjR+oZy/telCe9+g=
 github.com/bigstepinc/metal-cloud-sdk-go v0.0.0-20191101102828-827e57f571fa/go.mod h1:azxXXG6UPYs49ZEXqcC1GeYdSBe1R5Wbg7Xgmntb5Jk=
+github.com/bigstepinc/metal-cloud-sdk-go v0.0.0-20191101140001-9bd5df605557 h1:4panRlNpRJjqhExtPkBADLSKt7q8Dlcu8Yoy/v35yeM=
+github.com/bigstepinc/metal-cloud-sdk-go v0.0.0-20191101140001-9bd5df605557/go.mod h1:azxXXG6UPYs49ZEXqcC1GeYdSBe1R5Wbg7Xgmntb5Jk=
 github.com/bsm/go-vlq v0.0.0-20150828105119-ec6e8d4f5f4e/go.mod h1:N+BjUcTjSxc2mtRGSCPsat1kze3CUtvJN3/jTXlp29k=
 github.com/cheggaaa/pb v1.0.27/go.mod h1:pQciLPpbU0oxA0h+VJYYLxO+XeDQb5pZijXscXHm81s=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
@@ -155,6 +157,7 @@ github.com/onsi/ginkgo v1.10.2/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+
 github.com/onsi/ginkgo v1.10.3/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/gomega v1.4.3/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
 github.com/onsi/gomega v1.7.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
+github.com/onsi/gomega v1.7.1 h1:K0jcRCwNQM3vFGh1ppMtDh/+7ApJrjldlX8fA0jDTLQ=
 github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7JYyY=
 github.com/pierrec/lz4 v2.0.5+incompatible/go.mod h1:pdkljMzZIN41W+lC3N2tnIh5sFi+IEE17M5jbnwPHcY=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
