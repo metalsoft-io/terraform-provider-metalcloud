@@ -25,7 +25,6 @@ website/node_modules
 *.iml
 website/vendor
 vendor
-website
 set_envs.sh
 # Test exclusions
 !command/test-fixtures/**/*.tfstate

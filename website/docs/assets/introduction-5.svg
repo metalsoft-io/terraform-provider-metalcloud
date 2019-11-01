@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xl="http://www.w3.org/1999/xlink" viewBox="491 126 325 211" width="325" height="211">
+  <defs>
+    <font-face font-family="Helvetica Neue" font-size="16" panose-1="2 0 5 3 0 0 0 2 0 4" units-per-em="1000" underline-position="-100" underline-thickness="50" slope="0" x-height="517" cap-height="714" ascent="951.9958" descent="-212.99744" font-weight="400">
+      <font-face-src>
+        <font-face-name name="HelveticaNeue"/>
+      </font-face-src>
+    </font-face>
+    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-1 -4 10 8" markerWidth="10" markerHeight="8" color="black">
+      <g>
+        <path d="M 8 0 L 0 -3 L 0 3 Z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+      </g>
+    </marker>
+  </defs>
+  <metadata> Produced by OmniGraffle 7.10.2 
+    <dc:date>2019-10-03 13:58:54 +0000</dc:date>
+  </metadata>
+  <g id="Canvas_5" stroke="none" stroke-opacity="1" fill-opacity="1" stroke-dasharray="none" fill="none">
+    <title>Canvas 5</title>
+    <rect fill="white" x="491" y="126" width="325" height="211"/>
+    <g id="Canvas_5: Layer 1">
+      <title>Layer 1</title>
+      <g id="Graphic_2">
+        <rect x="491.5" y="127" width="323.5" height="80.5" fill="white"/>
+        <rect x="491.5" y="127" width="323.5" height="80.5" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(496.5 132)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="107.566" y="15">InstanceArray</tspan>
+        </text>
+      </g>
+      <g id="Graphic_3">
+        <rect x="501.5" y="160.5" width="82.5" height="33" fill="white"/>
+        <rect x="501.5" y="160.5" width="82.5" height="33" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(506.5 167)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="5.874" y="15">Instance</tspan>
+        </text>
+      </g>
+      <g id="Graphic_4">
+        <rect x="599" y="160.5" width="82.5" height="33" fill="white"/>
+        <rect x="599" y="160.5" width="82.5" height="33" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(604 167)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="5.874" y="15">Instance</tspan>
+        </text>
+      </g>
+      <g id="Graphic_5">
+        <rect x="719" y="163" width="82.5" height="33" fill="white"/>
+        <rect x="719" y="163" width="82.5" height="33" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(724 169.5)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="5.874" y="15">Instance</tspan>
+        </text>
+      </g>
+      <g id="Graphic_6">
+        <text transform="translate(692.25 167)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="0" y="15">…</tspan>
+        </text>
+      </g>
+      <g id="Graphic_8">
+        <rect x="491.5" y="255.5" width="323.5" height="80.5" fill="white"/>
+        <rect x="491.5" y="255.5" width="323.5" height="80.5" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(496.5 311)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="119.574" y="15">Drive</tspan>
+          <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" y="15">Array</tspan>
+        </text>
+      </g>
+      <g id="Graphic_9">
+        <rect x="501.5" y="271.5" width="82.5" height="33" fill="white"/>
+        <rect x="501.5" y="271.5" width="82.5" height="33" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(506.5 278)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="17.882" y="15">Drive</tspan>
+        </text>
+      </g>
+      <g id="Graphic_10">
+        <rect x="599" y="271.5" width="82.5" height="33" fill="white"/>
+        <rect x="599" y="271.5" width="82.5" height="33" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(604 278)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="17.882" y="15">Drive</tspan>
+        </text>
+      </g>
+      <g id="Graphic_11">
+        <rect x="719" y="271.5" width="82.5" height="33" fill="white"/>
+        <rect x="719" y="271.5" width="82.5" height="33" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(724 278)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="17.882" y="15">Drive</tspan>
+        </text>
+      </g>
+      <g id="Graphic_12">
+        <text transform="translate(692.25 279.5)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" font-weight="400" fill="black" x="0" y="15">…</tspan>
+        </text>
+      </g>
+      <g id="Line_13">
+        <line x1="542.75" y1="193.5" x2="542.75" y2="261.6" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Line_14">
+        <line x1="640.25" y1="193.5" x2="640.25" y2="261.6" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Line_15">
+        <line x1="760.25" y1="196" x2="760.25" y2="261.6" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+    </g>
+  </g>
+</svg>

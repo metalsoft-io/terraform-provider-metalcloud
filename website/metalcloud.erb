@@ -1,0 +1,64 @@
+<% wrap_layout :inner do %>
+  <% content_for :sidebar do %>
+    <div class="docs-sidebar hidden-print affix-top" role="complementary">
+
+      <ul class="nav docs-sidenav">
+        <li>
+          <a href="/docs/providers/index.html">All Providers</a>
+        </li>
+
+        <li>
+          <a href="/docs/providers/metalcloud/index.html">Bigstep Metalcloud Provider</a>
+        </li>
+
+        <li>
+          <a href="#">Guides</a>
+          <ul class="nav active nav-visible">
+            <li>
+              <a href="/docs/providers/metalcloud/guides/getting_started.html">Getting started</a>
+            </li>
+            <li>
+              <a href="/docs/providers/metalcloud/guides/concepts.html">Concepts</a>
+            </li>
+          </ul>
+        </li>
+
+
+        <li>
+          <a href="#">Data Sources</a>
+          <ul class="nav nav-visible">
+            <li>
+              <a href="/docs/providers/metalcloud/d/volume_template.html">volume_template </a>
+            </li>
+          </ul>
+        </li>
+
+        <li>
+          <a href="#">Resources</a>
+          <ul class="nav nav-visible">
+            <li>
+              <a href="/docs/providers/metalcloud/r/infrastructure.html">metalcloud_infrastructure</a>
+            </li>
+            <li>
+              <a href="#">Infrastructure Components</a>
+              <ul class="nav nav-visible">
+              <li>
+                <a href="/docs/providers/metalcloud/r/instance_array.html">instance_array</a>
+              </li>
+              <li>
+                <a href="/docs/providers/metalcloud/r/drive_array.html">drive_array</a>
+              </li>
+              <li>
+                <a href="/docs/providers/metalcloud/r/network.html">network</a>
+              </li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <%= partial("layouts/otherdocs", :locals => { :skip => "Terraform Enterprise" }) %>
+  <% end %>
+
+  <%= yield %>
+<% end %>
