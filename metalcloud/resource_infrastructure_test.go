@@ -183,6 +183,21 @@ func TestAccInfrastructureResource_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("metalcloud_infrastructure.foo", "infrastructure_label", "my-terraform-infra-"+rName),
 				),
 			},
+			{
+				// shrink second IA back
+				Config: testAccInfrastructureResourceFixture1(rName, 1, 1),
+				// compose a basic test, checking both remote and local values
+				Check: resource.ComposeTestCheckFunc(
+					// query the API to retrieve the widget object
+					testAccCheckResourceExists("metalcloud_infrastructure.foo"),
+					// verify remote values
+					testAccCheckInfrastructureExists("metalcloud_infrastructure.foo"),
+					testAccCheckInstanceArray("metalcloud_infrastructure.foo", expectedIAsAfterCreate),
+
+					// verify local values
+					resource.TestCheckResourceAttr("metalcloud_infrastructure.foo", "infrastructure_label", "my-terraform-infra-"+rName),
+				),
+			},
 		},
 	})
 }
