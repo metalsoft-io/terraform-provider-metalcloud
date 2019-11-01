@@ -81,6 +81,11 @@ func ResourceInfrastructure() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"keep_detaching_drives": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+			},
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(45 * time.Minute),
@@ -166,11 +171,6 @@ func resourceInstanceArray() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem:     resourceInstanceArrayInterface(),
-			},
-			"keep_detaching_drives": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
 			},
 		},
 	}
@@ -698,7 +698,7 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 
 			ia.InstanceArrayInterfaces = intList
 
-			bkeepDetachingDrives := d.Get(fmt.Sprintf("instance_array.%d.keep_detaching_drives", i)).(bool)
+			bkeepDetachingDrives := d.Get("keep_detaching_drives").(bool)
 			bSwapExistingInstancesHardware := false
 
 			retIA, err := createOrUpdateInstanceArray(infrastructureID, ia, client, &bSwapExistingInstancesHardware, &bkeepDetachingDrives, nil, nil)

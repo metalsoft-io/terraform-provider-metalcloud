@@ -51,7 +51,6 @@ func testAccInfrastructureResourceFixture1(infrastructureLabel string, instanceA
 			instance_array {
 				  instance_array_label = "master"
 				  instance_array_instance_count = %d
-		  
 				  interface{
 					  interface_index = 0
 					  network_label = "san"
@@ -106,6 +105,116 @@ func testAccInfrastructureResourceFixture1(infrastructureLabel string, instanceA
 							  firewall_rule_ip_address_type="ipv4"
 						  }
 			}
+		}
+		provider "metalcloud" {
+			user_email = "%s"
+			api_key = "%s"
+			endpoint = "%s"
+			}
+		`,
+		infrastructureLabel,
+		datacenter,
+		instanceArray1Count,
+		instanceArray2Count,
+		user,
+		apiKey,
+		endpoint)
+}
+
+func testAccInfrastructureResourceFixture2(infrastructureLabel string, instanceArray1Count int, instanceArray2Count int) string {
+
+	datacenter := os.Getenv("METALCLOUD_DATACENTER")
+	apiKey := os.Getenv("METALCLOUD_API_KEY")
+	user := os.Getenv("METALCLOUD_USER_EMAIL")
+	endpoint := os.Getenv("METALCLOUD_ENDPOINT")
+
+	return fmt.Sprintf(
+		`
+		data "metalcloud_volume_template" "centos76" {
+			volume_template_label = "centos7-6"
+		}
+
+		resource "metalcloud_infrastructure" "foo" {
+
+			infrastructure_label = "my-terraform-infra-%s"
+			datacenter_name = "%s"	
+			
+			prevent_deploy = true
+
+			network{
+			  network_type = "san"
+			  network_label = "san"
+			}
+		  
+			network{
+			  network_type = "wan"
+			  network_label = "internet"
+			}
+		  
+			network{
+			  network_type = "lan"
+			  network_label = "private"
+			}
+		  
+		  
+			instance_array {
+				  instance_array_label = "master"
+				  instance_array_instance_count = %d
+				  interface{
+					  interface_index = 0
+					  network_label = "san"
+				  }
+		  
+				  interface{
+					  interface_index = 1
+					  network_label = "internet"
+				  }
+		  
+				  interface{
+					  interface_index = 2
+					  network_label = "private"
+				  }
+				  
+				  drive_array{
+					drive_array_label = "testia2-centos"
+					drive_array_storage_type = "iscsi_hdd"
+					drive_size_mbytes_default = 49000
+					volume_template_id = tonumber(data.metalcloud_volume_template.centos76.id)
+				  }
+		  
+				  firewall_rule {
+							  firewall_rule_description = "test fw rule"
+							  firewall_rule_port_range_start = 22
+							  firewall_rule_port_range_end = 22
+							  firewall_rule_source_ip_address_range_start="0.0.0.0"
+							  firewall_rule_source_ip_address_range_end="0.0.0.0"
+							  firewall_rule_protocol="tcp"
+							  firewall_rule_ip_address_type="ipv4"
+						  }
+			}
+		  
+			instance_array {
+				  instance_array_label = "slave"  
+				  instance_array_instance_count = %d
+		  
+				  drive_array{
+					drive_array_label="asd2-centos"
+					drive_array_storage_type = "iscsi_hdd"
+					drive_size_mbytes_default = 49000
+					volume_template_id = tonumber(data.metalcloud_volume_template.centos76.id)
+				  }
+		  
+						  firewall_rule {
+							  firewall_rule_description = "test fw rule"
+							  firewall_rule_port_range_start = 22
+							  firewall_rule_port_range_end = 22
+							  firewall_rule_source_ip_address_range_start="0.0.0.0"
+							  firewall_rule_source_ip_address_range_end="0.0.0.0"
+							  firewall_rule_protocol="tcp"
+							  firewall_rule_ip_address_type="ipv4"
+						  }
+			}
+
 		}
 		provider "metalcloud" {
 			user_email = "%s"
