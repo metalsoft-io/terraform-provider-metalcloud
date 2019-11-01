@@ -13,7 +13,8 @@ resource "metalcloud_infrastructure" "my-infra216" {
   infrastructure_label = "my-terraform-infra216"
   datacenter_name = var.datacenter
   
-  prevent_deploy = true
+  //remove this to actually deploy changes, otherwise all changes will remain in edit mode only.
+  prevent_deploy = true 
 
   network{
     network_type = "san"

@@ -13,6 +13,8 @@ resource "metalcloud_infrastructure" "my-infra102" {
   infrastructure_label = "my-terraform-infra102"
   datacenter_name = var.datacenter
 
+  //remove this to actually deploy changes, otherwise all changes will remain in edit mode only.
+  prevent_deploy = true 
   
   instance_array {
         instance_array_label = "testia"
