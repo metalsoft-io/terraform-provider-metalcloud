@@ -71,7 +71,7 @@ resource "metalcloud_infrastructure" "my-infra102" {
 
 ```
 
-# Authentication
+## Authentication
 
 Getting the API Key is typically done via the Bigstep Metal Cloud's API key section. Use it with a -var or as an env variable:
 

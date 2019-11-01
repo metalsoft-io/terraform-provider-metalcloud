@@ -24,15 +24,7 @@
         </li>
 
 
-        <li>
-          <a href="#">Data Sources</a>
-          <ul class="nav nav-visible">
-            <li>
-              <a href="/docs/providers/metalcloud/d/volume_template.html">volume_template </a>
-            </li>
-          </ul>
-        </li>
-
+        
         <li>
           <a href="#">Resources</a>
           <ul class="nav nav-visible">
@@ -40,7 +32,7 @@
               <a href="/docs/providers/metalcloud/r/infrastructure.html">metalcloud_infrastructure</a>
             </li>
             <li>
-              <a href="#">Infrastructure Components</a>
+              <a href="#">Infrastructure components</a>
               <ul class="nav nav-visible">
               <li>
                 <a href="/docs/providers/metalcloud/r/instance_array.html">instance_array</a>
@@ -51,10 +43,27 @@
               <li>
                 <a href="/docs/providers/metalcloud/r/network.html">network</a>
               </li>
+              <li>
+                <a href="/docs/providers/metalcloud/r/instance_array_interface.html">interface</a>
+              </li>
+              <li>
+                <a href="/docs/providers/metalcloud/r/firewall_rule.html">firewall_rule</a>
+              </li>
               </ul>
             </li>
           </ul>
         </li>
+
+        <li>
+          <a href="#">Data Sources</a>
+          <ul class="nav nav-visible">
+            <li>
+              <a href="/docs/providers/metalcloud/d/volume_template.html">volume_template </a>
+            </li>
+          </ul>
+        </li>
+
+
       </ul>
     </div>
     <%= partial("layouts/otherdocs", :locals => { :skip => "Terraform Enterprise" }) %>

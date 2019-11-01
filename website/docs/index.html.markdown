@@ -11,7 +11,7 @@ description: |-
 The Metalcloud provider provides options to provision bare metal servers, switches, iSCSI drives, control firewall etc, via Terraform.
 
 * [Getting started guide](/docs/providers/metalcloud/guides/getting_started.html)
-
+* [Bigstep Metal Cloud Service](https://bigstep.com/uk/products/bare-metal-cloud)
 
 
 ## Example Usage
