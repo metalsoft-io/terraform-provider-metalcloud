@@ -76,37 +76,6 @@ func TestFlattenExpandDriveArray(t *testing.T) {
 	}
 }
 
-/*
-func TestFlattenExpandInstanceArrayWithDriveArrays(t *testing.T) {
-
-	origIA := metalcloud.InstanceArray{
-		InstanceArrayID:            10,
-		InstanceArrayLabel:         "test1",
-		InstanceArrayInstanceCount: 103,
-	}
-
-	origDAList := []metalcloud.DriveArray{
-		metalcloud.DriveArray{
-			DriveArrayID:    10,
-			InstanceArrayID: 103,
-			DriveArrayLabel: "testda",
-		},
-		metalcloud.DriveArray{
-			DriveArrayID:    10,
-			InstanceArrayID: 103,
-			DriveArrayLabel: "testda",
-		},
-	}
-
-	flattenIAWithDrives := flattenInstanceArrayWithDriveArrays(origIA, origDAList)
-
-	expandedIA, expandedDAList := expandInstanceArrayWithDriveArrays(flattenIAWithDrives)
-
-	if !reflect.DeepEqual(origIA, expandedIA) || !reflect.DeepEqual(origDAList, expandedDAList) {
-		t.Errorf("flatten & expand instanceArray doesn't return same values for %v and %v via %v", origIA, expandedIA, flattenIAWithDrives)
-	}
-}
-*/
 func TestInstanceArrayToOperation(t *testing.T) {
 	origIA := metalcloud.InstanceArray{
 		InstanceArrayID:            10,

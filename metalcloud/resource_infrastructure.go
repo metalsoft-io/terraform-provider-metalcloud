@@ -76,6 +76,11 @@ func ResourceInfrastructure() *schema.Resource {
 				Optional: true,
 				Default:  true,
 			},
+			"await_delete_finished": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(45 * time.Minute),
@@ -754,6 +759,9 @@ func resourceInfrastructureDelete(d *schema.ResourceData, meta interface{}) erro
 	if preventDeploy, ok := d.GetOkExists("prevent_deploy"); !ok || preventDeploy == false {
 		if err := deployInfrastructure(infrastructureID, d, meta); err != nil {
 			return err
+		}
+		if d.Get("await_delete_finished").(bool) {
+			return waitForInfrastructureFinished(infrastructureID, d, meta, d.Timeout(schema.TimeoutUpdate))
 		}
 	}
 
