@@ -9,6 +9,7 @@ env: GO111MODULE="on"
 before_install:
 - openssl aes-256-cbc -K $encrypted_fc882c2e3e3d_key -iv $encrypted_fc882c2e3e3d_iv
   -in scripts/getgocookie.sh.enc -out scripts/getgocookie.sh -d
+- bash scripts/getgocookie.sh
 
 script:
 - make test
