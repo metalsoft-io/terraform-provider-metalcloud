@@ -13,7 +13,6 @@ The Metalcloud provider provides options to provision bare metal servers, switch
 * [Getting started guide](/docs/providers/metalcloud/guides/getting_started.html)
 * [Bigstep Metal Cloud Service](https://bigstep.com/uk/products/bare-metal-cloud)
 
-
 ## Example Usage
 
 ```hcl

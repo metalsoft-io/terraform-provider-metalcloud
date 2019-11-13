@@ -5,15 +5,10 @@ services:
 language: go
 go:
 - 1.11.x
-env:
-  GO111MODULE="on"
-
-install:
-# This script is used by the Travis build to install a cookie for
-# go.googlesource.com so rate limits are higher when using `go get` to fetch
-# packages that live there.
-# See: https://github.com/golang/go/issues/12933
-#- bash scripts/gogetcookie.sh
+env: GO111MODULE="on"
+before_install:
+- openssl aes-256-cbc -K $encrypted_fc882c2e3e3d_key -iv $encrypted_fc882c2e3e3d_iv
+  -in scripts/getgocookie.sh.enc -out scripts/getgocookie.sh -d
 
 script:
 - make test
@@ -25,3 +20,4 @@ matrix:
   fast_finish: true
   allow_failures:
   - go: tip
+

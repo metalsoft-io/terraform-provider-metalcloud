@@ -1,5 +1,5 @@
 provider "metalcloud" {
-   user = var.user
+   user = var.user_email
    api_key = var.api_key 
    endpoint = var.endpoint
 }
@@ -14,7 +14,9 @@ resource "metalcloud_infrastructure" "my-infra104" {
   datacenter_name = var.datacenter
 
   instance_array {
+
         volume_template_id = tonumber(data.metalcloud_volume_template.centos76.id)
+
         instance_array_boot_method = "local_drives"
         instance_array_label = "testia"
         instance_array_instance_count = 1

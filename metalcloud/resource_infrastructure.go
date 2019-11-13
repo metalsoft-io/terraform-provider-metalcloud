@@ -282,7 +282,7 @@ func resourceNetwork() *schema.Resource {
 			},
 			"network_type": &schema.Schema{
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 			},
 			"network_lan_autoallocate_ips": &schema.Schema{
 				Type:     schema.TypeBool,
