@@ -31,3 +31,4 @@ set_envs.sh
 .vscode
 .gitcookies
 scripts/getgocookie.sh
+getgocookie.sh
