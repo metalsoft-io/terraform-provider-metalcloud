@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/bigstepinc/terraform-provider-metalcloud/metalcloud"
 	"github.com/hashicorp/terraform-plugin-sdk/plugin"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	metalcloud "github.com/terraform-providers/terraform-provider-metalcloud/metalcloud"
 )
 
 func main() {

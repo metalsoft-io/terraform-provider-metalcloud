@@ -1,11 +1,11 @@
 package metalcloud
 
 import (
-	metalcloud "github.com/bigstepinc/metal-cloud-sdk-go"
+	mc "github.com/bigstepinc/metal-cloud-sdk-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func flattenInstanceArray(instanceArray metalcloud.InstanceArray) map[string]interface{} {
+func flattenInstanceArray(instanceArray mc.InstanceArray) map[string]interface{} {
 
 	var d = make(map[string]interface{})
 
@@ -36,9 +36,9 @@ func flattenInstanceArray(instanceArray metalcloud.InstanceArray) map[string]int
 	return d
 }
 
-func expandInstanceArray(d map[string]interface{}) metalcloud.InstanceArray {
+func expandInstanceArray(d map[string]interface{}) mc.InstanceArray {
 
-	var ia metalcloud.InstanceArray
+	var ia mc.InstanceArray
 	if d["instance_array_id"] != nil {
 		ia.InstanceArrayID = d["instance_array_id"].(int)
 	}
@@ -60,7 +60,7 @@ func expandInstanceArray(d map[string]interface{}) metalcloud.InstanceArray {
 
 	if d["firewall_rule"] != nil {
 		fwRulesSet := d["firewall_rule"].(*schema.Set)
-		fwRules := []metalcloud.FirewallRule{}
+		fwRules := []mc.FirewallRule{}
 
 		for _, fwMap := range fwRulesSet.List() {
 			fwRules = append(fwRules, expandFirewallRule(fwMap.(map[string]interface{})))
@@ -72,7 +72,7 @@ func expandInstanceArray(d map[string]interface{}) metalcloud.InstanceArray {
 	return ia
 }
 
-func flattenFirewallRule(fw metalcloud.FirewallRule) map[string]interface{} {
+func flattenFirewallRule(fw mc.FirewallRule) map[string]interface{} {
 	var d = make(map[string]interface{})
 
 	d["firewall_rule_description"] = fw.FirewallRuleDescription
@@ -89,8 +89,8 @@ func flattenFirewallRule(fw metalcloud.FirewallRule) map[string]interface{} {
 	return d
 }
 
-func expandFirewallRule(d map[string]interface{}) metalcloud.FirewallRule {
-	var fw metalcloud.FirewallRule
+func expandFirewallRule(d map[string]interface{}) mc.FirewallRule {
+	var fw mc.FirewallRule
 
 	fw.FirewallRuleDescription = d["firewall_rule_description"].(string)
 	fw.FirewallRulePortRangeStart = d["firewall_rule_port_range_start"].(int)
@@ -106,7 +106,7 @@ func expandFirewallRule(d map[string]interface{}) metalcloud.FirewallRule {
 	return fw
 }
 
-func flattenDriveArray(driveArray metalcloud.DriveArray) map[string]interface{} {
+func flattenDriveArray(driveArray mc.DriveArray) map[string]interface{} {
 	var d = make(map[string]interface{})
 
 	d["drive_array_id"] = driveArray.DriveArrayID
@@ -119,8 +119,8 @@ func flattenDriveArray(driveArray metalcloud.DriveArray) map[string]interface{} 
 	return d
 }
 
-func expandDriveArray(d map[string]interface{}) metalcloud.DriveArray {
-	var da metalcloud.DriveArray
+func expandDriveArray(d map[string]interface{}) mc.DriveArray {
+	var da mc.DriveArray
 	if d["drive_array_id"] != nil {
 		da.DriveArrayID = d["drive_array_id"].(int)
 	}
@@ -136,7 +136,7 @@ func expandDriveArray(d map[string]interface{}) metalcloud.DriveArray {
 }
 
 /*
-func flattenInstanceArrayWithDriveArrays(instanceArray metalcloud.InstanceArray, driveArrays []metalcloud.DriveArray) map[string]interface{} {
+func flattenInstanceArrayWithDriveArrays(instanceArray mc.InstanceArray, driveArrays []mc.DriveArray) map[string]interface{} {
 	var d = flattenInstanceArray(instanceArray)
 	var daList []interface{}
 
@@ -149,17 +149,17 @@ func flattenInstanceArrayWithDriveArrays(instanceArray metalcloud.InstanceArray,
 	return d
 }
 
-func expandInstanceArrayWithDriveArrays(d map[string]interface{}) (metalcloud.InstanceArray, []metalcloud.DriveArray) {
+func expandInstanceArrayWithDriveArrays(d map[string]interface{}) (mc.InstanceArray, []mc.DriveArray) {
 	ia := expandInstanceArray(d)
 
-	var das []metalcloud.DriveArray
+	var das []mc.DriveArray
 	for _, da := range d["drive_array"].([]interface{}) {
 		das = append(das, expandDriveArray(da.(map[string]interface{})))
 	}
 	return ia, das
 }
 */
-func copyInstanceArrayToOperation(ia metalcloud.InstanceArray, iao *metalcloud.InstanceArrayOperation) {
+func copyInstanceArrayToOperation(ia mc.InstanceArray, iao *mc.InstanceArrayOperation) {
 
 	iao.InstanceArrayID = ia.InstanceArrayID
 	iao.InstanceArrayLabel = ia.InstanceArrayLabel
@@ -177,7 +177,7 @@ func copyInstanceArrayToOperation(ia metalcloud.InstanceArray, iao *metalcloud.I
 	iao.VolumeTemplateID = ia.VolumeTemplateID
 }
 
-func copyDriveArrayToOperation(da metalcloud.DriveArray, dao *metalcloud.DriveArrayOperation) {
+func copyDriveArrayToOperation(da mc.DriveArray, dao *mc.DriveArrayOperation) {
 	dao.DriveArrayID = da.DriveArrayID
 	dao.DriveArrayLabel = da.DriveArrayLabel
 	dao.VolumeTemplateID = da.VolumeTemplateID
@@ -186,13 +186,13 @@ func copyDriveArrayToOperation(da metalcloud.DriveArray, dao *metalcloud.DriveAr
 	dao.InstanceArrayID = da.InstanceArrayID
 }
 
-func copyInstanceArrayInterfaceToOperation(i metalcloud.InstanceArrayInterface, io *metalcloud.InstanceArrayInterfaceOperation) {
+func copyInstanceArrayInterfaceToOperation(i mc.InstanceArrayInterface, io *mc.InstanceArrayInterfaceOperation) {
 	io.InstanceArrayInterfaceLAGGIndexes = i.InstanceArrayInterfaceLAGGIndexes
 	io.InstanceArrayInterfaceIndex = i.InstanceArrayInterfaceIndex
 	io.NetworkID = i.NetworkID
 }
 
-func flattenNetwork(network metalcloud.Network) map[string]interface{} {
+func flattenNetwork(network mc.Network) map[string]interface{} {
 	var d = make(map[string]interface{})
 
 	d["network_id"] = network.NetworkID
@@ -204,8 +204,8 @@ func flattenNetwork(network metalcloud.Network) map[string]interface{} {
 	return d
 }
 
-func expandNetwork(d map[string]interface{}) metalcloud.Network {
-	var n metalcloud.Network
+func expandNetwork(d map[string]interface{}) mc.Network {
+	var n mc.Network
 
 	if d["network_id"] != nil {
 		n.NetworkID = d["network_id"].(int)
@@ -218,7 +218,7 @@ func expandNetwork(d map[string]interface{}) metalcloud.Network {
 	return n
 }
 
-func flattenInstanceArrayInterface(i metalcloud.InstanceArrayInterface) map[string]interface{} {
+func flattenInstanceArrayInterface(i mc.InstanceArrayInterface) map[string]interface{} {
 	var d = make(map[string]interface{})
 
 	d["instance_array_interface_id"] = i.InstanceArrayInterfaceID
@@ -231,9 +231,9 @@ func flattenInstanceArrayInterface(i metalcloud.InstanceArrayInterface) map[stri
 	return d
 }
 
-func expandInstanceArrayInterface(d map[string]interface{}) metalcloud.InstanceArrayInterface {
+func expandInstanceArrayInterface(d map[string]interface{}) mc.InstanceArrayInterface {
 
-	var i metalcloud.InstanceArrayInterface
+	var i mc.InstanceArrayInterface
 
 	if d["instance_array_interface_id"] != nil {
 		i.InstanceArrayInterfaceID = d["instance_array_interface_id"].(int)

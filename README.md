@@ -2,7 +2,7 @@ Bigstep Metalcloud Terraform Provider
 ==================
 This is a terraform plugin for controlling Bigstep Metalcloud resources.
 
-[![Build Status](https://travis-ci.org/bigstepinc/terraform-provider-metalcloud.svg?branch=master)](https://travis-ci.org/bigstepinc/terraform-provider-metalcloud)
+[![Build Status](https://travis-ci.org/bigstepinc/terraform-provider-mc.svg?branch=master)](https://travis-ci.org/bigstepinc/terraform-provider-metalcloud)
 
 Maintainers
 -----------
@@ -164,7 +164,7 @@ Clone repository to: `$GOPATH/src/github.com/bigstepinc/terraform-provider-metal
 
 ```sh
 $ mkdir -p $GOPATH/src/github.com/bigstepinc; cd $GOPATH/src/github.com/bigstepinc
-$ git clone git@github.com:bigstepinc/terraform-provider-metalcloud.git
+$ git clone git@github.com:bigstepinc/terraform-provider-mc.git
 ```
 
 Enter the provider directory and build the provider

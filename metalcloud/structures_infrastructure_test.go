@@ -4,17 +4,17 @@ import (
 	"reflect"
 	"testing"
 
-	metalcloud "github.com/bigstepinc/metal-cloud-sdk-go"
+	mc "github.com/bigstepinc/metal-cloud-sdk-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func TestFlattenExpandInstanceArray(t *testing.T) {
-	origFW := metalcloud.FirewallRule{
+	origFW := mc.FirewallRule{
 		FirewallRuleDescription: "test",
 	}
-	origIA := metalcloud.InstanceArray{
+	origIA := mc.InstanceArray{
 		InstanceArrayID:            10,
-		InstanceArrayFirewallRules: []metalcloud.FirewallRule{origFW},
+		InstanceArrayFirewallRules: []mc.FirewallRule{origFW},
 	}
 	flattenIA := flattenInstanceArray(origIA)
 
@@ -61,7 +61,7 @@ func TestExpandInstanceArrayComplete(t *testing.T) {
 }
 
 func TestFlattenExpandDriveArray(t *testing.T) {
-	origDA := metalcloud.DriveArray{
+	origDA := mc.DriveArray{
 		DriveArrayID:    10,
 		InstanceArrayID: 103,
 		DriveArrayLabel: "testda",
@@ -77,11 +77,11 @@ func TestFlattenExpandDriveArray(t *testing.T) {
 }
 
 func TestInstanceArrayToOperation(t *testing.T) {
-	origIA := metalcloud.InstanceArray{
+	origIA := mc.InstanceArray{
 		InstanceArrayID:            10,
 		InstanceArrayLabel:         "test1",
 		InstanceArrayInstanceCount: 103,
-		InstanceArrayOperation: &metalcloud.InstanceArrayOperation{
+		InstanceArrayOperation: &mc.InstanceArrayOperation{
 			InstanceArrayLabel: "test2",
 			InstanceArrayID:    11,
 		},
@@ -95,7 +95,7 @@ func TestInstanceArrayToOperation(t *testing.T) {
 }
 
 func TestFlattenExpandNetwork(t *testing.T) {
-	origNetwork := metalcloud.Network{
+	origNetwork := mc.Network{
 		NetworkLabel: "san-1",
 		NetworkType:  "san",
 	}
