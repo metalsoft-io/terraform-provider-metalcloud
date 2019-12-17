@@ -19,10 +19,24 @@ Requirements
 Installing The Provider
 ----------------------
 
-While the provider is in alpha stage, it will need to be manually installed by:
+1. Build the provider
+This will install the plugin binary in `$GOPATH/bin/`:
+
 ```bash
-go install github.com/bigstepinc/terraform-provider-metalcloud
-cp $GOPATH/bin/terraform-provider-metalcloud ~/.terraform.d/plugins
+git clone https://github.com/bigstepinc/terraform-provider-metalcloud
+cd terraform-provider-metalcloud
+make
+```
+
+2. Install the provider plugin
+
+If $GOPATH/bin not in $PATH you might need to put the plugin in the plugin directory:
+`~/.terraform.d/plugins` or most operating systems and `%APPDATA%\terraform.d\plugins` on Windows
+See [Terraform plugin locations](https://www.terraform.io/docs/extend/how-terraform-works.html#plugin-locations) 
+
+```bash
+mkdir -p ~/.terraform.d/plugins/darwin_amd64/
+cp $GOPATH/bin/terraform-provider-metalcloud ~/.terraform.d/plugins/darwin_amd64/
 terraform init
 ```
 
