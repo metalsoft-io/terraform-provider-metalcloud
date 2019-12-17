@@ -19,7 +19,7 @@ Requirements
 Installing The Provider
 ----------------------
 
-1. Build the provider
+### 1. Build the provider
 This will install the plugin binary in `$GOPATH/bin/`:
 
 ```bash
@@ -28,7 +28,7 @@ cd terraform-provider-metalcloud
 make
 ```
 
-2. Install the provider plugin
+### 2. Install the provider plugin
 
 If $GOPATH/bin not in $PATH you might need to put the plugin in the plugin directory:
 `~/.terraform.d/plugins` or most operating systems and `%APPDATA%\terraform.d\plugins` on Windows
