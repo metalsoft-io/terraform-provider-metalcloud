@@ -31,8 +31,10 @@ make
 ### 2. Install the provider plugin
 
 If $GOPATH/bin not in $PATH you might need to put the plugin in the plugin directory:
-`~/.terraform.d/plugins` or most operating systems and `%APPDATA%\terraform.d\plugins` on Windows
-See [Terraform plugin locations](https://www.terraform.io/docs/extend/how-terraform-works.html#plugin-locations) 
+`~/.terraform.d/plugins` or most operating systems and `%APPDATA%\terraform.d\plugins` on Windows.
+See [Terraform plugin locations](https://www.terraform.io/docs/extend/how-terraform-works.html#plugin-locations) for more information. 
+
+> Note: <OS> and <ARCH> use the Go language's standard OS and architecture names; for example, darwin_amd64. 
 
 ```bash
 mkdir -p ~/.terraform.d/plugins/darwin_amd64/
