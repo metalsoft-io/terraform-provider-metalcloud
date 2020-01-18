@@ -36,7 +36,7 @@ func dataSourceVolumeTemplateRead(d *schema.ResourceData, meta interface{}) erro
 		return err
 	}
 
-	var volumeTemplateID int = -1
+	var volumeTemplateID = -1
 	var possibleVolumeTemplateLabels []string
 
 	for _, volumeTemplate := range *availableVolumeTemplates {

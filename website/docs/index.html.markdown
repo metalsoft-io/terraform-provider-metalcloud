@@ -13,6 +13,15 @@ The Metalcloud provider provides options to provision bare metal servers, switch
 * [Getting started guide](/docs/providers/metalcloud/guides/getting_started.html)
 * [Bigstep Metal Cloud Service](https://bigstep.com/uk/products/bare-metal-cloud)
 
+
+## Argument Reference
+
+The following arguments are supported:
+
+* `user_email` - (Optional) **User's** email address used as the login identity. This will fallback to using METALCLOUD_API_KEY environment variable.
+* `api_key` - (Optional) The **User's**  API_KEY. Defaults to the METALCLOUD_API_KEY environment variable.
+* `endpoint` - (Optional) The **API endpoint to connect to. Defaults to METALCLOUD_ENDPOINT.
+
 ## Example Usage
 
 ```hcl
@@ -22,9 +31,7 @@ provider "metalcloud" {
    endpoint = var.endpoint
 }
 
-data "metalcloud_volume_template" "centos76" {
-  volume_template_label = "centos7-6"
-}
+
 
 resource "metalcloud_infrastructure" "my-infra216" {
   
