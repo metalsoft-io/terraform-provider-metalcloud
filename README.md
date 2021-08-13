@@ -1,4 +1,4 @@
-Bigstep Metalcloud Terraform Provider
+MetalSoft Terraform Provider
 ==================
 This is a terraform plugin for controlling Bigstep Metalcloud resources.
 
