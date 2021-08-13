@@ -2,7 +2,7 @@
 layout: "metalcloud"
 page_title: "Metalcloud: drive_array"
 description: |-
-  Controls a Bigstep Metalcloud DriveArray.
+  Controls a Metalcloud DriveArray.
 ---
 
 

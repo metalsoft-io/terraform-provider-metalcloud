@@ -1,13 +1,11 @@
 MetalSoft Terraform Provider
 ==================
-This is a terraform plugin for controlling Bigstep Metalcloud resources.
-
-[![Build Status](https://travis-ci.org/bigstepinc/terraform-provider-metalcloud.svg?branch=master)](https://travis-ci.org/bigstepinc/terraform-provider-metalcloud)
+This is a terraform plugin for controlling Metalcloud resources.
 
 Maintainers
 -----------
 
-This provider plugin is maintained by the Bigstep Team.
+This provider plugin is maintained by the MetalSoft Team.
 
 Requirements
 ------------
@@ -23,7 +21,7 @@ Installing The Provider
 This will install the plugin binary in `$GOPATH/bin/`:
 
 ```bash
-git clone https://github.com/bigstepinc/terraform-provider-metalcloud
+git clone https://github.com/metalsoft-io/terraform-provider-metalcloud
 cd terraform-provider-metalcloud
 make
 ```
@@ -179,14 +177,14 @@ Building The Provider
 Clone repository to: `$GOPATH/src/github.com/bigstepinc/terraform-provider-metalcloud`
 
 ```sh
-$ mkdir -p $GOPATH/src/github.com/bigstepinc; cd $GOPATH/src/github.com/bigstepinc
-$ git clone git@github.com:bigstepinc/terraform-provider-metalcloud.git
+$ mkdir -p $GOPATH/src/github.com/metalsoft-io; cd $GOPATH/src/github.com/metalsoft-io
+$ git clone git@github.com:metalsoft-io/terraform-provider-metalcloud.git
 ```
 
 Enter the provider directory and build the provider
 
 ```sh
-$ cd $GOPATH/src/github.com/bigstepinc/terraform-provider-metalcloud
+$ cd $GOPATH/src/github.com/metalsoft-io/terraform-provider-metalcloud
 $ make build
 ```
 Developing the Provider

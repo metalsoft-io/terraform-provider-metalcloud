@@ -2,7 +2,7 @@
 layout: "metalcloud"
 page_title: "Metalcloud: network"
 description: |-
-  Controls a Bigstep Metalcloud network.
+  Controls a Metalcloud network.
 ---
 
 

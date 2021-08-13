@@ -2,16 +2,13 @@
 layout: "metalcloud"
 page_title: "Provider: Metalcloud"
 description: |-
-  The Metalcloud provider enables control over the Bigstep Metalcloud's resources using terraform.
+  The Metalcloud provider enables control over the Metalcloud's resources using Terraform.
 ---
 
 # Metalcloud Provider
 
 
 The Metalcloud provider provides options to provision bare metal servers, switches, iSCSI drives, control firewall etc, via Terraform.
-
-* [Getting started guide](/docs/providers/metalcloud/guides/getting_started.html)
-* [Bigstep Metal Cloud Service](https://bigstep.com/uk/products/bare-metal-cloud)
 
 
 ## Argument Reference
