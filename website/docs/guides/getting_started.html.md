@@ -7,7 +7,7 @@ description: |-
 
 # Metalcloud: Getting started
 
-The Bigstep Metalcloud provider allows users to provision bare metal resources such as physical servers, switch condigurations, iSCSI drives etc.
+The Metalcloud provider allows users to provision bare metal resources such as physical servers, switch condigurations, iSCSI drives etc.
 
 
 ## Provisioning a server
@@ -73,13 +73,14 @@ resource "metalcloud_infrastructure" "my-infra102" {
 
 ## Authentication
 
-Getting the API Key is typically done via the Bigstep Metal Cloud's API key section. Use it with a -var or as an env variable:
+Getting the API Key is typically done via the  Metal Cloud's API key section. Use it with a -var or as an env variable:
 
 ```bash
 export TF_VAR_api_key="<yourkey>"
 export TF_VAR_user="test@test.com"
-export TF_VAR_endpoint="https://api.bigstep.com/metal-cloud"
+export TF_VAR_endpoint="https://api.poc.metalsoft.io"
 export TF_VAR_datacenter="uk-reading"
+
 terraform plan
 ```
 
