@@ -21,3 +21,9 @@ matrix:
   fast_finish: true
   allow_failures:
   - go: tip
+deploy:
+- provider: script
+  skip_cleanup: true
+  script: curl -sL https://git.io/goreleaser | bash -s -- "--skip-validate"
+  on:
+    tags: true
