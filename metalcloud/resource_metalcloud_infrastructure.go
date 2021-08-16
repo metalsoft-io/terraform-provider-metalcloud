@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	mc "github.com/bigstepinc/metal-cloud-sdk-go"
+	mc "github.com/bigstepinc/metal-cloud-sdk-go/v2"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -86,6 +86,11 @@ func ResourceInfrastructure() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
+			},
+			"shared_drive": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     resourceSharedDrive(),
 			},
 		},
 		Timeouts: &schema.ResourceTimeout{
@@ -314,6 +319,40 @@ func resourceInstanceArrayInterface() *schema.Resource {
 	}
 }
 
+func resourceSharedDrive() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"shared_drive_label": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"shared_drive_id": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"shared_drive_size_mbytes": &schema.Schema{
+				Type:     schema.TypeInt,
+				Required: true,
+			},
+			"shared_drive_storage_type": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"shared_drive_has_gfs": &schema.Schema{
+				Type:     schema.TypeBool,
+				Default:  false,
+				Optional: true,
+			},
+			"shared_drive_attached_instance_arrays": &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     schema.TypeInt,
+			},
+		},
+	}
+}
+
 func resourceInfrastructureCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*mc.Client)
@@ -370,6 +409,27 @@ func resourceInfrastructureCreate(d *schema.ResourceData, meta interface{}) erro
 				}
 			}
 			nCreatedNetworksMap[network.NetworkLabel] = *network
+		}
+	}
+
+	//create shared drives
+	if sharedDrives, ok := d.GetOkExists("shared_drive"); ok {
+		for _, resSD := range sharedDrives.([]interface{}) {
+			//populate shared drive
+			sd := expandSharedDrive(resSD.(map[string]interface{}))
+			//create shared drive
+			sdCreated, err := client.SharedDriveCreate(createdInfra.InfrastructureID, sd)
+			if err != nil {
+				return err
+			}
+
+			//attach shared drives to instances
+			for _, iaID := range sdCreated.SharedDriveAttachedInstanceArrays {
+				_, err := client.SharedDriveAttachInstanceArray(sdCreated.SharedDriveID, iaID)
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
 
@@ -498,6 +558,28 @@ func resourceInfrastructureRead(d *schema.ResourceData, meta interface{}) error 
 	log.Printf("networks:%v", nList)
 
 	d.Set("network", nList)
+
+	//discover shared drives
+	retSharedDrives, err := client.SharedDrives(infrastructureID)
+	if err != nil {
+		return err
+	}
+
+	sdList := []interface{}{}
+	sdListByID := map[int]mc.SharedDrive{}
+	if sdCount, ok := d.Get("shared_drive.#").(int); ok {
+		for i := 0; i < sdCount; i++ {
+			if sdLabel, ok := d.GetOkExists(fmt.Sprintf("shared_drive.%d.shared_drive_label", i)); ok {
+				sd := (*retSharedDrives)[sdLabel.(string)]
+				sdList = append(sdList, flattenSharedDrive(sd))
+				sdListByID[sd.SharedDriveID] = sd
+			}
+		}
+	}
+
+	log.Printf("shared drives:%v", sdList)
+
+	d.Set("shared_drive", sdList)
 
 	//discover drive arrays
 	retInstanceArrays, err := client.InstanceArrays(infrastructureID)
@@ -644,6 +726,23 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 		needsDeploy = true
 	}
 
+	if d.HasChange("shared_drive") {
+		//update shared drives
+		sdList := d.Get("shared_drive").([]interface{})
+
+		for i, sdMapIntf := range sdList {
+			if !d.HasChange(fmt.Sprintf("shared_drive.%d", i)) {
+				continue
+			}
+			sdMap := sdMapIntf.(map[string]interface{})
+			sd := expandSharedDrive(sdMap)
+			if _, err := createOrUpdateSharedDrive(infrastructureID, sd, client); err != nil {
+				return err
+			}
+			needsDeploy = true
+		}
+	}
+
 	if d.HasChange("instance_array") {
 		//take each instance array and apply changes
 		currentInstanceArraysMap := d.Get("instance_array").([]interface{})
@@ -770,7 +869,7 @@ func resourceInfrastructureDelete(d *schema.ResourceData, meta interface{}) erro
 	return nil
 }
 
-func createOrUpdateInstanceArray(infrastructureID int, ia mc.InstanceArray, client *mc.Client, bSwapExistingInstancesHardware *bool, bKeepDetachingDrives *bool, objServerTypeMatches *[]mc.ServerType, arrInstancesToBeDeleted *[]int) (*mc.InstanceArray, error) {
+func createOrUpdateInstanceArray(infrastructureID int, ia mc.InstanceArray, client *mc.Client, bSwapExistingInstancesHardware *bool, bKeepDetachingDrives *bool, objServerTypeMatches *mc.ServerTypeMatches, arrInstancesToBeDeleted *[]int) (*mc.InstanceArray, error) {
 	var instanceArrayID = ia.InstanceArrayID
 
 	var iaToReturn *mc.InstanceArray
@@ -809,6 +908,32 @@ func createOrUpdateInstanceArray(infrastructureID int, ia mc.InstanceArray, clie
 		iaToReturn = retIA2
 	}
 	return iaToReturn, nil
+}
+
+func createOrUpdateSharedDrive(infrastructureID int, sd mc.SharedDrive, client *mc.Client) (*mc.SharedDrive, error) {
+	var sharedDriveToReturn *mc.SharedDrive
+	if sd.SharedDriveID == 0 {
+		retSD, err := client.SharedDriveCreate(infrastructureID, sd)
+		if err != nil {
+			return nil, err
+		}
+		sharedDriveToReturn = retSD
+	} else {
+		retSD, err := client.SharedDriveGet(sd.SharedDriveID)
+		if err != nil {
+			return nil, err
+		}
+
+		copySharedDriveToOperation(sd, &retSD.SharedDriveOperation)
+
+		retSD, err = client.SharedDriveEdit(sd.SharedDriveID, *&retSD.SharedDriveOperation)
+		if err != nil {
+			return nil, err
+		}
+		sharedDriveToReturn = retSD
+	}
+
+	return sharedDriveToReturn, nil
 }
 
 func createOrUpdateDriveArray(infrastructureID int, da mc.DriveArray, client *mc.Client) (*mc.DriveArray, error) {

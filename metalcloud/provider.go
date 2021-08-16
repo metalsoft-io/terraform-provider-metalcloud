@@ -1,11 +1,11 @@
 package metalcloud
 
 import (
-	mc "github.com/bigstepinc/metal-cloud-sdk-go"
+	mc "github.com/bigstepinc/metal-cloud-sdk-go/v2"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-//Provider of Bistep Metal Cloud resources
+//Provider of Bigstep Metal Cloud resources
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema:         providerSchema(),
