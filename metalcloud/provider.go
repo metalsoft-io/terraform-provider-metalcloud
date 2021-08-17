@@ -48,6 +48,12 @@ func providerSchema() map[string]*schema.Schema {
 			DefaultFunc: schema.EnvDefaultFunc("METALCLOUD_USER_EMAIL", nil),
 			Description: "User email",
 		},
+		"logging": &schema.Schema{
+			Type:        schema.TypeBool,
+			Optional:    true,
+			DefaultFunc: schema.EnvDefaultFunc("METALCLOUD_LOGGING_ENABLED", nil),
+			Description: "Enable logging",
+		},
 	}
 }
 
@@ -57,7 +63,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		d.Get("user_email").(string),
 		d.Get("api_key").(string),
 		d.Get("endpoint").(string),
-		false,
+		d.Get("logging").(bool),
 	)
 	if err != nil {
 		return nil, err
