@@ -60,7 +60,14 @@ func expandSharedDrive(d map[string]interface{}) mc.SharedDrive {
 	sd.SharedDriveSizeMbytes = d["shared_drive_size_mbytes"].(int)
 
 	if d["shared_drive_attached_instance_arrays"] != nil {
-		sd.SharedDriveAttachedInstanceArrays = d["shared_drive_attached_instance_arrays"].([]int)
+		sd.SharedDriveAttachedInstanceArrays = []int{}
+
+		for _, label := range d["shared_drive_attached_instance_arrays"].(map[string]interface{}) {
+			iaMap := d["infrastructure_instance_arrays"].(map[string]mc.InstanceArray)
+			if val, ok := iaMap[label.(string)]; ok {
+				sd.SharedDriveAttachedInstanceArrays = append(sd.SharedDriveAttachedInstanceArrays, val.InstanceArrayID)
+			}
+		}
 	}
 
 	return sd

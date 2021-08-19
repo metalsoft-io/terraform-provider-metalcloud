@@ -347,7 +347,9 @@ func resourceSharedDrive() *schema.Resource {
 			"shared_drive_attached_instance_arrays": &schema.Schema{
 				Type:     schema.TypeList,
 				Optional: true,
-				Elem:     schema.TypeInt,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 			},
 		},
 	}
@@ -412,27 +414,6 @@ func resourceInfrastructureCreate(d *schema.ResourceData, meta interface{}) erro
 		}
 	}
 
-	//create shared drives
-	if sharedDrives, ok := d.GetOkExists("shared_drive"); ok {
-		for _, resSD := range sharedDrives.([]interface{}) {
-			//populate shared drive
-			sd := expandSharedDrive(resSD.(map[string]interface{}))
-			//create shared drive
-			sdCreated, err := client.SharedDriveCreate(createdInfra.InfrastructureID, sd)
-			if err != nil {
-				return err
-			}
-
-			//attach shared drives to instances
-			for _, iaID := range sdCreated.SharedDriveAttachedInstanceArrays {
-				_, err := client.SharedDriveAttachInstanceArray(sdCreated.SharedDriveID, iaID)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-
 	//create instance arrays (and their drives)
 	if instanceArrays, ok := d.GetOkExists("instance_array"); ok {
 
@@ -485,6 +466,34 @@ func resourceInfrastructureCreate(d *schema.ResourceData, meta interface{}) erro
 				}
 			}
 
+		}
+	}
+
+	//create shared drives
+	if sharedDrives, ok := d.GetOkExists("shared_drive"); ok {
+		for _, resSD := range sharedDrives.([]interface{}) {
+			//populate shared drive
+			retInstanceArrays, err := client.InstanceArrays(createdInfra.InfrastructureID)
+			if err != nil {
+				return err
+			}
+
+			mapSD := resSD.(map[string]interface{})
+			mapSD["infrastructure_instance_arrays"] = retInstanceArrays
+			sd := expandSharedDrive(mapSD)
+			//create shared drive
+			sdCreated, err := client.SharedDriveCreate(createdInfra.InfrastructureID, sd)
+			if err != nil {
+				return err
+			}
+
+			//attach shared drives to instances
+			for _, iaID := range sdCreated.SharedDriveAttachedInstanceArrays {
+				_, err := client.SharedDriveAttachInstanceArray(sdCreated.SharedDriveID, iaID)
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
 
