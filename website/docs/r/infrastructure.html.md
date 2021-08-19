@@ -2,7 +2,7 @@
 layout: "metalcloud"
 page_title: "Metalcloud: metalcloud_infrastructure"
 description: |-
-  Controls a Bigstep Metalcloud infrastructure and all it's elements such as instance arrays and others.
+  Controls a Metalcloud infrastructure and all it's elements such as instance arrays and others.
 ---
 
 # metalcloud_infrastructure

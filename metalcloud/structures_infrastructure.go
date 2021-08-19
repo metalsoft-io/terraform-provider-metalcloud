@@ -1,7 +1,7 @@
 package metalcloud
 
 import (
-	mc "github.com/bigstepinc/metal-cloud-sdk-go"
+	mc "github.com/bigstepinc/metal-cloud-sdk-go/v2"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -34,6 +34,47 @@ func flattenInstanceArray(instanceArray mc.InstanceArray) map[string]interface{}
 	}
 
 	return d
+}
+
+func flattenSharedDrive(sharedDrive mc.SharedDrive) map[string]interface{} {
+	var d = make(map[string]interface{})
+
+	d["shared_drive_id"] = sharedDrive.SharedDriveID
+	d["shared_drive_label"] = sharedDrive.SharedDriveLabel
+	d["shared_drive_storage_type"] = sharedDrive.SharedDriveStorageType
+	d["shared_drive_size_mbytes"] = sharedDrive.SharedDriveSizeMbytes
+	// d["shared_drive_attached_instance_arrays"] = sharedDrive.SharedDriveAttachedInstanceArrays
+
+	return d
+}
+
+func expandSharedDrive(d map[string]interface{}) mc.SharedDrive {
+	var sd mc.SharedDrive
+
+	if d["shared_drive_id"] != nil {
+		sd.SharedDriveID = d["shared_drive_id"].(int)
+	}
+	sd.SharedDriveLabel = d["shared_drive_label"].(string)
+	sd.SharedDriveHasGFS = d["shared_drive_has_gfs"].(bool)
+	sd.SharedDriveStorageType = d["shared_drive_storage_type"].(string)
+	sd.SharedDriveSizeMbytes = d["shared_drive_size_mbytes"].(int)
+
+	if d["shared_drive_attached_instance_arrays"] != nil {
+		sd.SharedDriveAttachedInstanceArrays = []int{}
+
+		for _, label := range d["shared_drive_attached_instance_arrays"].([]interface{}) {
+			iaPlannedMap := d["infrastructure_instance_arrays_planned"].(map[string]mc.InstanceArray)
+			iaExistingMap := d["infrastructure_instance_arrays_existing"].(map[string]mc.InstanceArray)
+
+			if val, ok := iaExistingMap[label.(string)]; ok {
+				sd.SharedDriveAttachedInstanceArrays = append(sd.SharedDriveAttachedInstanceArrays, val.InstanceArrayID)
+			} else if val, ok := iaPlannedMap[label.(string)]; ok {
+				sd.SharedDriveAttachedInstanceArrays = append(sd.SharedDriveAttachedInstanceArrays, val.InstanceArrayID)
+			}
+		}
+	}
+
+	return sd
 }
 
 func expandInstanceArray(d map[string]interface{}) mc.InstanceArray {
@@ -190,6 +231,15 @@ func copyInstanceArrayInterfaceToOperation(i mc.InstanceArrayInterface, io *mc.I
 	io.InstanceArrayInterfaceLAGGIndexes = i.InstanceArrayInterfaceLAGGIndexes
 	io.InstanceArrayInterfaceIndex = i.InstanceArrayInterfaceIndex
 	io.NetworkID = i.NetworkID
+}
+
+func copySharedDriveToOperation(sd mc.SharedDrive, sdo *mc.SharedDriveOperation) {
+	sdo.SharedDriveID = sd.SharedDriveID
+	sdo.SharedDriveHasGFS = sd.SharedDriveHasGFS
+	sdo.SharedDriveLabel = sd.SharedDriveLabel
+	sdo.SharedDriveSizeMbytes = sd.SharedDriveSizeMbytes
+	sdo.SharedDriveStorageType = sd.SharedDriveStorageType
+	sdo.SharedDriveAttachedInstanceArrays = sd.SharedDriveAttachedInstanceArrays
 }
 
 func flattenNetwork(network mc.Network) map[string]interface{} {

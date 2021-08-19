@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	mc "github.com/bigstepinc/metal-cloud-sdk-go"
+	mc "github.com/bigstepinc/metal-cloud-sdk-go/v2"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 

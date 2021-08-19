@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"testing"
 
-	mc "github.com/bigstepinc/metal-cloud-sdk-go"
+	mc "github.com/bigstepinc/metal-cloud-sdk-go/v2"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"

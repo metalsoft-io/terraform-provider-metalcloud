@@ -13,10 +13,11 @@ The Metal Cloud uses a few concepts that set it apart from other vendors thus a 
 1. **Infrastructure** - A collection of servers, drives etc. It is both a grouping construct and a security construct. Users can have as many infrastructures as they like.
 2. **InstanceArray** - A collection of identical **Instances** (servers). All operations are done on an InstanceArray rather than on individual instances. For example attaching an InstanceArray's network port to a network will cause all of it's instances to do the same. The most important property of an InstanceArray is the fact that it can be expanded or shrinked (by using the `instance_array_instance_count` property).
 3. **DriveArray** - **Drives** (iSCSI LUNs) are groupped in an "Array" as well. A DriveArray can be attached to an InstanceArray in which case it will "grow" or "shrink" with it. This means new drives will be created and/or some drives will deleted as the instance array is shrinked.
-4. **VolumeTemplate** - A **Drive** (iSCSI LUN) can be created by cloning a template. This is used to create Drives that have an operating system on them.
-5. **Network** - A network is an abstract concept whose implementation differs from "Datacenter to datacenter" (it can be Layer 2, Layer 3, VLAN based, VPLS or VXLAN based tc. but fundamentally it will isolate servers from reaching each other and provide reachability to the internet or the SAN network.
-6. **Subnet** -  In L2 network implementations, IPs are allocated to Infrastructures in blocks rather than individually. They can be of different sizes: /30, /29, /27 etc.
-7. **Datacenter** - Typically datacenters are resource pools, they hold servers, storages networks etc.
+5. **SharedDrive**** iSCSI LUN that are shared by more than one instance. Use this with VMWare, Kubernetes etc.
+6. **VolumeTemplate** - A **Drive** (iSCSI LUN) can be created by cloning a template. This is used to create Drives that have an operating system on them.
+7. **Network** - A network is an abstract concept whose implementation differs from "Datacenter to datacenter" (it can be Layer 2, Layer 3, VLAN based, VPLS or VXLAN based tc. but fundamentally it will isolate servers from reaching each other and provide reachability to the internet or the SAN network.
+8. **Subnet** -  In L2 network implementations, IPs are allocated to Infrastructures in blocks rather than individually. They can be of different sizes: /30, /29, /27 etc.
+9. **Datacenter** - Typically datacenters are resource pools, they hold servers, storages networks etc.
 
 
 ## Deploy and design mode
