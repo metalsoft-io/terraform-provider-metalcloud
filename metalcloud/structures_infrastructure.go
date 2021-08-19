@@ -21,6 +21,7 @@ func flattenInstanceArray(instanceArray mc.InstanceArray) map[string]interface{}
 	d["instance_array_disk_size_mbytes"] = instanceArray.InstanceArrayDiskSizeMBytes
 	d["volume_template_id"] = instanceArray.VolumeTemplateID
 	d["instance_array_firewall_managed"] = instanceArray.InstanceArrayFirewallManaged
+	d["instance_array_additional_wan_ipv4_json"] = instanceArray.InstanceArrayAdditionalWanIPv4JSON
 
 	fwRules := []interface{}{}
 
@@ -96,6 +97,7 @@ func expandInstanceArray(d map[string]interface{}) mc.InstanceArray {
 	ia.InstanceArrayDiskCount = d["instance_array_disk_count"].(int)
 	ia.InstanceArrayDiskSizeMBytes = d["instance_array_disk_size_mbytes"].(int)
 	ia.VolumeTemplateID = d["volume_template_id"].(int)
+	ia.InstanceArrayAdditionalWanIPv4JSON = d["instance_array_additional_wan_ipv4_json"].(string)
 
 	ia.InstanceArrayFirewallManaged = d["instance_array_firewall_managed"].(bool)
 
@@ -216,6 +218,7 @@ func copyInstanceArrayToOperation(ia mc.InstanceArray, iao *mc.InstanceArrayOper
 	iao.InstanceArrayFirewallManaged = ia.InstanceArrayFirewallManaged
 	iao.InstanceArrayFirewallRules = ia.InstanceArrayFirewallRules
 	iao.VolumeTemplateID = ia.VolumeTemplateID
+	iao.InstanceArrayAdditionalWanIPv4JSON = ia.InstanceArrayAdditionalWanIPv4JSON
 }
 
 func copyDriveArrayToOperation(da mc.DriveArray, dao *mc.DriveArrayOperation) {
