@@ -23,6 +23,17 @@ The following arguments are supported:
 
 ```hcl
 # Configure the metalcloud provider
+#list required providers
+
+terraform {
+  required_providers {
+    metalcloud = {
+      source = "metalsoft-io/metalcloud"
+      version = "1.0.12"
+    }
+  }
+}
+
 provider "metalcloud" {
    user_email = var.user_email
    api_key = var.api_key 

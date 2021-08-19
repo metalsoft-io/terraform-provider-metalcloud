@@ -36,5 +36,5 @@ resource "metalcloud_infrastructure" "foo" {
 
 ## Expanding the shared drive
 
-It is possible to expand the block device (increase the LUN size) of a SharedDrive by changing the `shared_drive_size_mbytes` property.
+It is possible to expand the block device (increase the LUN size) of a SharedDrive by changing the `shared_drive_size_mbytes` property. The filesystem will also need to be expanded from within the operating system on which this drive is mounted.
 

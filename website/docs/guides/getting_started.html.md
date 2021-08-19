@@ -15,7 +15,16 @@ The Metalcloud provider allows users to provision bare metal resources such as p
 To provision a server:
 
 ```hcl
-# Configure the metalcloud provider
+# List required providers
+terraform {
+  required_providers {
+    metalcloud = {
+      source = "metalsoft-io/metalcloud"
+      version = "1.0.12"
+    }
+  }
+}
+
 # Configure the metalcloud provider
 provider "metalcloud" {
    user_email = var.user_email
