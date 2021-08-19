@@ -151,6 +151,10 @@ func resourceInstanceArray() *schema.Resource {
 				Optional: true,
 				Default:  0,
 			},
+			"instance_array_additional_wan_ipv4_json": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"volume_template_id": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
