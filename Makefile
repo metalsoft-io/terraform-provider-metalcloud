@@ -6,9 +6,10 @@ BINARY=terraform-provider-${NAME}
 VERSION=1.0.12
 OS_ARCH=darwin_amd64
 
-default: install
+default: build
 
-build: go build -o ${BINARY}
+build: 
+	go build -o ${BINARY}
 
 release:
 	GOOS=darwin GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_darwin_amd64
@@ -34,3 +35,10 @@ test:
 
 testacc:
 	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 120m
+
+clean:
+	rm ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS_ARCH}/${BINARY}
+
+%.o : %.mod
+
+
