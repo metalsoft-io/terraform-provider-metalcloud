@@ -43,7 +43,7 @@ func flattenSharedDrive(sharedDrive mc.SharedDrive) map[string]interface{} {
 	d["shared_drive_label"] = sharedDrive.SharedDriveLabel
 	d["shared_drive_storage_type"] = sharedDrive.SharedDriveStorageType
 	d["shared_drive_size_mbytes"] = sharedDrive.SharedDriveSizeMbytes
-	d["shared_drive_attached_instance_arrays"] = sharedDrive.SharedDriveAttachedInstanceArrays
+	// d["shared_drive_attached_instance_arrays"] = sharedDrive.SharedDriveAttachedInstanceArrays
 
 	return d
 }
@@ -63,8 +63,12 @@ func expandSharedDrive(d map[string]interface{}) mc.SharedDrive {
 		sd.SharedDriveAttachedInstanceArrays = []int{}
 
 		for _, label := range d["shared_drive_attached_instance_arrays"].([]interface{}) {
-			iaMap := d["infrastructure_instance_arrays"].(map[string]mc.InstanceArray)
-			if val, ok := iaMap[label.(string)]; ok {
+			iaPlannedMap := d["infrastructure_instance_arrays_planned"].(map[string]mc.InstanceArray)
+			iaExistingMap := d["infrastructure_instance_arrays_existing"].(map[string]mc.InstanceArray)
+
+			if val, ok := iaExistingMap[label.(string)]; ok {
+				sd.SharedDriveAttachedInstanceArrays = append(sd.SharedDriveAttachedInstanceArrays, val.InstanceArrayID)
+			} else if val, ok := iaPlannedMap[label.(string)]; ok {
 				sd.SharedDriveAttachedInstanceArrays = append(sd.SharedDriveAttachedInstanceArrays, val.InstanceArrayID)
 			}
 		}
@@ -235,6 +239,7 @@ func copySharedDriveToOperation(sd mc.SharedDrive, sdo *mc.SharedDriveOperation)
 	sdo.SharedDriveLabel = sd.SharedDriveLabel
 	sdo.SharedDriveSizeMbytes = sd.SharedDriveSizeMbytes
 	sdo.SharedDriveStorageType = sd.SharedDriveStorageType
+	sdo.SharedDriveAttachedInstanceArrays = sd.SharedDriveAttachedInstanceArrays
 }
 
 func flattenNetwork(network mc.Network) map[string]interface{} {

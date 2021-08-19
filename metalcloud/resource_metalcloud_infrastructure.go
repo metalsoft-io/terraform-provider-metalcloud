@@ -414,6 +414,8 @@ func resourceInfrastructureCreate(d *schema.ResourceData, meta interface{}) erro
 		}
 	}
 
+	iaInfraMap := make(map[string]mc.InstanceArray)
+
 	//create instance arrays (and their drives)
 	if instanceArrays, ok := d.GetOkExists("instance_array"); ok {
 
@@ -427,6 +429,8 @@ func resourceInfrastructureCreate(d *schema.ResourceData, meta interface{}) erro
 			if err != nil {
 				return err
 			}
+
+			iaInfraMap[ia.InstanceArrayLabel] = *iaCreated
 
 			//add interfaces to networks
 
@@ -478,21 +482,14 @@ func resourceInfrastructureCreate(d *schema.ResourceData, meta interface{}) erro
 				return err
 			}
 
-			mapSD := resSD.(map[string]interface{})
-			mapSD["infrastructure_instance_arrays"] = retInstanceArrays
-			sd := expandSharedDrive(mapSD)
+			sdMap := resSD.(map[string]interface{})
+			sdMap["infrastructure_instance_arrays_planned"] = *retInstanceArrays
+			sdMap["infrastructure_instance_arrays_existing"] = iaInfraMap
+			sd := expandSharedDrive(sdMap)
 			//create shared drive
-			sdCreated, err := client.SharedDriveCreate(createdInfra.InfrastructureID, sd)
+			_, err = client.SharedDriveCreate(createdInfra.InfrastructureID, sd)
 			if err != nil {
 				return err
-			}
-
-			//attach shared drives to instances
-			for _, iaID := range sdCreated.SharedDriveAttachedInstanceArrays {
-				_, err := client.SharedDriveAttachInstanceArray(sdCreated.SharedDriveID, iaID)
-				if err != nil {
-					return err
-				}
 			}
 		}
 	}
@@ -735,22 +732,7 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 		needsDeploy = true
 	}
 
-	if d.HasChange("shared_drive") {
-		//update shared drives
-		sdList := d.Get("shared_drive").([]interface{})
-
-		for i, sdMapIntf := range sdList {
-			if !d.HasChange(fmt.Sprintf("shared_drive.%d", i)) {
-				continue
-			}
-			sdMap := sdMapIntf.(map[string]interface{})
-			sd := expandSharedDrive(sdMap)
-			if _, err := createOrUpdateSharedDrive(infrastructureID, sd, client); err != nil {
-				return err
-			}
-			needsDeploy = true
-		}
-	}
+	iaInfraMap := make(map[string]mc.InstanceArray)
 
 	if d.HasChange("instance_array") {
 		//take each instance array and apply changes
@@ -814,6 +796,7 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 			if err != nil {
 				return err
 			}
+			iaInfraMap[ia.InstanceArrayLabel] = *retIA
 
 			//update drive arrays
 			daList := iaMap["drive_array"].([]interface{})
@@ -830,6 +813,30 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 				needsDeploy = true
 			}
 
+			needsDeploy = true
+		}
+	}
+
+	if d.HasChange("shared_drive") {
+		//update shared drives
+		sdList := d.Get("shared_drive").([]interface{})
+
+		for i, sdMapIntf := range sdList {
+			if !d.HasChange(fmt.Sprintf("shared_drive.%d", i)) {
+				continue
+			}
+			retInstanceArrays, err := client.InstanceArrays(infrastructureID)
+			if err != nil {
+				return err
+			}
+
+			sdMap := sdMapIntf.(map[string]interface{})
+			sdMap["infrastructure_instance_arrays_planned"] = *retInstanceArrays
+			sdMap["infrastructure_instance_arrays_existing"] = iaInfraMap
+			sd := expandSharedDrive(sdMap)
+			if _, err := createOrUpdateSharedDrive(infrastructureID, sd, client); err != nil {
+				return err
+			}
 			needsDeploy = true
 		}
 	}
