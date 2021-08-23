@@ -737,10 +737,28 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	iaInfraMap := make(map[string]mc.InstanceArray)
+	stateInstanceArraysMap := make(map[string]mc.InstanceArray)
+	stateDriveArraysMap := make(map[string]mc.DriveArray)
+
+	retInstanceArrays, err := client.InstanceArrays(infrastructureID)
+	if err != nil {
+		return err
+	}
+
+	retDriveArraysMap, err := client.DriveArrays(infrastructureID)
+	if err != nil {
+		return err
+	}
+
+	retSharedDrivesMap, err := client.SharedDrives(infrastructureID)
+	if err != nil {
+		return err
+	}
 
 	if d.HasChange("instance_array") {
 		//take each instance array and apply changes
 		currentInstanceArraysMap := d.Get("instance_array").([]interface{})
+		// return fmt.Errorf("DEBUG currentInstanceArraysMap %+v", currentInstanceArraysMap)
 
 		for i, iaMapIntf := range currentInstanceArraysMap {
 
@@ -751,6 +769,7 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 			iaMap := iaMapIntf.(map[string]interface{})
 
 			ia := expandInstanceArray(iaMap)
+			stateInstanceArraysMap[ia.InstanceArrayLabel] = ia
 
 			//update interfaces
 			intMapList := iaMap["interface"].([]interface{})
@@ -810,6 +829,7 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 					continue
 				}
 				da := expandDriveArray(daMap.(map[string]interface{}))
+				stateDriveArraysMap[da.DriveArrayLabel] = da
 				da.InstanceArrayID = retIA.InstanceArrayID
 				if _, err := createOrUpdateDriveArray(infrastructureID, da, client); err != nil {
 					return err
@@ -819,7 +839,10 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 
 			needsDeploy = true
 		}
+
 	}
+
+	stateSharedDrivesMap := make(map[string]mc.SharedDrive)
 
 	if d.HasChange("shared_drive") {
 		//update shared drives
@@ -829,19 +852,43 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 			if !d.HasChange(fmt.Sprintf("shared_drive.%d", i)) {
 				continue
 			}
-			retInstanceArrays, err := client.InstanceArrays(infrastructureID)
-			if err != nil {
-				return err
-			}
 
 			sdMap := sdMapIntf.(map[string]interface{})
 			sdMap["infrastructure_instance_arrays_planned"] = *retInstanceArrays
 			sdMap["infrastructure_instance_arrays_existing"] = iaInfraMap
 			sd := expandSharedDrive(sdMap)
+			stateSharedDrivesMap[sd.SharedDriveLabel] = sd
 			if _, err := createOrUpdateSharedDrive(infrastructureID, sd, client); err != nil {
 				return err
 			}
 			needsDeploy = true
+		}
+	}
+
+	for _, v := range *retDriveArraysMap {
+		if _, ok := stateDriveArraysMap[v.DriveArrayLabel]; !ok {
+			err := deleteDriveArray(&v, client)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, v := range *retSharedDrivesMap {
+		if _, ok := stateSharedDrivesMap[v.SharedDriveLabel]; !ok {
+			err := deleteSharedDrive(&v, client)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, v := range *retInstanceArrays {
+		if _, ok := stateInstanceArraysMap[v.InstanceArrayLabel]; !ok {
+			err := deleteInstanceArray(&v, client)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -860,6 +907,30 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	return resourceInfrastructureRead(d, meta)
+}
+
+func deleteInstanceArray(ia *mc.InstanceArray, client *mc.Client) error {
+	err := client.InstanceArrayDelete(ia.InstanceArrayID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func deleteSharedDrive(sd *mc.SharedDrive, client *mc.Client) error {
+	err := client.SharedDriveDelete(sd.SharedDriveID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func deleteDriveArray(da *mc.DriveArray, client *mc.Client) error {
+	err := client.DriveArrayDelete(da.DriveArrayID)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 //does not wait for a deploy to finish.
