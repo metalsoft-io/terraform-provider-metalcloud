@@ -206,6 +206,80 @@ func testAccInfrastructureResourceFixture2(infrastructureLabel string, instanceA
 	)
 }
 
+func testAccInfrastructureResourceFixture3(infrastructureLabel string, instanceArray1Count int) string {
+
+	return fmt.Sprintf(
+		`
+		data "metalcloud_volume_template" "centos76" {
+			volume_template_label = "centos7-6"
+		}
+
+		resource "metalcloud_infrastructure" "%s" {
+
+			infrastructure_label = "my-terraform-infra-%s"
+		
+			
+			prevent_deploy = true
+
+			network{
+			  network_type = "san"
+			  network_label = "san"
+			}
+		  
+			network{
+			  network_type = "wan"
+			  network_label = "internet"
+			}
+		  
+			network{
+			  network_type = "lan"
+			  network_label = "private"
+			}
+		  
+		  
+			instance_array {
+				  instance_array_label = "master"
+				  instance_array_instance_count = %d
+				  interface{
+					  interface_index = 0
+					  network_label = "san"
+				  }
+		  
+				  interface{
+					  interface_index = 1
+					  network_label = "internet"
+				  }
+		  
+				  interface{
+					  interface_index = 2
+					  network_label = "private"
+				  }
+				  
+				  drive_array{
+					drive_array_label = "testia2-centos"
+					drive_array_storage_type = "iscsi_hdd"
+					drive_size_mbytes_default = 49000
+					volume_template_id = tonumber(data.metalcloud_volume_template.centos76.id)
+				  }
+		  
+				  firewall_rule {
+							  firewall_rule_description = "test fw rule"
+							  firewall_rule_port_range_start = 22
+							  firewall_rule_port_range_end = 22
+							  firewall_rule_source_ip_address_range_start="0.0.0.0"
+							  firewall_rule_source_ip_address_range_end="0.0.0.0"
+							  firewall_rule_protocol="tcp"
+							  firewall_rule_ip_address_type="ipv4"
+						  }
+			}
+		}
+		`,
+		infrastructureLabel,
+		infrastructureLabel,
+		instanceArray1Count,
+	)
+}
+
 func TestAccInfrastructureResource_basic(t *testing.T) {
 
 	label := fmt.Sprintf("i%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
@@ -232,6 +306,14 @@ func TestAccInfrastructureResource_basic(t *testing.T) {
 		map[string]interface{}{
 			"instance_array_label":          "slave",
 			"instance_array_instance_count": 2,
+		},
+	}
+
+	//after delete
+	expectedIAsAfterDelete := []interface{}{
+		map[string]interface{}{
+			"instance_array_label":          "master",
+			"instance_array_instance_count": 1,
 		},
 	}
 
@@ -280,6 +362,21 @@ func TestAccInfrastructureResource_basic(t *testing.T) {
 					// verify remote values
 					testAccCheckInfrastructureExists(rName),
 					testAccCheckInstanceArray(rName, expectedIAsAfterCreate),
+
+					// verify local values
+					resource.TestCheckResourceAttr(rName, "infrastructure_label", "my-terraform-infra-"+label),
+				),
+			},
+			{
+				// delete second IA
+				Config: testAccInfrastructureResourceFixture3(label, 1),
+				// compose a basic test, checking both remote and local values
+				Check: resource.ComposeTestCheckFunc(
+					// query the API to retrieve the widget object
+					testAccCheckResourceExists(rName),
+					// verify remote values
+					testAccCheckInfrastructureExists(rName),
+					testAccCheckInstanceArray(rName, expectedIAsAfterDelete),
 
 					// verify local values
 					resource.TestCheckResourceAttr(rName, "infrastructure_label", "my-terraform-infra-"+label),

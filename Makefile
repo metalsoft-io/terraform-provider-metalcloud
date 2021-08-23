@@ -3,7 +3,7 @@ HOSTNAME=registry.terraform.io
 NAMESPACE=metalsoft-io
 NAME=metalcloud
 BINARY=terraform-provider-${NAME}
-VERSION=1.0.12
+VERSION=1.0.13
 OS_ARCH=darwin_amd64
 
 default: build
