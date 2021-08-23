@@ -182,6 +182,12 @@ func resourceInstanceArray() *schema.Resource {
 				Optional: true,
 				Elem:     resourceInstanceArrayInterface(),
 			},
+			"instances":{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			//	Elem:     resourceInstanceArrayInstances(),
+			},
 		},
 	}
 }
@@ -358,6 +364,7 @@ func resourceSharedDrive() *schema.Resource {
 		},
 	}
 }
+
 
 func resourceInfrastructureCreate(d *schema.ResourceData, meta interface{}) error {
 
@@ -619,6 +626,19 @@ func resourceInfrastructureRead(d *schema.ResourceData, meta interface{}) error 
 
 			iaMap := flattenInstanceArray(ia)
 
+			//get the instances of this instance array (if any)
+			retInstances,err := client.InstanceArrayInstances(ia.InstanceArrayID)
+			if err != nil {
+				return err
+			}
+
+			bytes, err := json.Marshal(retInstances); 
+			if err != nil {
+				return fmt.Errorf("error serializing instances array: %s", err)
+			}
+
+			iaMap["instances"] = string(bytes)
+
 			//get the drive arrays of the current instance array
 			daList := []interface{}{}
 			daCount := d.Get(fmt.Sprintf("instance_array.%d.drive_array.#", iai)).(int)
@@ -819,6 +839,9 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 
 			needsDeploy = true
 		}
+
+
+
 	}
 
 	if d.HasChange("shared_drive") {
