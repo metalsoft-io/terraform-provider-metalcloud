@@ -861,6 +861,16 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 				needsDeploy = true
 			}
 
+			for _, v := range *retDriveArraysMap {
+				if _, ok := stateDriveArrayMap[v.DriveArrayID]; !ok {
+					needsDeploy = true
+					err := deleteDriveArray(&v, client)
+					if err != nil {
+						return err
+					}
+				}
+			}
+
 			needsDeploy = true
 		}
 	}
@@ -885,24 +895,14 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 			}
 			needsDeploy = true
 		}
-	}
 
-	for _, v := range *retDriveArraysMap {
-		if _, ok := stateDriveArrayMap[v.DriveArrayID]; !ok {
-			needsDeploy = true
-			err := deleteDriveArray(&v, client)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	for _, v := range *retSharedDrivesMap {
-		if _, ok := stateSharedDriveMap[v.SharedDriveID]; !ok {
-			needsDeploy = true
-			err := deleteSharedDrive(&v, client)
-			if err != nil {
-				return err
+		for _, v := range *retSharedDrivesMap {
+			if _, ok := stateSharedDriveMap[v.SharedDriveID]; !ok {
+				needsDeploy = true
+				err := deleteSharedDrive(&v, client)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
