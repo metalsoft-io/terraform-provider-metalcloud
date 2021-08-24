@@ -120,7 +120,7 @@ To deploy this infrastructure export the following variables (or use -var):
 
 ```bash
 export TF_VAR_api_key="<yourkey>"
-export TF_VAR_user="test@test.com"
+export TF_VAR_user_email="test@test.com"
 export TF_VAR_endpoint="https://api.bigstep.com/metal-cloud"
 export TF_VAR_datacenter="uk-reading"
 ```

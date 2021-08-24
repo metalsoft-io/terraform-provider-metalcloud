@@ -125,7 +125,7 @@ Getting the API Key is typically done via the  Metal Cloud's API key section. Us
 
 ```bash
 export TF_VAR_api_key="<yourkey>"
-export TF_VAR_user="test@test.com"
+export TF_VAR_user_email="test@test.com"
 export TF_VAR_endpoint="https://api.poc.metalsoft.io"
 export TF_VAR_datacenter="uk-reading"
 
