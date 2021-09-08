@@ -379,10 +379,16 @@ func resourceInfrastructureCreate(d *schema.ResourceData, meta interface{}) erro
 		return err
 	}
 
+	d.SetId(fmt.Sprintf("%d", createdInfra.InfrastructureID))
+
 	//create networks
 	//there are some networks already created by infrastructure create so we will be updating their labels only
 	retNetworks, err := client.Networks(createdInfra.InfrastructureID)
 	if err != nil {
+		err1 := resourceInfrastructureRead(d, meta)
+		if err1 != nil {
+			return err1
+		}
 		return err
 	}
 
@@ -403,6 +409,10 @@ func resourceInfrastructureCreate(d *schema.ResourceData, meta interface{}) erro
 
 						network, err = client.NetworkEdit(existingN.NetworkID, *existingN.NetworkOperation)
 						if err != nil {
+							err1 := resourceInfrastructureRead(d, meta)
+							if err1 != nil {
+								return err1
+							}
 							return err
 						}
 					} else {
@@ -417,6 +427,10 @@ func resourceInfrastructureCreate(d *schema.ResourceData, meta interface{}) erro
 				log.Printf("Creating network %s (%s)", n.NetworkLabel, n.NetworkType)
 				network, err = client.NetworkCreate(createdInfra.InfrastructureID, n)
 				if err != nil {
+					err1 := resourceInfrastructureRead(d, meta)
+					if err1 != nil {
+						return err1
+					}
 					return err
 				}
 			}
@@ -428,7 +442,6 @@ func resourceInfrastructureCreate(d *schema.ResourceData, meta interface{}) erro
 
 	//create instance arrays (and their drives)
 	if instanceArrays, ok := d.GetOkExists("instance_array"); ok {
-
 		for i, resIA := range instanceArrays.([]interface{}) {
 
 			//populate instance array
@@ -437,6 +450,10 @@ func resourceInfrastructureCreate(d *schema.ResourceData, meta interface{}) erro
 			//create the instance array
 			iaCreated, err := client.InstanceArrayCreate(createdInfra.InfrastructureID, ia)
 			if err != nil {
+				err1 := resourceInfrastructureRead(d, meta)
+				if err1 != nil {
+					return err1
+				}
 				return err
 			}
 
@@ -457,6 +474,10 @@ func resourceInfrastructureCreate(d *schema.ResourceData, meta interface{}) erro
 
 					_, err = client.InstanceArrayInterfaceAttachNetwork(iaCreated.InstanceArrayID, intIntfMap["interface_index"].(int), n.NetworkID)
 					if err != nil {
+						err1 := resourceInfrastructureRead(d, meta)
+						if err1 != nil {
+							return err1
+						}
 						return err
 					}
 
@@ -476,10 +497,13 @@ func resourceInfrastructureCreate(d *schema.ResourceData, meta interface{}) erro
 
 				_, err := client.DriveArrayCreate(createdInfra.InfrastructureID, da)
 				if err != nil {
+					err1 := resourceInfrastructureRead(d, meta)
+					if err1 != nil {
+						return err1
+					}
 					return err
 				}
 			}
-
 		}
 	}
 
@@ -499,17 +523,23 @@ func resourceInfrastructureCreate(d *schema.ResourceData, meta interface{}) erro
 			//create shared drive
 			_, err = client.SharedDriveCreate(createdInfra.InfrastructureID, sd)
 			if err != nil {
+				err1 := resourceInfrastructureRead(d, meta)
+				if err1 != nil {
+					return err1
+				}
 				return err
 			}
 		}
 	}
 
-	d.SetId(fmt.Sprintf("%d", createdInfra.InfrastructureID))
-
 	log.Printf("current state object after create (before read):%v", d.Get("instance_array"))
 
 	if preventDeploy, ok := d.GetOkExists("prevent_deploy"); !ok || preventDeploy == false {
 		if err := deployInfrastructure(createdInfra.InfrastructureID, d, meta); err != nil {
+			err1 := resourceInfrastructureRead(d, meta)
+			if err1 != nil {
+				return err1
+			}
 			return err
 		}
 
@@ -525,7 +555,6 @@ func resourceInfrastructureCreate(d *schema.ResourceData, meta interface{}) erro
 //resourceInfrastructureRead reads the serverside status of elements
 //it ignores elements added outside of terraform (except of course at deploy time)
 func resourceInfrastructureRead(d *schema.ResourceData, meta interface{}) error {
-
 	client := meta.(*mc.Client)
 
 	infrastructureID, err := strconv.Atoi(d.Id())
@@ -564,7 +593,10 @@ func resourceInfrastructureRead(d *schema.ResourceData, meta interface{}) error 
 	if nCount, ok := d.Get("network.#").(int); ok {
 		for i := 0; i < nCount; i++ {
 			if networkLabel, ok := d.GetOkExists(fmt.Sprintf("network.%d.network_label", i)); ok {
-				n := (*retNetworks)[networkLabel.(string)]
+				n, ok := (*retNetworks)[networkLabel.(string)]
+				if !ok {
+					continue
+				}
 				nList = append(nList, flattenNetwork(n))
 				nListByID[n.NetworkID] = n
 			}
@@ -586,7 +618,10 @@ func resourceInfrastructureRead(d *schema.ResourceData, meta interface{}) error 
 	if sdCount, ok := d.Get("shared_drive.#").(int); ok {
 		for i := 0; i < sdCount; i++ {
 			if sdLabel, ok := d.GetOkExists(fmt.Sprintf("shared_drive.%d.shared_drive_label", i)); ok {
-				sd := (*retSharedDrives)[sdLabel.(string)]
+				sd, ok := (*retSharedDrives)[sdLabel.(string)]
+				if !ok {
+					continue
+				}
 				sdList = append(sdList, flattenSharedDrive(sd))
 				sdListByID[sd.SharedDriveID] = sd
 			}
@@ -621,7 +656,11 @@ func resourceInfrastructureRead(d *schema.ResourceData, meta interface{}) error 
 			log.Printf("Retriving existing instance array with label :%s", instanceArrayLabel.(string))
 
 			//locate the instance array
-			ia := (*retInstanceArrays)[fmt.Sprintf("%s.vanilla", instanceArrayLabel)]
+			ia, ok := (*retInstanceArrays)[fmt.Sprintf("%s.vanilla", instanceArrayLabel)]
+
+			if !ok {
+				continue
+			}
 
 			iaMap := flattenInstanceArray(ia)
 
@@ -648,7 +687,10 @@ func resourceInfrastructureRead(d *schema.ResourceData, meta interface{}) error 
 
 				driveArrayLabel := d.Get(fmt.Sprintf("instance_array.%d.drive_array.%d.drive_array_label", iai, di))
 
-				da := (*retDriveArrays)[fmt.Sprintf("%s.vanilla", driveArrayLabel)]
+				da, ok := (*retDriveArrays)[fmt.Sprintf("%s.vanilla", driveArrayLabel)]
+				if !ok {
+					continue
+				}
 				daList = append(daList, flattenDriveArray(da))
 
 			}
