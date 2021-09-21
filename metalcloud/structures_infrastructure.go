@@ -1,8 +1,8 @@
 package metalcloud
 
 import (
-	mc "github.com/bigstepinc/metal-cloud-sdk-go/v2"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v2"
 )
 
 func flattenInstanceArray(instanceArray mc.InstanceArray) map[string]interface{} {
@@ -37,14 +37,19 @@ func flattenInstanceArray(instanceArray mc.InstanceArray) map[string]interface{}
 	return d
 }
 
-func flattenSharedDrive(sharedDrive mc.SharedDrive) map[string]interface{} {
+func flattenSharedDrive(sharedDrive mc.SharedDrive, sdIAs []interface{}) map[string]interface{} {
 	var d = make(map[string]interface{})
 
 	d["shared_drive_id"] = sharedDrive.SharedDriveID
 	d["shared_drive_label"] = sharedDrive.SharedDriveLabel
 	d["shared_drive_storage_type"] = sharedDrive.SharedDriveStorageType
 	d["shared_drive_size_mbytes"] = sharedDrive.SharedDriveSizeMbytes
-	// d["shared_drive_attached_instance_arrays"] = sharedDrive.SharedDriveAttachedInstanceArrays
+	d["shared_drive_attached_instance_arrays"] = make([]string, len(sharedDrive.SharedDriveAttachedInstanceArrays))
+	// iaList := d["shared_drive_attached_instance_arrays"].([]string)
+	// for i, value := range sharedDrive.SharedDriveAttachedInstanceArrays {
+	// 	iaList[i] = strconv.Itoa(value)
+	// }
+	d["shared_drive_attached_instance_arrays"] = sdIAs
 
 	return d
 }
@@ -202,6 +207,7 @@ func expandInstanceArrayWithDriveArrays(d map[string]interface{}) (mc.InstanceAr
 	return ia, das
 }
 */
+
 func copyInstanceArrayToOperation(ia mc.InstanceArray, iao *mc.InstanceArrayOperation) {
 
 	iao.InstanceArrayID = ia.InstanceArrayID

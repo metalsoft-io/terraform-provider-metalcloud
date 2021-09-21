@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"testing"
 
-	mc "github.com/bigstepinc/metal-cloud-sdk-go/v2"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v2"
 )
 
 func testAccInfrastructureResourceFixture1(infrastructureLabel string, instanceArray1Count int, instanceArray2Count int) string {

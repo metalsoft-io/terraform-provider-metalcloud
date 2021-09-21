@@ -1,7 +1,7 @@
 package metalcloud
 
 import (
-	mc "github.com/bigstepinc/metal-cloud-sdk-go/v2"
+	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v2"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 

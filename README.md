@@ -40,7 +40,7 @@ resource "metalcloud_infrastructure" "my-infra92" {
   infrastructure_label = "my-terraform-infra92"
   datacenter_name = var.datacenter
 
-  # Remove this to actually deploy changes, otherwise all changes will remain in edit mode only.
+  # Set this to false to actually deploy the changes, otherwise all changes will remain in edit mode only.
   prevent_deploy = true 
 
   shared_drive {

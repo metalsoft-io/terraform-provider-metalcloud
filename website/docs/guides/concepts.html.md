@@ -22,7 +22,7 @@ The Metal Cloud uses a few concepts that set it apart from other vendors thus a 
 
 ## Deploy and design mode
 
-The Metal Cloud uses a two stage approach to provisioning where a user would describe changes required and then apply them in bulk. Changes can also be reverted to the deployed state thus all operations with the `prevent_deploy=true` will result only in the editing of the infrastructure and not the actual provisioning.
+The Metal Cloud uses a two stage approach to provisioning where a user would describe changes required and then apply them in bulk. Changes can also be reverted to the deployed state thus all operations with the `prevent_deploy=true` will result only in the editing of the infrastructure and not the actual provisioning. In order for the changes to be provisioned, prevent_deploy needs to be explicitly set to false `prevent_deploy=false`.
 
 ## Servers and Instances
 

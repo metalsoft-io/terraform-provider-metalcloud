@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	mc "github.com/bigstepinc/metal-cloud-sdk-go/v2"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v2"
 )
 
 func TestFlattenExpandInstanceArray(t *testing.T) {
