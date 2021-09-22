@@ -886,9 +886,9 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 			nMap := nMapIntf.(map[string]interface{})
 			n := expandNetwork(nMap)
 			stateNetworksMap[n.NetworkID] = &n
-			if _, ok := d.GetOkExists(fmt.Sprintf("network.%d", networkResourceHash(nMapIntf))); ok {
-				continue
-			}
+			// if _, ok := d.GetOkExists(fmt.Sprintf("network.%d", networkResourceHash(nMapIntf))); ok {
+			// 	continue
+			// }
 
 			if _, err := createOrUpdateNetwork(infrastructureID, n, client); err != nil {
 				err1 := resourceInfrastructureRead(d, meta)
@@ -929,56 +929,54 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 				stateInstanceArrayMap[ia.InstanceArrayID] = &ia
 			}
 
-			if _, ok := d.GetOkExists(fmt.Sprintf("instance_array.%d", instanceArrayResourceHash(iaMapIntf))); !ok {
-				//update interfaces
-				intMapList := iaMap["interface"].(*schema.Set).List()
+			//update interfaces
+			intMapList := iaMap["interface"].(*schema.Set).List()
 
-				var nMapList []interface{}
+			var nMapList []interface{}
 
-				if nMapListIntf, ok := d.GetOkExists("networks"); ok {
-					nMapList = nMapListIntf.(*schema.Set).List()
-				}
-
-				intList := []mc.InstanceArrayInterface{}
-				for _, intMapIntf := range intMapList {
-					intMap := intMapIntf.(map[string]interface{})
-
-					//because we could have alternations to the interface index - to network map
-					//we're retrieving the networks rather than relying on the exisitng network_id
-					//locate network with label and get it's network id
-					var networkID = 0
-					for _, nMapIntf := range nMapList {
-						nMap := nMapIntf.(map[string]interface{})
-						if nMap["network_label"] == intMap["network_label"] {
-							networkID = nMap["network_id"].(int)
-						}
-						intf := mc.InstanceArrayInterface{
-							InstanceArrayInterfaceIndex: intMap["interface_index"].(int),
-							NetworkID:                   networkID,
-						}
-
-						intList = append(intList, intf)
-
-						needsDeploy = true
-					}
-				}
-
-				ia.InstanceArrayInterfaces = intList
-
-				bkeepDetachingDrives := d.Get("keep_detaching_drives").(bool)
-				bSwapExistingInstancesHardware := false
-
-				retIA, err = createOrUpdateInstanceArray(infrastructureID, ia, client, &bSwapExistingInstancesHardware, &bkeepDetachingDrives, nil, nil)
-
-				if err != nil {
-					err1 := resourceInfrastructureRead(d, meta)
-					if err1 != nil {
-						return err1
-					}
-					return err
-				}
-				iaInfraMap[ia.InstanceArrayLabel] = *retIA
+			if nMapListIntf, ok := d.GetOkExists("networks"); ok {
+				nMapList = nMapListIntf.(*schema.Set).List()
 			}
+
+			intList := []mc.InstanceArrayInterface{}
+			for _, intMapIntf := range intMapList {
+				intMap := intMapIntf.(map[string]interface{})
+
+				//because we could have alternations to the interface index - to network map
+				//we're retrieving the networks rather than relying on the exisitng network_id
+				//locate network with label and get it's network id
+				var networkID = 0
+				for _, nMapIntf := range nMapList {
+					nMap := nMapIntf.(map[string]interface{})
+					if nMap["network_label"] == intMap["network_label"] {
+						networkID = nMap["network_id"].(int)
+					}
+					intf := mc.InstanceArrayInterface{
+						InstanceArrayInterfaceIndex: intMap["interface_index"].(int),
+						NetworkID:                   networkID,
+					}
+
+					intList = append(intList, intf)
+
+					needsDeploy = true
+				}
+			}
+
+			ia.InstanceArrayInterfaces = intList
+
+			bkeepDetachingDrives := d.Get("keep_detaching_drives").(bool)
+			bSwapExistingInstancesHardware := false
+
+			retIA, err = createOrUpdateInstanceArray(infrastructureID, ia, client, &bSwapExistingInstancesHardware, &bkeepDetachingDrives, nil, nil)
+
+			if err != nil {
+				err1 := resourceInfrastructureRead(d, meta)
+				if err1 != nil {
+					return err1
+				}
+				return err
+			}
+			iaInfraMap[ia.InstanceArrayLabel] = *retIA
 
 			//update drive arrays
 			daList := iaMap["drive_array"].(*schema.Set).List()
@@ -1034,9 +1032,9 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 				stateSharedDriveMap[sd.SharedDriveLabel] = &sd
 			}
 
-			if _, ok := d.GetOkExists(fmt.Sprintf("shared_drive.%d", sharedDriveResourceHash(sdMapIntf))); ok {
-				continue
-			}
+			// if _, ok := d.GetOkExists(fmt.Sprintf("shared_drive.%d", sharedDriveResourceHash(sdMapIntf))); ok {
+			// 	continue
+			// }
 
 			if _, err := createOrUpdateSharedDrive(infrastructureID, sd, client); err != nil {
 				err1 := resourceInfrastructureRead(d, meta)
