@@ -27,18 +27,22 @@ func ResourceInfrastructure() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 
-			"infrastructure_label": &schema.Schema{
+			"infrastructure_label": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"datacenter_name": &schema.Schema{
+			"datacenter_name": {
 				Type:        schema.TypeString,
 				DefaultFunc: schema.EnvDefaultFunc("METALCLOUD_DATACENTER", nil),
 				Optional:    true,
 			},
+			"infrastructure_custom_variables": {
+				Type:     schema.TypeMap,
+				Elem:     schema.TypeString,
+				Optional: true,
+			},
 			"instance_array": {
-				Type: schema.TypeSet,
-				// Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Optional: true,
 				Elem:     resourceInstanceArray(),
 				Set:      instanceArrayResourceHash,
@@ -163,6 +167,16 @@ func resourceInstanceArray() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"instance_array_custom_variables": {
+				Type:     schema.TypeMap,
+				Elem:     schema.TypeString,
+				Optional: true,
+			},
+			"instance_custom_variables": {
+				Type:     schema.TypeList,
+				Elem:     instanceCustomVariableResource(),
+				Optional: true,
+			},
 			"volume_template_id": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -173,7 +187,6 @@ func resourceInstanceArray() *schema.Resource {
 				Optional: true,
 				Default:  true,
 			},
-
 			"firewall_rule": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -240,6 +253,22 @@ func resourceDriveArray() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Computed: true,
+			},
+		},
+	}
+}
+
+func instanceCustomVariableResource() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"instance_label": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"custom_variables": &schema.Schema{
+				Type:     schema.TypeMap,
+				Elem:     schema.TypeString,
+				Required: true,
 			},
 		},
 	}
@@ -389,6 +418,15 @@ func resourceInfrastructureCreate(d *schema.ResourceData, meta interface{}) erro
 	infrastructure := mc.Infrastructure{
 		InfrastructureLabel: d.Get("infrastructure_label").(string),
 		DatacenterName:      d.Get("datacenter_name").(string),
+	}
+	if cvIntf, ok := d.GetOkExists("infrastructure_custom_variables"); ok {
+		cv := make(map[string]string)
+
+		for k, v := range cvIntf.(map[string]interface{}) {
+			cv[k] = v.(string)
+		}
+
+		infrastructure.InfrastructureCustomVariables = cv
 	}
 
 	createdInfra, err := client.InfrastructureCreate(infrastructure)
@@ -597,6 +635,25 @@ func resourceInfrastructureRead(d *schema.ResourceData, meta interface{}) error 
 		return fmt.Errorf("error setting datacenter_name: %s", err)
 	}
 
+	switch infrastructure.InfrastructureCustomVariables.(type) {
+	case []interface{}:
+		err := d.Set("infrastructure_custom_variables", make(map[string]string))
+		if err != nil {
+			return fmt.Errorf("error setting infrastructure custom variables %s", err)
+		}
+	default:
+		icv := make(map[string]string)
+
+		for k, v := range infrastructure.InfrastructureCustomVariables.(map[string]interface{}) {
+			icv[k] = v.(string)
+		}
+		err := d.Set("infrastructure_custom_variables", icv)
+
+		if err != nil {
+			return fmt.Errorf("error setting infrastructure custom variables %s", err)
+		}
+	}
+
 	//discover networks, we use the original network id so that we preserve the order of elements
 	retNetworks, err := client.Networks(infrastructureID)
 	if err != nil {
@@ -636,14 +693,10 @@ func resourceInfrastructureRead(d *schema.ResourceData, meta interface{}) error 
 		return err
 	}
 
-	iaList := []interface{}{}
-
 	iaSet := schema.NewSet(instanceArrayResourceHash, []interface{}{})
 
 	if instanceArrays, ok := d.GetOk("instance_array"); ok {
 		for _, iaIntf := range instanceArrays.(*schema.Set).List() {
-			// iaHash := instanceArrayResourceHash(iaIntf)
-			// log.Printf("current state object=%v", d.Get(fmt.Sprintf("instance_array.%d", iai)))
 			instance_array := iaIntf.(map[string]interface{})
 
 			if instanceArrayLabel, ok := instance_array["instance_array_label"]; ok {
@@ -658,7 +711,6 @@ func resourceInfrastructureRead(d *schema.ResourceData, meta interface{}) error 
 
 				iaMap := flattenInstanceArray(ia)
 
-				//get the instances of this instance array (if any)
 				retInstances, err := client.InstanceArrayInstances(ia.InstanceArrayID)
 				if err != nil {
 					return err
@@ -670,6 +722,31 @@ func resourceInfrastructureRead(d *schema.ResourceData, meta interface{}) error 
 				}
 
 				iaMap["instances"] = string(bytes)
+
+				customVars := []interface{}{}
+
+				for _, instance := range *retInstances {
+					i := make(map[string]interface{})
+					cv := make(map[string]interface{})
+					i["instance_label"] = instance.InstanceLabel
+					switch instance.InstanceCustomVariables.(type) {
+					case []interface{}:
+						cv = make(map[string]interface{})
+					default:
+						for k, v := range instance.InstanceCustomVariables.(map[string]interface{}) {
+							cv[k] = v.(string)
+						}
+					}
+					i["custom_variables"] = cv
+					if len(cv) > 0 {
+						customVars = append(customVars, i)
+					}
+				}
+
+				if len(customVars) > 0 {
+					iaMap["instance_custom_variables"] = customVars
+
+				}
 
 				//get the drive arrays of the current instance array
 				daSet := schema.NewSet(driveArrayResourceHash, []interface{}{})
@@ -747,9 +824,6 @@ func resourceInfrastructureRead(d *schema.ResourceData, meta interface{}) error 
 		}
 	}
 
-	j, _ := json.MarshalIndent(iaList, "", "\t")
-	log.Printf("flattened list of instance arrays is now %s", j)
-
 	if err := d.Set("instance_array", iaSet); err != nil {
 		return fmt.Errorf("error setting instance_array: %s", err)
 	}
@@ -812,8 +886,7 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 
 	needsDeploy := false
 
-	if d.HasChange("infrastructure_label") || d.HasChange("datacenter_name") {
-
+	if d.HasChange("infrastructure_label") || d.HasChange("datacenter_name") || d.HasChange("infrastructure_custom_variables") {
 		infrastructure, err := client.InfrastructureGet(int(infrastructureID))
 		if err != nil {
 			err1 := resourceInfrastructureRead(d, meta)
@@ -826,6 +899,16 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 		operation := infrastructure.InfrastructureOperation
 		operation.InfrastructureLabel = d.Get("infrastructure_label").(string)
 		operation.DatacenterName = d.Get("datacenter_name").(string)
+
+		if cvIntf, ok := d.GetOkExists("infrastructure_custom_variables"); ok {
+			cv := make(map[string]string)
+
+			for k, v := range cvIntf.(map[string]interface{}) {
+				cv[k] = v.(string)
+			}
+
+			operation.InfrastructureCustomVariables = cv
+		}
 
 		if _, err = client.InfrastructureEdit(int(infrastructureID), operation); err != nil {
 			err1 := resourceInfrastructureRead(d, meta)
@@ -886,9 +969,6 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 			nMap := nMapIntf.(map[string]interface{})
 			n := expandNetwork(nMap)
 			stateNetworksMap[n.NetworkID] = &n
-			// if _, ok := d.GetOkExists(fmt.Sprintf("network.%d", networkResourceHash(nMapIntf))); ok {
-			// 	continue
-			// }
 
 			if _, err := createOrUpdateNetwork(infrastructureID, n, client); err != nil {
 				err1 := resourceInfrastructureRead(d, meta)
@@ -918,15 +998,68 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 	if d.HasChange("instance_array") {
 		//take each instance array and apply changes
 		currentInstanceArraysMap := d.Get("instance_array").(*schema.Set).List()
+		labelList := map[string]int{}
 
 		for _, iaMapIntf := range currentInstanceArraysMap {
 			iaMap := iaMapIntf.(map[string]interface{})
+
+			label, _ := iaMap["instance_array_label"]
+			labelList[label.(string)] = len(label.(string))
+		}
+
+		for _, iaMapIntf := range currentInstanceArraysMap {
+			iaMap := iaMapIntf.(map[string]interface{})
+
+			if _, ok := iaMap["instance_array_label"].(string); !ok {
+				continue
+			}
+
+			if ok := len(iaMap["instance_array_label"].(string)); ok == 0 {
+				continue
+			}
+
 			retIA := &mc.InstanceArray{}
 			ia := expandInstanceArray(iaMap)
 
 			if iaRes, ok := (*retInstanceArrays)[fmt.Sprintf("%s.vanilla", ia.InstanceArrayLabel)]; ok {
 				ia.InstanceArrayID = iaRes.InstanceArrayID
 				stateInstanceArrayMap[ia.InstanceArrayID] = &ia
+			}
+
+			cvList := iaMap["instance_custom_variables"].([]interface{})
+			instanceList, err := client.InstanceArrayInstances(ia.InstanceArrayID)
+			if err != nil {
+				return err
+			}
+
+			currentCVLabelList := make(map[string]int, len(*instanceList))
+
+			for _, icvIntf := range cvList {
+				icv := icvIntf.(map[string]interface{})
+				cvIntf := icv["custom_variables"].(map[string]interface{})
+				instance_custom_variables := make(map[string]string)
+				for k, v := range cvIntf {
+					instance_custom_variables[k] = v.(string)
+				}
+				instance_label := icv["instance_label"].(string)
+				if instance, ok := (*instanceList)[instance_label]; ok {
+					currentCVLabelList[instance_label] = instance.InstanceID
+					instance.InstanceOperation.InstanceCustomVariables = instance_custom_variables
+					_, err := client.InstanceEdit(instance.InstanceID, instance.InstanceOperation)
+					if err != nil {
+						return err
+					}
+				}
+			}
+
+			for _, instance := range *instanceList {
+				if _, ok := currentCVLabelList[instance.InstanceLabel]; !ok {
+					instance.InstanceOperation.InstanceCustomVariables = make(map[string]string)
+					_, err := client.InstanceEdit(instance.InstanceID, instance.InstanceOperation)
+					if err != nil {
+						return err
+					}
+				}
 			}
 
 			//update interfaces
@@ -1017,12 +1150,6 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 
 		for _, sdMapIntf := range sdList {
 			sdMap := sdMapIntf.(map[string]interface{})
-			// sdLabelIntf := sdMap["shared_drive_attached_instance_arrays"].([]interface{})
-			// sdLabels := make([]string, len(sdLabelIntf))
-			// for _, label := range sdLabelIntf {
-			// 	sdLabels = append(sdLabels, label.(string))
-			// }
-
 			sdMap["infrastructure_instance_arrays_planned"] = *retInstanceArrays
 			sdMap["infrastructure_instance_arrays_existing"] = iaInfraMap
 			sd := expandSharedDrive(sdMap)
@@ -1031,10 +1158,6 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 				sd.SharedDriveID = sdRes.SharedDriveID
 				stateSharedDriveMap[sd.SharedDriveLabel] = &sd
 			}
-
-			// if _, ok := d.GetOkExists(fmt.Sprintf("shared_drive.%d", sharedDriveResourceHash(sdMapIntf))); ok {
-			// 	continue
-			// }
 
 			if _, err := createOrUpdateSharedDrive(infrastructureID, sd, client); err != nil {
 				err1 := resourceInfrastructureRead(d, meta)
@@ -1270,6 +1393,24 @@ func instanceArrayResourceHash(v interface{}) int {
 	instance_array_disk_size_mbytes := strconv.Itoa(ia["instance_array_disk_size_mbytes"].(int))
 	volume_template_id := strconv.Itoa(ia["volume_template_id"].(int))
 	instance_array_firewall_managed := strconv.FormatBool(ia["instance_array_firewall_managed"].(bool))
+	instance_array_custom_variables, _ := json.Marshal(ia["instance_array_custom_variables"])
+
+	var instance_custom_variables []byte
+
+	if ia["instance_custom_variables"] != nil {
+		for _, iaIntf := range ia["instance_custom_variables"].([]interface{}) {
+			iacv := iaIntf.(map[string]interface{})
+
+			cv := make(map[string]string)
+			custom_variables := iacv["custom_variables"].(map[string]interface{})
+
+			for k, v := range custom_variables {
+				cv[k] = v.(string)
+			}
+
+			instance_custom_variables, _ = json.Marshal(cv)
+		}
+	}
 
 	drive_arrays := ia["drive_array"].(*schema.Set).List()
 	for _, driveArray := range drive_arrays {
@@ -1291,6 +1432,8 @@ func instanceArrayResourceHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(instance_array_disk_size_mbytes)))
 	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(volume_template_id)))
 	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(instance_array_firewall_managed)))
+	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(string(instance_array_custom_variables))))
+	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(string(instance_custom_variables))))
 
 	return hash(buf.String())
 

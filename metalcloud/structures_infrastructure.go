@@ -22,6 +22,17 @@ func flattenInstanceArray(instanceArray mc.InstanceArray) map[string]interface{}
 	d["volume_template_id"] = instanceArray.VolumeTemplateID
 	d["instance_array_firewall_managed"] = instanceArray.InstanceArrayFirewallManaged
 	d["instance_array_additional_wan_ipv4_json"] = instanceArray.InstanceArrayAdditionalWanIPv4JSON
+	switch instanceArray.InstanceArrayCustomVariables.(type) {
+	case []interface{}:
+		d["instance_array_custom_variables"] = make(map[string]string)
+	default:
+		iacv := make(map[string]string)
+
+		for k, v := range instanceArray.InstanceArrayCustomVariables.(map[string]interface{}) {
+			iacv[k] = v.(string)
+		}
+		d["instance_array_custom_variables"] = iacv
+	}
 
 	fwRules := []interface{}{}
 
@@ -115,6 +126,16 @@ func expandInstanceArray(d map[string]interface{}) mc.InstanceArray {
 		}
 
 		ia.InstanceArrayFirewallRules = fwRules
+	}
+
+	if d["instance_array_custom_variables"] != nil {
+		iacv := make(map[string]string)
+
+		for k, v := range d["instance_array_custom_variables"].(map[string]interface{}) {
+			iacv[k] = v.(string)
+		}
+
+		ia.InstanceArrayCustomVariables = iacv
 	}
 
 	return ia
@@ -225,6 +246,7 @@ func copyInstanceArrayToOperation(ia mc.InstanceArray, iao *mc.InstanceArrayOper
 	iao.InstanceArrayFirewallRules = ia.InstanceArrayFirewallRules
 	iao.VolumeTemplateID = ia.VolumeTemplateID
 	iao.InstanceArrayAdditionalWanIPv4JSON = ia.InstanceArrayAdditionalWanIPv4JSON
+	iao.InstanceArrayCustomVariables = ia.InstanceArrayCustomVariables
 }
 
 func copyDriveArrayToOperation(da mc.DriveArray, dao *mc.DriveArrayOperation) {

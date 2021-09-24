@@ -31,8 +31,6 @@ github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d h1:xDfNPAt8lFiC1U
 github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d/go.mod h1:6QX/PXZ00z/TKoufEY6K/a0k6AhaJrQKdFe6OfVXsa4=
 github.com/bgentry/speakeasy v0.1.0 h1:ByYyxL9InA1OWqxJqqp2A5pYHUrCiAL6K3J+LKSsQkY=
 github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=
-github.com/bigstepinc/metal-cloud-sdk-go/v2 v2.2.15 h1:KYEf0gzOQwjoxLueJDzW5DpXblnbO5P9JkVHo5MoiWg=
-github.com/bigstepinc/metal-cloud-sdk-go/v2 v2.2.15/go.mod h1:PnOlikFgznqB4aaCwgFUXyc5JZ468LTAPGEqCXeEWss=
 github.com/bsm/go-vlq v0.0.0-20150828105119-ec6e8d4f5f4e/go.mod h1:N+BjUcTjSxc2mtRGSCPsat1kze3CUtvJN3/jTXlp29k=
 github.com/cheggaaa/pb v1.0.27/go.mod h1:pQciLPpbU0oxA0h+VJYYLxO+XeDQb5pZijXscXHm81s=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
@@ -155,6 +153,10 @@ github.com/mattn/go-isatty v0.0.4/go.mod h1:M+lRXTBqGeGNdLjl/ufCoiOlB5xdOkqRJdNx
 github.com/mattn/go-isatty v0.0.5 h1:tHXDdz1cpzGaovsTB+TVB8q90WEokoVmfMqoVcrLUgw=
 github.com/mattn/go-isatty v0.0.5/go.mod h1:Iq45c/XA43vh69/j3iqttzPXn0bhXyGjM0Hdxcsrc5s=
 github.com/mattn/go-runewidth v0.0.4/go.mod h1:LwmH8dsx7+W8Uxz3IHJYH5QSwggIsqBzpuz5H//U1FU=
+github.com/metalsoft-io/metal-cloud-sdk-go/v2 v2.2.22 h1:a0hRGfsGLaGxfMaJc7WFFBBDwHzpTqYbocrKyH8B6ag=
+github.com/metalsoft-io/metal-cloud-sdk-go/v2 v2.2.22/go.mod h1:8vKH9S+jQpIh37egamR0p8uWZkcBtYWZhFaTdadBYvQ=
+github.com/metalsoft-io/metal-cloud-sdk-go/v2 v2.2.24 h1:EbyB/+WrxoleKzYjSlLo4kVp1t3HuA8kIzPC8XFjM40=
+github.com/metalsoft-io/metal-cloud-sdk-go/v2 v2.2.24/go.mod h1:8vKH9S+jQpIh37egamR0p8uWZkcBtYWZhFaTdadBYvQ=
 github.com/mitchellh/cli v1.0.0 h1:iGBIsUe3+HZ/AD/Vd7DErOt5sU9fa8Uj7A2s1aggv1Y=
 github.com/mitchellh/cli v1.0.0/go.mod h1:hNIlj7HEI86fIcpObd7a0FcrxTWetlwJDGcceTlRvqc=
 github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db h1:62I3jR2EmQ4l5rM/4FEfDWcRD+abF5XlKShorW5LRoQ=
