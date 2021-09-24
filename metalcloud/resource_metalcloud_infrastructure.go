@@ -1024,40 +1024,39 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 			if iaRes, ok := (*retInstanceArrays)[fmt.Sprintf("%s.vanilla", ia.InstanceArrayLabel)]; ok {
 				ia.InstanceArrayID = iaRes.InstanceArrayID
 				stateInstanceArrayMap[ia.InstanceArrayID] = &ia
-			}
-
-			cvList := iaMap["instance_custom_variables"].([]interface{})
-			instanceList, err := client.InstanceArrayInstances(ia.InstanceArrayID)
-			if err != nil {
-				return err
-			}
-
-			currentCVLabelList := make(map[string]int, len(*instanceList))
-
-			for _, icvIntf := range cvList {
-				icv := icvIntf.(map[string]interface{})
-				cvIntf := icv["custom_variables"].(map[string]interface{})
-				instance_custom_variables := make(map[string]string)
-				for k, v := range cvIntf {
-					instance_custom_variables[k] = v.(string)
+				cvList := iaMap["instance_custom_variables"].([]interface{})
+				instanceList, err := client.InstanceArrayInstances(ia.InstanceArrayID)
+				if err != nil {
+					return err
 				}
-				instance_label := icv["instance_label"].(string)
-				if instance, ok := (*instanceList)[instance_label]; ok {
-					currentCVLabelList[instance_label] = instance.InstanceID
-					instance.InstanceOperation.InstanceCustomVariables = instance_custom_variables
-					_, err := client.InstanceEdit(instance.InstanceID, instance.InstanceOperation)
-					if err != nil {
-						return err
+
+				currentCVLabelList := make(map[string]int, len(*instanceList))
+
+				for _, icvIntf := range cvList {
+					icv := icvIntf.(map[string]interface{})
+					cvIntf := icv["custom_variables"].(map[string]interface{})
+					instance_custom_variables := make(map[string]string)
+					for k, v := range cvIntf {
+						instance_custom_variables[k] = v.(string)
+					}
+					instance_label := icv["instance_label"].(string)
+					if instance, ok := (*instanceList)[instance_label]; ok {
+						currentCVLabelList[instance_label] = instance.InstanceID
+						instance.InstanceOperation.InstanceCustomVariables = instance_custom_variables
+						_, err := client.InstanceEdit(instance.InstanceID, instance.InstanceOperation)
+						if err != nil {
+							return err
+						}
 					}
 				}
-			}
 
-			for _, instance := range *instanceList {
-				if _, ok := currentCVLabelList[instance.InstanceLabel]; !ok {
-					instance.InstanceOperation.InstanceCustomVariables = make(map[string]string)
-					_, err := client.InstanceEdit(instance.InstanceID, instance.InstanceOperation)
-					if err != nil {
-						return err
+				for _, instance := range *instanceList {
+					if _, ok := currentCVLabelList[instance.InstanceLabel]; !ok {
+						instance.InstanceOperation.InstanceCustomVariables = make(map[string]string)
+						_, err := client.InstanceEdit(instance.InstanceID, instance.InstanceOperation)
+						if err != nil {
+							return err
+						}
 					}
 				}
 			}
