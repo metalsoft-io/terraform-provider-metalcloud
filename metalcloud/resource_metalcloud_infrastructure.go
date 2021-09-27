@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"hash/crc32"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -261,8 +262,8 @@ func resourceDriveArray() *schema.Resource {
 func instanceCustomVariableResource() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
-			"instance_label": &schema.Schema{
-				Type:     schema.TypeString,
+			"instance_index": &schema.Schema{
+				Type:     schema.TypeInt,
 				Required: true,
 			},
 			"custom_variables": &schema.Schema{
@@ -514,6 +515,46 @@ func resourceInfrastructureCreate(d *schema.ResourceData, meta interface{}) erro
 
 			iaInfraMap[ia.InstanceArrayLabel] = *iaCreated
 
+			cvList := iaMap["instance_custom_variables"].([]interface{})
+			instanceList, err := client.InstanceArrayInstances(iaCreated.InstanceArrayID)
+			if err != nil {
+				return err
+			}
+
+			instanceMap := make(map[int]mc.Instance, len(*instanceList))
+			nInstances := len(*instanceList)
+			keys := []int{}
+			instances := []mc.Instance{}
+
+			for _, v := range *instanceList {
+				instanceMap[v.InstanceID] = v
+				keys = append(keys, v.InstanceID)
+			}
+
+			sort.Ints(keys)
+
+			for _, id := range keys {
+				instances = append(instances, instanceMap[id])
+			}
+
+			for _, icvIntf := range cvList {
+				icv := icvIntf.(map[string]interface{})
+				cvIntf := icv["custom_variables"].(map[string]interface{})
+				instance_custom_variables := make(map[string]string)
+				for k, v := range cvIntf {
+					instance_custom_variables[k] = v.(string)
+				}
+				instance_index := icv["instance_index"].(int)
+				if instance_index < nInstances {
+					instance := instances[instance_index]
+					instance.InstanceOperation.InstanceCustomVariables = instance_custom_variables
+					_, err := client.InstanceEdit(instance.InstanceID, instance.InstanceOperation)
+					if err != nil {
+						return err
+					}
+				}
+			}
+
 			//add interfaces to networks
 
 			intListIntf := d.Get(fmt.Sprintf("instance_array.%d.interface", instanceArrayResourceHash(resIA)))
@@ -716,6 +757,21 @@ func resourceInfrastructureRead(d *schema.ResourceData, meta interface{}) error 
 					return err
 				}
 
+				instanceMap := make(map[int]mc.Instance, len(*retInstances))
+				keys := []int{}
+				instances := []mc.Instance{}
+
+				for _, v := range *retInstances {
+					instanceMap[v.InstanceID] = v
+					keys = append(keys, v.InstanceID)
+				}
+
+				sort.Ints(keys)
+
+				for _, id := range keys {
+					instances = append(instances, instanceMap[id])
+				}
+
 				bytes, err := json.Marshal(retInstances)
 				if err != nil {
 					return fmt.Errorf("error serializing instances array: %s", err)
@@ -725,11 +781,12 @@ func resourceInfrastructureRead(d *schema.ResourceData, meta interface{}) error 
 
 				customVars := []interface{}{}
 
-				for _, instance := range *retInstances {
+				for index, instance := range instances {
 					i := make(map[string]interface{})
 					cv := make(map[string]interface{})
-					i["instance_label"] = instance.InstanceLabel
+					i["instance_index"] = index
 					switch instance.InstanceCustomVariables.(type) {
+					//todo: add nil
 					case []interface{}:
 						cv = make(map[string]interface{})
 					default:
@@ -1029,6 +1086,21 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 				if err != nil {
 					return err
 				}
+				instanceMap := make(map[int]mc.Instance, len(*instanceList))
+				nInstances := len(*instanceList)
+				keys := []int{}
+				instances := []mc.Instance{}
+
+				for _, v := range *instanceList {
+					instanceMap[v.InstanceID] = v
+					keys = append(keys, v.InstanceID)
+				}
+
+				sort.Ints(keys)
+
+				for _, id := range keys {
+					instances = append(instances, instanceMap[id])
+				}
 
 				currentCVLabelList := make(map[string]int, len(*instanceList))
 
@@ -1039,9 +1111,10 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 					for k, v := range cvIntf {
 						instance_custom_variables[k] = v.(string)
 					}
-					instance_label := icv["instance_label"].(string)
-					if instance, ok := (*instanceList)[instance_label]; ok {
-						currentCVLabelList[instance_label] = instance.InstanceID
+					instance_index := icv["instance_index"].(int)
+					if instance_index < nInstances {
+						instance := instances[instance_index]
+						currentCVLabelList[instance.InstanceLabel] = instance.InstanceID
 						instance.InstanceOperation.InstanceCustomVariables = instance_custom_variables
 						_, err := client.InstanceEdit(instance.InstanceID, instance.InstanceOperation)
 						if err != nil {
