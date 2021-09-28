@@ -1483,6 +1483,7 @@ func instanceArrayResourceHash(v interface{}) int {
 			for k, v := range custom_variables {
 				cv[k] = v.(string)
 			}
+			cv["index"] = strconv.Itoa(iacv["instance_index"].(int))
 
 			instance_custom_variables, _ = json.Marshal(cv)
 		}
