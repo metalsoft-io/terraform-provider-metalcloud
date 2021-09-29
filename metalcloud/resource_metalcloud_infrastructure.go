@@ -772,7 +772,7 @@ func resourceInfrastructureRead(d *schema.ResourceData, meta interface{}) error 
 					instances = append(instances, instanceMap[id])
 				}
 
-				bytes, err := json.Marshal(retInstances)
+				bytes, err := json.Marshal(instances)
 				if err != nil {
 					return fmt.Errorf("error serializing instances array: %s", err)
 				}
@@ -1471,7 +1471,7 @@ func instanceArrayResourceHash(v interface{}) int {
 	instance_array_firewall_managed := strconv.FormatBool(ia["instance_array_firewall_managed"].(bool))
 	instance_array_custom_variables, _ := json.Marshal(ia["instance_array_custom_variables"])
 
-	var instance_custom_variables []byte
+	var instance_custom_variables string
 
 	if ia["instance_custom_variables"] != nil {
 		for _, iaIntf := range ia["instance_custom_variables"].([]interface{}) {
@@ -1484,8 +1484,9 @@ func instanceArrayResourceHash(v interface{}) int {
 				cv[k] = v.(string)
 			}
 			cv["index"] = strconv.Itoa(iacv["instance_index"].(int))
+			cv_encoded, _ := json.Marshal(cv)
 
-			instance_custom_variables, _ = json.Marshal(cv)
+			instance_custom_variables = fmt.Sprintf("%s-%s", instance_custom_variables, string(cv_encoded))
 		}
 	}
 
@@ -1510,7 +1511,7 @@ func instanceArrayResourceHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(volume_template_id)))
 	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(instance_array_firewall_managed)))
 	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(string(instance_array_custom_variables))))
-	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(string(instance_custom_variables))))
+	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(instance_custom_variables)))
 
 	return hash(buf.String())
 
