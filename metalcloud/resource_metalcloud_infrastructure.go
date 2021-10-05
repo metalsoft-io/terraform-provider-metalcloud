@@ -359,15 +359,15 @@ func resourceNetwork() *schema.Resource {
 func resourceInstanceArrayInterface() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
-			"interface_index": &schema.Schema{
+			"interface_index": {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
-			"network_label": &schema.Schema{
+			"network_label": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"network_id": &schema.Schema{
+			"network_id": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Computed: true,
@@ -1543,13 +1543,14 @@ func interfaceToString(v interface{}) string {
 
 	i := v.(map[string]interface{})
 
-	instance_array_interface_label := i["instance_array_interface_label"].(string)
-	instance_array_interface_service_status := i["instance_array_interface_service_status"].(string)
-	instance_array_interface_index := strconv.Itoa(i["instance_array_interface_index"].(int))
+	// instance_array_interface_label := i["instance_array_interface_label"].(string)
+	// instance_array_interface_service_status := i["instance_array_interface_service_status"].(string)
+	instance_array_interface_index := strconv.Itoa(i["interface_index"].(int))
 	network_id := strconv.Itoa(i["network_id"].(int))
+	network_label := i["network_label"].(string)
 
-	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(instance_array_interface_label)))
-	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(instance_array_interface_service_status)))
+	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(network_label)))
+	// buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(instance_array_interface_service_status)))
 	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(instance_array_interface_index)))
 	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(network_id)))
 

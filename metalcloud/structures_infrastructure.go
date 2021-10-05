@@ -305,7 +305,7 @@ func flattenInstanceArrayInterface(i mc.InstanceArrayInterface) map[string]inter
 	d["instance_array_interface_id"] = i.InstanceArrayInterfaceID
 	d["instance_array_interface_label"] = i.InstanceArrayInterfaceLabel
 	d["instance_array_interface_lagg_indexes"] = i.InstanceArrayInterfaceLAGGIndexes
-	d["instance_array_interface_index"] = i.InstanceArrayInterfaceIndex
+	d["interface_index"] = i.InstanceArrayInterfaceIndex
 	d["instance_array_interface_service_status"] = i.InstanceArrayInterfaceServiceStatus
 	d["network_id"] = i.NetworkID
 
