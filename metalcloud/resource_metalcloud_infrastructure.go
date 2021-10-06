@@ -1406,7 +1406,7 @@ func createOrUpdateNetwork(infrastructureID int, n mc.Network, client *mc.Client
 				(v.NetworkType == NETWORK_TYPE_SAN ||
 					v.NetworkType == NETWORK_TYPE_WAN) {
 				v.NetworkOperation.NetworkLabel = n.NetworkLabel
-				nToReturn, err = client.NetworkEdit(networkID, *v.NetworkOperation)
+				nToReturn, err = client.NetworkEdit(v.NetworkID, *v.NetworkOperation)
 				if err != nil {
 					return nil, err
 				}
