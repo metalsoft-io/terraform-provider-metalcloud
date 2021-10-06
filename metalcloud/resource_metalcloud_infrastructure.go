@@ -1020,9 +1020,9 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 	stateNetworksMap := make(map[int]*mc.Network)
 
 	if d.HasChange("network") {
-		nMapByLabel := d.Get("network").(*schema.Set).List()
+		nList := d.Get("network").(*schema.Set).List()
 
-		for _, nMapIntf := range nMapByLabel {
+		for _, nMapIntf := range nList {
 			nMap := nMapIntf.(map[string]interface{})
 			n := expandNetwork(nMap)
 			stateNetworksMap[n.NetworkID] = &n
