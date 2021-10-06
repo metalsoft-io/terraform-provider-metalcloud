@@ -303,10 +303,7 @@ func flattenInstanceArrayInterface(i mc.InstanceArrayInterface) map[string]inter
 	var d = make(map[string]interface{})
 
 	d["instance_array_interface_id"] = i.InstanceArrayInterfaceID
-	d["instance_array_interface_label"] = i.InstanceArrayInterfaceLabel
-	d["instance_array_interface_lagg_indexes"] = i.InstanceArrayInterfaceLAGGIndexes
 	d["interface_index"] = i.InstanceArrayInterfaceIndex
-	d["instance_array_interface_service_status"] = i.InstanceArrayInterfaceServiceStatus
 	d["network_id"] = i.NetworkID
 
 	return d
@@ -320,10 +317,7 @@ func expandInstanceArrayInterface(d map[string]interface{}) mc.InstanceArrayInte
 		i.InstanceArrayInterfaceID = d["instance_array_interface_id"].(int)
 	}
 
-	i.InstanceArrayInterfaceLabel = d["instance_array_interface_label"].(string)
-	i.InstanceArrayInterfaceLAGGIndexes = d["instance_array_interface_lagg_indexes"].([]interface{})
-	i.InstanceArrayInterfaceIndex = d["instance_array_interface_index"].(int)
-	i.InstanceArrayInterfaceServiceStatus = d["instance_array_interface_service_status"].(string)
+	i.InstanceArrayInterfaceIndex = d["interface_index"].(int)
 	i.NetworkID = d["network_id"].(int)
 
 	return i

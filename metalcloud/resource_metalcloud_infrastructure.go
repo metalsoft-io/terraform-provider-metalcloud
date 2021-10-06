@@ -1083,41 +1083,6 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 				stateInstanceArrayMap[ia.InstanceArrayID] = &ia
 			}
 
-			//update interfaces
-			intMapList := iaMap["interface"].(*schema.Set).List()
-
-			var nMapList []interface{}
-
-			if nMapListIntf, ok := d.GetOkExists("networks"); ok {
-				nMapList = nMapListIntf.(*schema.Set).List()
-			}
-
-			intList := []mc.InstanceArrayInterface{}
-			for _, intMapIntf := range intMapList {
-				intMap := intMapIntf.(map[string]interface{})
-
-				//because we could have alternations to the interface index - to network map
-				//we're retrieving the networks rather than relying on the exisitng network_id
-				//locate network with label and get it's network id
-				var networkID = 0
-				for _, nMapIntf := range nMapList {
-					nMap := nMapIntf.(map[string]interface{})
-					if nMap["network_label"] == intMap["network_label"] {
-						networkID = nMap["network_id"].(int)
-					}
-					intf := mc.InstanceArrayInterface{
-						InstanceArrayInterfaceIndex: intMap["interface_index"].(int),
-						NetworkID:                   networkID,
-					}
-
-					intList = append(intList, intf)
-
-					needsDeploy = true
-				}
-			}
-
-			ia.InstanceArrayInterfaces = intList
-
 			bkeepDetachingDrives := d.Get("keep_detaching_drives").(bool)
 			bSwapExistingInstancesHardware := false
 
@@ -1129,6 +1094,62 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 					return err1
 				}
 				return err
+			}
+
+			//update interfaces
+			intMapList := iaMap["interface"].(*schema.Set).List()
+
+			for _, intMapIntf := range intMapList {
+				intMap := intMapIntf.(map[string]interface{})
+
+				//because we could have alternations to the interface index - to network map
+				//we're retrieving the networks rather than relying on the exisitng network_id
+				//locate network with label and get it's network id
+
+				if network, ok := (*retNetworksMap)[intMap["network_label"].(string)]; ok {
+					intf := mc.InstanceArrayInterface{
+						InstanceArrayInterfaceIndex: intMap["interface_index"].(int),
+						NetworkID:                   network.NetworkID,
+					}
+
+					_, err = client.InstanceArrayInterfaceAttachNetwork(retIA.InstanceArrayID, intf.InstanceArrayInterfaceIndex, intf.NetworkID)
+					if err != nil {
+						err1 := resourceInfrastructureRead(d, meta)
+						if err1 != nil {
+							return err1
+						}
+						return err
+					}
+					needsDeploy = true
+				}
+			}
+
+			existingIntfList := retIA.InstanceArrayInterfaces
+
+			for _, existingIntf := range existingIntfList {
+				found := false
+
+				for _, intMapIntf := range intMapList {
+					intMap := intMapIntf.(map[string]interface{})
+
+					intf := expandInstanceArrayInterface(intMap)
+
+					if existingIntf.InstanceArrayInterfaceIndex == intf.InstanceArrayInterfaceIndex {
+						found = true
+					}
+				}
+
+				if found == false {
+					_, err = client.InstanceArrayInterfaceDetach(retIA.InstanceArrayID, existingIntf.InstanceArrayInterfaceIndex)
+					if err != nil {
+						err1 := resourceInfrastructureRead(d, meta)
+						if err1 != nil {
+							return err1
+						}
+						return err
+					}
+					needsDeploy = true
+				}
 			}
 
 			cvList := iaMap["instance_custom_variables"].([]interface{})
