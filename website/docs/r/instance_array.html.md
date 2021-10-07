@@ -13,9 +13,11 @@ InstanceArrays are central to Metal Cloud. They operate on groups of indentical 
 In general lines an InstanceArray has the following properties:
 
 * provision control flags & other properties
-* one or more [drive_array](/docs/providers/metalcloud/r/drive_array.html) blocks
-* one or mare [interface](/docs/providers/metalcloud/r/interface.html) blocks
-* one or mare [firewall_rule](/docs/providers/metalcloud/r/interface.html) blocks
+* zero or more [drive_array](/docs/providers/metalcloud/r/drive_array.html) blocks
+* zero or more [interface](/docs/providers/metalcloud/r/interface.html) blocks
+* zero or more [firewall_rule](/docs/providers/metalcloud/r/interface.html) blocks
+* zero or more [instance_array_custom_variables](/docs/providers/metalcloud/r/instance_array_custom_variables.html) blocks
+* zero or more [instance_custom_variables](/docs/providers/metalcloud/r/instance_custom_variables.html) blocks
 
 ## Example usage
 
@@ -59,6 +61,30 @@ resource "metalcloud_infrastructure" "my-infra"{
                     firewall_rule_protocol="tcp"
                     firewall_rule_ip_address_type="ipv4"
         }
+
+        instance_array_custom_variables = {
+            b = "c"
+            d = "e"
+            c = "f"
+            r = "p"
+        }
+
+         instance_custom_variables {
+              instance_index = 1
+              custom_variables = {
+                a = "z"
+
+            }
+        }
+
+    
+        instance_custom_variables {
+            instance_index = 0
+            custom_variables = {
+                a = "d"
+
+            }
+        }
     }
 }
 ```
@@ -85,6 +111,25 @@ The following arguments are supported:
 * `drive_array` (Optional) One or more blocks of this type define **DriveArrays** linked to this InstanceArray. Reffer to [drive_array](/docs/providers/metalcloud/r/drive_array.html) for more details.
 * `firewall_rule` (Optional) One or more blocks of this type define firewall rules to be applied on each server of this InstanceArray. Reffer to [firewall_rule](/docs/providers/metalcloud/r/firewall_rule.html) for more details.
 * `interface` (Optional) One or more blocks of this type define how the InstanceArray is connected to a Network. Reffer to [interface](/docs/providers/metalcloud/r/instance_array_interface.html) for more details.
+* `instance_array_custom_variables` (Optional, default []) - All of the variables specified as a map of *string* = *string* such as { var_a="var_value" } will be sent to the underlying deploy process and referenced in operating system templates and workflows. These are variables that will be applied at the `instance array` level and will override any identical ones configured at the `infrastructure` level specified via the `infrastructure_custom_variables` property. Example:
+  ```
+  instance_array_custom_variables = {
+              b = "c"
+              d = "e"
+              c = "f"
+              r = "p"
+  }
+  ```
+* `instance_custom_variables` (Optional, default []) - All of the variables specified as a map of *string* = *string* such as { var_a="var_value" } will be sent to the underlying deploy process and referenced in operating system templates and workflows. These are variables that will be applied at the **instance** level and will override any identical ones configured at the **infrastructure** and **instance_array** level via the `infrastructure_custom_variables` and `instance_array_custom_variables` properties. Use the `instance_index` property to specify which from the instance array's instances this set of variables applies to. For example the variables for the second instance of an array would be:
+  ```
+  instance_custom_variables {
+      instance_index = 1
+      custom_variables = {
+          aa = "00"
+          bb = "00"
+      }
+  }
+  ```
 
 ## Attributes
 

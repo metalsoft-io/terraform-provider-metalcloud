@@ -22,8 +22,15 @@ The following example deployes 3 servers, each with a 40TB drive with Centos 7.6
 resource "metalcloud_infrastructure" "foo" {
 
 			infrastructure_label = "my-terraform-infra-1"
-			datacenter_name = "uk-reading"	
-			
+			datacenter_name = "uk-reading"
+
+			infrastructure_custom_variables  = {
+				a = "b"
+				b = "a"
+				c = "c"
+				d = "f"
+			}
+
 			prevent_deploy = true
 
 			network{
@@ -79,25 +86,79 @@ resource "metalcloud_infrastructure" "foo" {
 			}
 		  
 			instance_array {
-				  instance_array_label = "slave"  
-				  instance_array_instance_count = 2
-		  
-				  drive_array{
+				instance_array_label = "slave"  
+				instance_array_instance_count = 2
+
+				instance_array_custom_variables = {
+					b = "c"
+					d = "e"
+					c = "f"
+					r = "p"
+				}
+
+				instance_custom_variables {
+					instance_index = 0
+					custom_variables = {
+						aa = "00"
+						bb = "00"
+
+					}
+				}
+				instance_custom_variables {
+					instance_index = 1
+					custom_variables = {
+						# aa = "11"
+						bb = "11"
+						cc = "11"
+						# d = "11"
+					}
+				}
+		
+				drive_array{
 					drive_array_label="asd2-centos"
 					drive_array_storage_type = "iscsi_hdd"
 					drive_size_mbytes_default = 49000
 					volume_template_id = tonumber(data.metalcloud_volume_template.centos76.id)
-				  }
-		  
-						  firewall_rule {
-							  firewall_rule_description = "test fw rule"
-							  firewall_rule_port_range_start = 22
-							  firewall_rule_port_range_end = 22
-							  firewall_rule_source_ip_address_range_start="0.0.0.0"
-							  firewall_rule_source_ip_address_range_end="0.0.0.0"
-							  firewall_rule_protocol="tcp"
-							  firewall_rule_ip_address_type="ipv4"
-						  }
+				}
+		
+				firewall_rule {
+					firewall_rule_description = "test fw rule"
+					firewall_rule_port_range_start = 22
+					firewall_rule_port_range_end = 22
+					firewall_rule_source_ip_address_range_start="0.0.0.0"
+					firewall_rule_source_ip_address_range_end="0.0.0.0"
+					firewall_rule_protocol="tcp"
+					firewall_rule_ip_address_type="ipv4"
+				}
+			}
+
+
+			firmware_upgrade_policy {
+				server_firmware_upgrade_policy_label = "test1"
+				server_firmware_upgrade_policy_action = "accept"
+				instance_array_label = "web-servers"
+				server_firmware_upgrade_policy_rules {
+					operation = "string_equal"
+					property = "datacenter_name"
+					value = "slavedatacenter-138"
+				}
+			}
+
+			firmware_upgrade_policy {
+				server_firmware_upgrade_policy_label = "test2"
+				server_firmware_upgrade_policy_action = "accept"
+				instance_array_label = "web-servers"
+				server_firmware_upgrade_policy_rules {
+					operation = "string_equal"
+					property = "datacenter_name"
+					value = "slavedatacenter-138"
+				}
+
+				server_firmware_upgrade_policy_rules {
+					operation = "string_equal"
+					property = "server_vendor"
+					value = "dell"
+				}
 			}
 
 		}
@@ -120,6 +181,8 @@ The following arguments are supported:
 * `await_deploy_finished` (Optional, default true) - If **true**, the provider will wait until the deploy has finished before exiting. If **false**, the deploy will continue after the provider exited. No other operations are permitted on theis infrastructure during deploy.
 * `await_delete_finished` (Optional, default false) - If **true**, the provider will wait for a deploy (involving delete) to finish before exiting. If **false**, the delete operation (really a deploy) will continue after the provider existed. This operation is generally quick.
 * `keep_detaching_drives` (Optional, default true) - If **true**, the detaching Drive objects will not be deleted. If **false**, and the number of Instance objects is reduced, then the detaching Drive objects will be deleted.
+* `infrastructure_custom_variables` (Optional, default []) - All of the variables specified as a map of *string* = *string* such as { var_a="var_value" } will be sent to the underlying deploy process and referenced in operating system templates and workflows. 
+
 
 ## Attributes
 
