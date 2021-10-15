@@ -13,8 +13,9 @@ func TestFlattenExpandInstanceArray(t *testing.T) {
 		FirewallRuleDescription: "test",
 	}
 	origIA := mc.InstanceArray{
-		InstanceArrayID:            10,
-		InstanceArrayFirewallRules: []mc.FirewallRule{origFW},
+		InstanceArrayID:              10,
+		InstanceArrayFirewallRules:   []mc.FirewallRule{origFW},
+		InstanceArrayCustomVariables: map[string]interface{}{},
 	}
 	flattenIA := flattenInstanceArray(origIA)
 
@@ -27,18 +28,20 @@ func TestFlattenExpandInstanceArray(t *testing.T) {
 
 func TestExpandInstanceArrayComplete(t *testing.T) {
 	origIAMap := map[string]interface{}{
-		"instance_array_label":                "as111",
-		"instance_array_instance_count":       1,
-		"instance_array_boot_method":          "pxe_iscsi",
-		"instance_array_ram_gbytes":           1,
-		"instance_array_processor_count":      1,
-		"instance_array_processor_core_mhz":   1,
-		"instance_array_processor_core_count": 1,
-		"instance_array_disk_count":           0,
-		"instance_array_disk_size_mbytes":     0,
-		"volume_template_id":                  0,
-		"instance_array_firewall_managed":     true,
-		"firewall_rule":                       schema.NewSet(schema.HashResource(resourceFirewallRule()), []interface{}{}),
+		"instance_array_label":                    "as111",
+		"instance_array_instance_count":           1,
+		"instance_array_boot_method":              "pxe_iscsi",
+		"instance_array_ram_gbytes":               1,
+		"instance_array_processor_count":          1,
+		"instance_array_processor_core_mhz":       1,
+		"instance_array_processor_core_count":     1,
+		"instance_array_disk_count":               0,
+		"instance_array_disk_size_mbytes":         0,
+		"volume_template_id":                      0,
+		"instance_array_firewall_managed":         true,
+		"firewall_rule":                           schema.NewSet(schema.HashResource(resourceFirewallRule()), []interface{}{}),
+		"instance_array_additional_wan_ipv4_json": "",
+		"instance_array_custom_variables":         map[string]interface{}{},
 	}
 
 	ia := expandInstanceArray(origIAMap)

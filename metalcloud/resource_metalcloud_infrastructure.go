@@ -1567,13 +1567,13 @@ func interfaceToString(v interface{}) string {
 	// instance_array_interface_label := i["instance_array_interface_label"].(string)
 	// instance_array_interface_service_status := i["instance_array_interface_service_status"].(string)
 	instance_array_interface_index := strconv.Itoa(i["interface_index"].(int))
-	network_id := strconv.Itoa(i["network_id"].(int))
+	// network_id := strconv.Itoa(i["network_id"].(int))
 	network_label := i["network_label"].(string)
 
 	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(network_label)))
 	// buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(instance_array_interface_service_status)))
 	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(instance_array_interface_index)))
-	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(network_id)))
+	// buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(network_id)))
 
 	return buf.String()
 }

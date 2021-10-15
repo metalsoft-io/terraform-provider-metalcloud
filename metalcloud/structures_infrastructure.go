@@ -24,9 +24,9 @@ func flattenInstanceArray(instanceArray mc.InstanceArray) map[string]interface{}
 	d["instance_array_additional_wan_ipv4_json"] = instanceArray.InstanceArrayAdditionalWanIPv4JSON
 	switch instanceArray.InstanceArrayCustomVariables.(type) {
 	case []interface{}:
-		d["instance_array_custom_variables"] = make(map[string]string)
+		d["instance_array_custom_variables"] = make(map[string]interface{})
 	default:
-		iacv := make(map[string]string)
+		iacv := make(map[string]interface{})
 
 		for k, v := range instanceArray.InstanceArrayCustomVariables.(map[string]interface{}) {
 			iacv[k] = v.(string)
@@ -129,7 +129,7 @@ func expandInstanceArray(d map[string]interface{}) mc.InstanceArray {
 	}
 
 	if d["instance_array_custom_variables"] != nil {
-		iacv := make(map[string]string)
+		iacv := make(map[string]interface{})
 
 		for k, v := range d["instance_array_custom_variables"].(map[string]interface{}) {
 			iacv[k] = v.(string)
