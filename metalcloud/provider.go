@@ -1,8 +1,8 @@
 package metalcloud
 
 import (
-	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v2"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v2"
 )
 
 //Provider of Bigstep Metal Cloud resources
@@ -54,6 +54,24 @@ func providerSchema() map[string]*schema.Schema {
 			DefaultFunc: schema.EnvDefaultFunc("METALCLOUD_LOGGING_ENABLED", nil),
 			Description: "Enable logging",
 		},
+		"user_id": &schema.Schema{
+			Type:        schema.TypeString,
+			Optional:    true,
+			DefaultFunc: schema.EnvDefaultFunc("METALCLOUD_USER_ID", ""),
+			Description: "User id",
+		},
+		"user_secret": &schema.Schema{
+			Type:        schema.TypeString,
+			Optional:    true,
+			DefaultFunc: schema.EnvDefaultFunc("METALCLOUD_USER_SECRET", ""),
+			Description: "User secret",
+		},
+		"oauth_token_url": &schema.Schema{
+			Type:        schema.TypeString,
+			Optional:    true,
+			DefaultFunc: schema.EnvDefaultFunc("OAUTH_TOKEN_URL", ""),
+			Description: "Oauth token URL",
+		},
 	}
 }
 
@@ -64,6 +82,9 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		d.Get("api_key").(string),
 		d.Get("endpoint").(string),
 		d.Get("logging").(bool),
+		d.Get("user_id").(string),
+		d.Get("user_secret").(string),
+		d.Get("oauth_token_url").(string),
 	)
 	if err != nil {
 		return nil, err
