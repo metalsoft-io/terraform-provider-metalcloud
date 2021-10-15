@@ -1153,7 +1153,7 @@ func resourceInfrastructureUpdate(d *schema.ResourceData, meta interface{}) erro
 			}
 
 			cvList := iaMap["instance_custom_variables"].([]interface{})
-			instanceList, err := client.InstanceArrayInstances(ia.InstanceArrayID)
+			instanceList, err := client.InstanceArrayInstances(retIA.InstanceArrayID)
 			if err != nil {
 				return err
 			}
