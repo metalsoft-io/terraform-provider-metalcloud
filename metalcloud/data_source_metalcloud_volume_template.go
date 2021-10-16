@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v2"
 )
 
@@ -16,6 +16,9 @@ func DataSourceVolumeTemplate() *schema.Resource {
 			"volume_template_label": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				//this required as the serverside will convert to lowercase and generate a diff
+				//also helpful to prevent other
+				ValidateDiagFunc: validateLabel,
 			},
 			"volume_template_id": &schema.Schema{
 				Type:     schema.TypeInt,

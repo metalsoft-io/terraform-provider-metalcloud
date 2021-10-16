@@ -1,7 +1,7 @@
 package metalcloud
 
 import (
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v2"
 )
 
@@ -48,48 +48,62 @@ func flattenInstanceArray(instanceArray mc.InstanceArray) map[string]interface{}
 	return d
 }
 
-func flattenSharedDrive(sharedDrive mc.SharedDrive, sdIAs []interface{}) map[string]interface{} {
-	var d = make(map[string]interface{})
+func flattenSharedDrive(d *schema.ResourceData, sharedDrive mc.SharedDrive) error {
 
-	d["shared_drive_id"] = sharedDrive.SharedDriveID
-	d["shared_drive_label"] = sharedDrive.SharedDriveLabel
-	d["shared_drive_storage_type"] = sharedDrive.SharedDriveStorageType
-	d["shared_drive_size_mbytes"] = sharedDrive.SharedDriveSizeMbytes
-	d["shared_drive_attached_instance_arrays"] = make([]string, len(sharedDrive.SharedDriveAttachedInstanceArrays))
+	d.Set("shared_drive_id", sharedDrive.SharedDriveID)
+	d.Set("shared_drive_label", sharedDrive.SharedDriveLabel)
+	d.Set("shared_drive_storage_type", sharedDrive.SharedDriveStorageType)
+	d.Set("shared_drive_size_mbytes", sharedDrive.SharedDriveSizeMbytes)
+	d.Set("shared_drive_attached_instance_arrays", sharedDrive.SharedDriveAttachedInstanceArrays)
 	// iaList := d["shared_drive_attached_instance_arrays"].([]string)
 	// for i, value := range sharedDrive.SharedDriveAttachedInstanceArrays {
 	// 	iaList[i] = strconv.Itoa(value)
 	// }
-	d["shared_drive_attached_instance_arrays"] = sdIAs
+	//d["shared_drive_attached_instance_arrays"] = sdIAs
 
-	return d
+	return nil
 }
 
-func expandSharedDrive(d map[string]interface{}) mc.SharedDrive {
+func expandSharedDrive(d *schema.ResourceData) mc.SharedDrive {
 	var sd mc.SharedDrive
 
-	if d["shared_drive_id"] != nil {
-		sd.SharedDriveID = d["shared_drive_id"].(int)
+	if v, ok := d.GetOk("shared_drive_id"); ok {
+		sd.SharedDriveID = v.(int)
 	}
-	sd.SharedDriveLabel = d["shared_drive_label"].(string)
-	sd.SharedDriveHasGFS = d["shared_drive_has_gfs"].(bool)
-	sd.SharedDriveStorageType = d["shared_drive_storage_type"].(string)
-	sd.SharedDriveSizeMbytes = d["shared_drive_size_mbytes"].(int)
 
-	if d["shared_drive_attached_instance_arrays"] != nil {
+	if v, ok := d.GetOk("shared_drive_label"); ok {
+		sd.SharedDriveLabel = v.(string)
+	}
+
+	sd.SharedDriveHasGFS = d.Get("shared_drive_has_gfs").(bool)
+	sd.SharedDriveStorageType = d.Get("shared_drive_storage_type").(string)
+	sd.SharedDriveSizeMbytes = d.Get("shared_drive_size_mbytes").(int)
+
+	if v, ok := d.GetOk("shared_drive_attached_instance_arrays"); ok {
 		sd.SharedDriveAttachedInstanceArrays = []int{}
 
-		for _, label := range d["shared_drive_attached_instance_arrays"].([]interface{}) {
-			iaPlannedMap := d["infrastructure_instance_arrays_planned"].(map[string]mc.InstanceArray)
-			iaExistingMap := d["infrastructure_instance_arrays_existing"].(map[string]mc.InstanceArray)
+		for _, k := range v.(*schema.Set).List() {
 
-			if val, ok := iaExistingMap[label.(string)]; ok {
-				sd.SharedDriveAttachedInstanceArrays = append(sd.SharedDriveAttachedInstanceArrays, val.InstanceArrayID)
-			} else if val, ok := iaPlannedMap[label.(string)]; ok {
-				sd.SharedDriveAttachedInstanceArrays = append(sd.SharedDriveAttachedInstanceArrays, val.InstanceArrayID)
-			}
+			sd.SharedDriveAttachedInstanceArrays = append(sd.SharedDriveAttachedInstanceArrays, k.(int))
 		}
 	}
+
+	/*
+		if d["shared_drive_attached_instance_arrays"] != nil {
+			sd.SharedDriveAttachedInstanceArrays = []int{}
+
+			for _, label := range d["shared_drive_attached_instance_arrays"].([]interface{}) {
+				iaPlannedMap := d["infrastructure_instance_arrays_planned"].(map[string]mc.InstanceArray)
+				iaExistingMap := d["infrastructure_instance_arrays_existing"].(map[string]mc.InstanceArray)
+
+				if val, ok := iaExistingMap[label.(string)]; ok {
+					sd.SharedDriveAttachedInstanceArrays = append(sd.SharedDriveAttachedInstanceArrays, val.InstanceArrayID)
+				} else if val, ok := iaPlannedMap[label.(string)]; ok {
+					sd.SharedDriveAttachedInstanceArrays = append(sd.SharedDriveAttachedInstanceArrays, val.InstanceArrayID)
+				}
+			}
+		}
+	*/
 
 	return sd
 }
@@ -175,30 +189,31 @@ func expandFirewallRule(d map[string]interface{}) mc.FirewallRule {
 	return fw
 }
 
-func flattenDriveArray(driveArray mc.DriveArray) map[string]interface{} {
-	var d = make(map[string]interface{})
+func flattenDriveArray(d *schema.ResourceData, driveArray mc.DriveArray) error {
 
-	d["drive_array_id"] = driveArray.DriveArrayID
-	d["drive_array_label"] = driveArray.DriveArrayLabel
-	d["drive_array_storage_type"] = driveArray.DriveArrayStorageType
-	d["drive_size_mbytes_default"] = driveArray.DriveSizeMBytesDefault
-	d["volume_template_id"] = driveArray.VolumeTemplateID
-	d["instance_array_id"] = driveArray.InstanceArrayID
+	d.Set("drive_array_id", driveArray.DriveArrayID)
+	d.Set("drive_array_label", driveArray.DriveArrayLabel)
+	d.Set("drive_array_storage_type", driveArray.DriveArrayStorageType)
+	d.Set("drive_size_mbytes_default", driveArray.DriveSizeMBytesDefault)
+	d.Set("volume_template_id", driveArray.VolumeTemplateID)
+	d.Set("instance_array_id", driveArray.InstanceArrayID)
 
-	return d
+	return nil
 }
 
-func expandDriveArray(d map[string]interface{}) mc.DriveArray {
+func expandDriveArray(d *schema.ResourceData) mc.DriveArray {
 	var da mc.DriveArray
-	if d["drive_array_id"] != nil {
-		da.DriveArrayID = d["drive_array_id"].(int)
+
+	if d.Get("drive_array_id") != nil {
+		da.DriveArrayID = d.Get("drive_array_id").(int)
 	}
-	da.DriveArrayLabel = d["drive_array_label"].(string)
-	da.DriveArrayStorageType = d["drive_array_storage_type"].(string)
-	da.DriveSizeMBytesDefault = d["drive_size_mbytes_default"].(int)
-	da.VolumeTemplateID = d["volume_template_id"].(int)
-	if d["instance_array_id"] != nil {
-		da.InstanceArrayID = d["instance_array_id"].(int)
+	da.DriveArrayLabel = d.Get("drive_array_label").(string)
+	da.DriveArrayStorageType = d.Get("drive_array_storage_type").(string)
+	da.DriveSizeMBytesDefault = d.Get("drive_size_mbytes_default").(int)
+	da.VolumeTemplateID = d.Get("volume_template_id").(int)
+
+	if d.Get("instance_array_id") != nil {
+		da.InstanceArrayID = d.Get("instance_array_id").(int)
 	}
 
 	return da
