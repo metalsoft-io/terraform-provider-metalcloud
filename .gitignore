@@ -32,3 +32,4 @@ set_envs.sh
 .gitcookies
 scripts/getgocookie.sh
 getgocookie.sh
+terraform-provider-metalcloud
