@@ -33,3 +33,9 @@ set_envs.sh
 scripts/getgocookie.sh
 getgocookie.sh
 terraform-provider-metalcloud
+
+examples/**/.terraform*
+examples/**/terraform*
+.DS_Store
+*/.DS_Store
+examples/**/.terraform.lock.hcl

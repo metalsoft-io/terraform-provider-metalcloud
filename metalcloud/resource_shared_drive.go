@@ -134,3 +134,41 @@ func resourceSharedDriveDelete(ctx context.Context, d *schema.ResourceData, meta
 
 	return diags
 }
+
+func flattenSharedDrive(d *schema.ResourceData, sharedDrive mc.SharedDrive) error {
+
+	d.Set("shared_drive_id", sharedDrive.SharedDriveID)
+	d.Set("shared_drive_label", sharedDrive.SharedDriveLabel)
+	d.Set("shared_drive_storage_type", sharedDrive.SharedDriveStorageType)
+	d.Set("shared_drive_size_mbytes", sharedDrive.SharedDriveSizeMbytes)
+	d.Set("shared_drive_attached_instance_arrays", sharedDrive.SharedDriveAttachedInstanceArrays)
+
+	return nil
+}
+
+func expandSharedDrive(d *schema.ResourceData) mc.SharedDrive {
+	var sd mc.SharedDrive
+
+	if v, ok := d.GetOk("shared_drive_id"); ok {
+		sd.SharedDriveID = v.(int)
+	}
+
+	if v, ok := d.GetOk("shared_drive_label"); ok {
+		sd.SharedDriveLabel = v.(string)
+	}
+
+	sd.SharedDriveHasGFS = d.Get("shared_drive_has_gfs").(bool)
+	sd.SharedDriveStorageType = d.Get("shared_drive_storage_type").(string)
+	sd.SharedDriveSizeMbytes = d.Get("shared_drive_size_mbytes").(int)
+
+	if v, ok := d.GetOk("shared_drive_attached_instance_arrays"); ok {
+		sd.SharedDriveAttachedInstanceArrays = []int{}
+
+		for _, k := range v.(*schema.Set).List() {
+
+			sd.SharedDriveAttachedInstanceArrays = append(sd.SharedDriveAttachedInstanceArrays, k.(int))
+		}
+	}
+
+	return sd
+}

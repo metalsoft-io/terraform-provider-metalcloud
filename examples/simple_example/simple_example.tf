@@ -1,17 +1,3 @@
-MetalSoft Terraform Provider
-==================
-This is a terraform plugin for controlling Metalcloud resources.
-
-Maintainers
------------
-
-This provider plugin is maintained by the MetalSoft Team.
-
-Using the Provider
-------------------
-A terraform `main.tf` template file, for an infrastructure with a single server would look something like this:
-
-```terraform
 /* Simple example of using metalcloud */
 terraform {
   required_providers {
@@ -47,7 +33,7 @@ resource "metalcloud_instance_array" "cluster" {
 
     infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
 
-    instance_array_label = "test-2"
+    instance_array_label = "test-3"
 
     instance_array_instance_count = 1 //deprecated, keep equal to 1
     instance_array_ram_gbytes = "16"
@@ -87,7 +73,7 @@ resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
   infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
 
   # Set this to false to actually trigger deploys.
-  prevent_deploy = true
+  prevent_deploy = false
 
   #these options will make terraform apply operation will wait for the deploy to finish (when prevent_deploy is false)
   #instead of exiting while the deploy is ongoing
@@ -108,71 +94,3 @@ resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
   ]
 
 }
-```
-
-To deploy this infrastructure export the following variables (or use -var):
-
-```bash
-export TF_VAR_api_key="<yourkey>"
-export TF_VAR_user_email="<your user email>"
-export TF_VAR_endpoint="<your endpoint>"
-export TF_VAR_datacenter="<your datacenter>"
-```
-
-The plan phase:
-```bash
-terraform plan
-```
-
-The apply phase:
-```bash
-terraform apply
-```
-
-To delete the infrastrucure:
-```bash
-terraform destroy
-```
-
-Building The Provider
----------------------
-
-To build the provider:
-
-```sh
-make
-```
-
-To install the provider so that `terraform init` works:
-```sh
-make install
-```
-
-Enter the provider directory and build the provider
-
-Testing the Provider
----------------------------
-
-In order to test the provider, you can simply run `make test`.
-
-```sh
-$ make test
-```
-
-In order to run the full suite of Acceptance tests, run `make testacc`.
-
-*Note:* Acceptance tests create real resources, and often cost money to run.
-
-```sh
-export METALCLOUD_DATACENTER="uk-reading"
-export METALCLOUD_API_KEY="<api-key>"
-export METALCLOUD_USER_EMAIL="user"
-export METALCLOUD_ENDPOINT="https://your-endpoint"
-
-make testacc
-```
-
-Troubleshooting
-```
-export METALCLOUD_LOGGING_ENABLED=true 
-```

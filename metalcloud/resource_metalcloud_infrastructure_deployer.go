@@ -45,20 +45,17 @@ func ResourceInfrastructureDeployer() *schema.Resource {
 			"hard_shutdown_after_timeout": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  nil,  //default is computed serverside
-				Computed: true, //default is computed serverside
+				Default:  true,
 			},
 			"attempt_soft_shutdown": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  nil,  //default is computed serverside
-				Computed: true, //default is computed serverside
+				Default:  true,
 			},
 			"soft_shutdown_timeout_seconds": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Default:  nil,  //default is computed serverside
-				Computed: true, //default is computed serverside
+				Default:  30,
 			},
 			"allow_data_loss": {
 				Type:     schema.TypeBool,

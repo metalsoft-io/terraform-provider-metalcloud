@@ -20,6 +20,7 @@ func DataSourceInfrastructureReference() *schema.Resource {
 				//this required as the serverside will convert to lowercase and generate a diff
 				//also helpful to prevent other
 				ValidateDiagFunc: validateLabel,
+				ForceNew:         true,
 			},
 			"datacenter_name": &schema.Schema{
 				Type:     schema.TypeString,

@@ -165,3 +165,33 @@ func resourceDriveArrayDelete(ctx context.Context, d *schema.ResourceData, meta 
 	return diags
 
 }
+
+func flattenDriveArray(d *schema.ResourceData, driveArray mc.DriveArray) error {
+
+	d.Set("drive_array_id", driveArray.DriveArrayID)
+	d.Set("drive_array_label", driveArray.DriveArrayLabel)
+	d.Set("drive_array_storage_type", driveArray.DriveArrayStorageType)
+	d.Set("drive_size_mbytes_default", driveArray.DriveSizeMBytesDefault)
+	d.Set("volume_template_id", driveArray.VolumeTemplateID)
+	d.Set("instance_array_id", driveArray.InstanceArrayID)
+
+	return nil
+}
+
+func expandDriveArray(d *schema.ResourceData) mc.DriveArray {
+	var da mc.DriveArray
+
+	if d.Get("drive_array_id") != nil {
+		da.DriveArrayID = d.Get("drive_array_id").(int)
+	}
+	da.DriveArrayLabel = d.Get("drive_array_label").(string)
+	da.DriveArrayStorageType = d.Get("drive_array_storage_type").(string)
+	da.DriveSizeMBytesDefault = d.Get("drive_size_mbytes_default").(int)
+	da.VolumeTemplateID = d.Get("volume_template_id").(int)
+
+	if d.Get("instance_array_id") != nil {
+		da.InstanceArrayID = d.Get("instance_array_id").(int)
+	}
+
+	return da
+}
