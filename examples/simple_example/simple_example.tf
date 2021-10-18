@@ -55,13 +55,21 @@ resource "metalcloud_instance_array" "cluster" {
       network_label = "data-network"
     }
 
+    instance_custom_variables {
+      instance_index = 1
+      custom_variables={
+        "test1":"test2"
+        "test3":"test4"
+      }
+    }
+
 }
 
 resource "metalcloud_shared_drive" "datastore" {
 
     infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
   
-    shared_drive_label = "test-da"
+    shared_drive_label = "test-da-1"
     shared_drive_size_mbytes = 40966
     shared_drive_storage_type = "iscsi_hdd"
 
