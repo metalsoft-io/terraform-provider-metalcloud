@@ -1458,7 +1458,6 @@ func sharedDriveResourceHash(v interface{}) int {
 	sd := v.(map[string]interface{})
 
 	shared_drive_label := sd["shared_drive_label"].(string)
-	shared_drive_storage_type := sd["shared_drive_storage_type"].(string)
 	shared_drive_size_mbytes := strconv.Itoa(sd["shared_drive_size_mbytes"].(int))
 	iaList := sd["shared_drive_attached_instance_arrays"].([]interface{})
 
@@ -1469,7 +1468,6 @@ func sharedDriveResourceHash(v interface{}) int {
 	}
 
 	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(shared_drive_label)))
-	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(shared_drive_storage_type)))
 	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(shared_drive_size_mbytes)))
 	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(strings.Join(shared_drive_attached_instance_arrays, "-"))))
 
@@ -1675,7 +1673,7 @@ func createOrUpdateSharedDrive(infrastructureID int, sd mc.SharedDrive, client *
 
 		copySharedDriveToOperation(sd, &retSD.SharedDriveOperation)
 
-		retSD, err = client.SharedDriveEdit(sd.SharedDriveID, *&retSD.SharedDriveOperation)
+		retSD, err = client.SharedDriveEdit(sd.SharedDriveID, retSD.SharedDriveOperation)
 		if err != nil {
 			return nil, err
 		}

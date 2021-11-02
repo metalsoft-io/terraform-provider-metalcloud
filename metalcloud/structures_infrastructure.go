@@ -73,7 +73,9 @@ func expandSharedDrive(d map[string]interface{}) mc.SharedDrive {
 	}
 	sd.SharedDriveLabel = d["shared_drive_label"].(string)
 	sd.SharedDriveHasGFS = d["shared_drive_has_gfs"].(bool)
-	sd.SharedDriveStorageType = d["shared_drive_storage_type"].(string)
+	if d["shared_drive_storage_type"] != "" {
+		sd.SharedDriveStorageType = d["shared_drive_storage_type"].(string)
+	}
 	sd.SharedDriveSizeMbytes = d["shared_drive_size_mbytes"].(int)
 
 	if d["shared_drive_attached_instance_arrays"] != nil {
@@ -269,7 +271,6 @@ func copySharedDriveToOperation(sd mc.SharedDrive, sdo *mc.SharedDriveOperation)
 	sdo.SharedDriveHasGFS = sd.SharedDriveHasGFS
 	sdo.SharedDriveLabel = sd.SharedDriveLabel
 	sdo.SharedDriveSizeMbytes = sd.SharedDriveSizeMbytes
-	sdo.SharedDriveStorageType = sd.SharedDriveStorageType
 	sdo.SharedDriveAttachedInstanceArrays = sd.SharedDriveAttachedInstanceArrays
 }
 
