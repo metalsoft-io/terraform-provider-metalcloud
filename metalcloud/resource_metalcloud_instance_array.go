@@ -1,14 +1,12 @@
 package metalcloud
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"hash/crc32"
+	"log"
 	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -116,22 +114,42 @@ func resourceInstanceArray() *schema.Resource {
 				Default:  nil,  //default is computed serverside
 				Computed: true, //default is computed serverside
 				Elem:     resourceFirewallRule(),
-				//Set:      firewallRuleResourceHash,
 			},
 
 			"interface": {
 				Type:     schema.TypeSet,
 				Optional: true,
+				Default:  nil,
+				Computed: true,
 				Elem:     resourceInstanceArrayInterface(),
-				Set:      interfaceResourceHash,
-				//TODO: set defaults so that we don't get the big list of serverside generated rules
 			},
-
 			"instances": {
 				Type:     schema.TypeString,
 				Computed: true,
 				Optional: false,
 				Default:  nil,
+			},
+			"network_profile": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Default:  nil,
+				Computed: true,
+				Elem:     resourceInstanceArrayNetworkProfile(),
+			},
+		},
+	}
+}
+
+func resourceInstanceArrayNetworkProfile() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"network_id": &schema.Schema{
+				Type:     schema.TypeInt,
+				Required: true,
+			},
+			"network_profile_id": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
 			},
 		},
 	}
@@ -216,25 +234,18 @@ func resourceInstanceArrayInterface() *schema.Resource {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
-			"network_label": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
 			"network_id": {
 				Type:     schema.TypeInt,
-				Optional: true,
-				Computed: true,
+				Required: true,
 			},
 		},
 	}
 }
 
 func resourceInstanceArrayCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-
 	client := meta.(*mc.Client)
 
 	infrastructure_id := d.Get("infrastructure_id").(int)
-
 	ia := expandInstanceArray(d)
 
 	iaC, err := client.InstanceArrayCreate(infrastructure_id, ia)
@@ -245,6 +256,27 @@ func resourceInstanceArrayCreate(ctx context.Context, d *schema.ResourceData, me
 	id := fmt.Sprintf("%d", iaC.InstanceArrayID)
 
 	d.SetId(id)
+
+	for _, intf := range ia.InstanceArrayInterfaces {
+		_, err := client.InstanceArrayInterfaceAttachNetwork(iaC.InstanceArrayID, intf.InstanceArrayInterfaceIndex, intf.NetworkID)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	if d.Get("network_profile") != nil {
+		profileSet := d.Get("network_profile").(*schema.Set)
+
+		for _, profileIntf := range profileSet.List() {
+			profileMap := profileIntf.(map[string]interface{})
+
+			_, err := client.NetworkProfileSet(id, profileMap["network_id"], profileMap["network_profile_id"])
+
+			if err != nil {
+				return diag.FromErr(err)
+			}
+		}
+	}
 
 	return resourceInstanceArrayRead(ctx, d, meta)
 }
@@ -273,6 +305,18 @@ func resourceInstanceArrayRead(ctx context.Context, d *schema.ResourceData, meta
 		return diag.FromErr(err)
 	}
 
+	networkProfiles, err := client.NetworkProfileListByInstanceArray(ia.InstanceArrayID)
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	profiles := flattenInstanceArrayNetworkProfile(*networkProfiles, d)
+
+	if len(profiles) > 0 {
+		d.Set("network_profile", schema.NewSet(schema.HashResource(resourceInstanceArrayNetworkProfile()), profiles))
+	}
+
 	retInstancesJSON, err := flattenInstances(retInstances)
 	if err != nil {
 		return diag.FromErr(err)
@@ -287,8 +331,6 @@ func resourceInstanceArrayRead(ctx context.Context, d *schema.ResourceData, meta
 		d.Set("instance_custom_variables", instancesCustomVariables)
 
 	}
-
-	//TODO: interfaces
 
 	return diags
 
@@ -337,6 +379,19 @@ func resourceInstanceArrayUpdate(ctx context.Context, d *schema.ResourceData, me
 
 	ia := expandInstanceArray(d)
 
+	if d.Get("network_profile") != nil {
+		profileSet := d.Get("network_profile").(*schema.Set)
+
+		for _, profileIntf := range profileSet.List() {
+			profileMap := profileIntf.(map[string]interface{})
+			_, err := client.NetworkProfileSet(id, profileMap["network_id"], profileMap["network_profile_id"])
+
+			if err != nil {
+				return diag.FromErr(err)
+			}
+		}
+	}
+
 	//update interface operations
 	for _, intf := range ia.InstanceArrayInterfaces {
 		for _, opIntf := range retIA.InstanceArrayOperation.InstanceArrayInterfaces {
@@ -352,7 +407,8 @@ func resourceInstanceArrayUpdate(ctx context.Context, d *schema.ResourceData, me
 	bSwapExistingInstancesHardware := false
 	bkeepDetachingDrives := false
 
-	_, err = client.InstanceArrayEdit(id, *retIA.InstanceArrayOperation, &bSwapExistingInstancesHardware, &bkeepDetachingDrives, nil, nil)
+	editedIA, err := client.InstanceArrayEdit(id, *retIA.InstanceArrayOperation, &bSwapExistingInstancesHardware, &bkeepDetachingDrives, nil, nil)
+
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -365,8 +421,43 @@ func resourceInstanceArrayUpdate(ctx context.Context, d *schema.ResourceData, me
 		return diag
 	}
 
-	//TODO: handle interfaces
+	//update interfaces
+	if d.HasChange("interface") {
+		diag := updateInstanceArrayInterfaces(ia.InstanceArrayInterfaces, editedIA.InstanceArrayInterfaces, client)
+
+		if diag.HasError() {
+			return diag
+		}
+	}
+
 	return resourceInstanceArrayRead(ctx, d, meta)
+}
+
+func updateInstanceArrayInterfaces(configuredInterfaces []mc.InstanceArrayInterface, intfList []mc.InstanceArrayInterface, client *mc.Client) diag.Diagnostics {
+	for _, intf := range configuredInterfaces {
+		_, err := client.InstanceArrayInterfaceAttachNetwork(intf.InstanceArrayID, intf.InstanceArrayInterfaceIndex, intf.NetworkID)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	for _, existingIntf := range intfList {
+		found := false
+
+		for _, intf := range configuredInterfaces {
+			if existingIntf.InstanceArrayInterfaceIndex == intf.InstanceArrayInterfaceIndex {
+				found = true
+			}
+		}
+		if found == false && existingIntf.NetworkID != 0 {
+			_, err := client.InstanceArrayInterfaceDetach(existingIntf.InstanceArrayID, existingIntf.InstanceArrayInterfaceIndex)
+			if err != nil {
+				return diag.FromErr(err)
+			}
+		}
+	}
+
+	return nil
 }
 
 func resourceInstanceArrayDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -382,65 +473,6 @@ func resourceInstanceArrayDelete(ctx context.Context, d *schema.ResourceData, me
 	err = client.InstanceArrayDelete(id)
 	d.SetId("")
 	return diags
-}
-
-func interfaceToString(v interface{}) string {
-	var buf bytes.Buffer
-
-	i := v.(map[string]interface{})
-
-	// instance_array_interface_label := i["instance_array_interface_label"].(string)
-	// instance_array_interface_service_status := i["instance_array_interface_service_status"].(string)
-	instance_array_interface_index := strconv.Itoa(i["interface_index"].(int))
-	network_id := strconv.Itoa(i["network_id"].(int))
-	network_label := i["network_label"].(string)
-
-	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(network_label)))
-	// buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(instance_array_interface_service_status)))
-	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(instance_array_interface_index)))
-	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(network_id)))
-
-	return buf.String()
-}
-
-func interfaceResourceHash(v interface{}) int {
-	return hash(interfaceToString(v))
-}
-
-func firewallRuleResourceHash(v interface{}) int {
-	var buf bytes.Buffer
-	fr := v.(map[string]interface{})
-
-	firewall_rule_description := fr["firewall_rule_description"].(string)
-	firewall_rule_source_ip_address_range_start := fr["firewall_rule_source_ip_address_range_start"].(string)
-	firewall_rule_source_ip_address_range_end := fr["firewall_rule_source_ip_address_range_end"].(string)
-	firewall_rule_destination_ip_address_range_start := fr["firewall_rule_destination_ip_address_range_start"].(string)
-	firewall_rule_destination_ip_address_range_end := fr["firewall_rule_destination_ip_address_range_end"].(string)
-	firewall_rule_protocol := fr["firewall_rule_protocol"].(string)
-	firewall_rule_ip_address_type := fr["firewall_rule_ip_address_type"].(string)
-	firewall_rule_port_range_start := strconv.Itoa(fr["firewall_rule_port_range_start"].(int))
-	firewall_rule_port_range_end := strconv.Itoa(fr["firewall_rule_port_range_end"].(int))
-	firewall_rule_enabled := strconv.FormatBool(fr["firewall_rule_enabled"].(bool))
-
-	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(firewall_rule_description)))
-	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(firewall_rule_source_ip_address_range_start)))
-	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(firewall_rule_source_ip_address_range_end)))
-	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(firewall_rule_destination_ip_address_range_start)))
-	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(firewall_rule_destination_ip_address_range_end)))
-	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(firewall_rule_protocol)))
-	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(firewall_rule_ip_address_type)))
-	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(firewall_rule_port_range_start)))
-	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(firewall_rule_port_range_end)))
-	buf.WriteString(fmt.Sprintf("%s-", strings.ToLower(firewall_rule_enabled)))
-
-	return hash(buf.String())
-}
-
-func hash(v string) int {
-	hash := crc32.ChecksumIEEE([]byte(v))
-
-	return int(hash)
-
 }
 
 func flattenInstanceArray(d *schema.ResourceData, instanceArray mc.InstanceArray) error {
@@ -482,6 +514,29 @@ func flattenInstanceArray(d *schema.ResourceData, instanceArray mc.InstanceArray
 		d.Set("firewall_rule", schema.NewSet(schema.HashResource(resourceFirewallRule()), fwRules))
 	}
 
+	/* INTERFACES */
+	interfaces := []interface{}{}
+
+	//iterate over interfaces
+	if intfList, ok := d.GetOkExists("interface"); ok {
+		for _, iIntf := range intfList.(*schema.Set).List() {
+			iaInterface := iIntf.(map[string]interface{})
+			interfaceIndex := iaInterface["interface_index"].(int)
+
+			//locate interface with index in returned data
+			for _, intf := range instanceArray.InstanceArrayInterfaces {
+				//if we found it, locate the network it's connected to add it to the list
+				if intf.InstanceArrayInterfaceIndex == interfaceIndex && intf.NetworkID != 0 {
+					interfaces = append(interfaces, flattenInstanceArrayInterface(intf))
+				}
+			}
+		}
+	}
+	if len(interfaces) > 0 {
+		log.Printf("Appending interfaces to state %+v", interfaces)
+		d.Set("interface", schema.NewSet(schema.HashResource(resourceInstanceArrayInterface()), interfaces))
+	}
+
 	return nil
 }
 
@@ -517,6 +572,19 @@ func expandInstanceArray(d *schema.ResourceData) mc.InstanceArray {
 		}
 
 		ia.InstanceArrayFirewallRules = fwRules
+	}
+
+	if d.Get("interface") != nil {
+		interfaceSet := d.Get("interface").(*schema.Set)
+		interfaces := []mc.InstanceArrayInterface{}
+
+		for _, intfList := range interfaceSet.List() {
+			intfMap := intfList.(map[string]interface{})
+			intfMap["instance_array_id"] = ia.InstanceArrayID
+			interfaces = append(interfaces, expandInstanceArrayInterface(intfMap))
+		}
+
+		ia.InstanceArrayInterfaces = interfaces
 	}
 
 	if d.Get("instance_array_custom_variables") != nil {
@@ -569,7 +637,6 @@ func expandFirewallRule(d map[string]interface{}) mc.FirewallRule {
 func flattenInstanceArrayInterface(i mc.InstanceArrayInterface) map[string]interface{} {
 	var d = make(map[string]interface{})
 
-	d["instance_array_interface_id"] = i.InstanceArrayInterfaceID
 	d["interface_index"] = i.InstanceArrayInterfaceIndex
 	d["network_id"] = i.NetworkID
 
@@ -580,14 +647,28 @@ func expandInstanceArrayInterface(d map[string]interface{}) mc.InstanceArrayInte
 
 	var i mc.InstanceArrayInterface
 
-	if d["instance_array_interface_id"] != nil {
-		i.InstanceArrayInterfaceID = d["instance_array_interface_id"].(int)
-	}
-
 	i.InstanceArrayInterfaceIndex = d["interface_index"].(int)
 	i.NetworkID = d["network_id"].(int)
+	i.InstanceArrayID = d["instance_array_id"].(int)
 
 	return i
+}
+
+func flattenInstanceArrayNetworkProfile(networkProfiles map[int]int, d *schema.ResourceData) []interface{} {
+	profiles := []interface{}{}
+
+	if profileList, ok := d.GetOkExists("network_profile"); ok {
+		for _, pIntf := range profileList.(*schema.Set).List() {
+			profile := pIntf.(map[string]interface{})
+			network_id := profile["network_id"].(int)
+
+			if _, ok := networkProfiles[network_id]; ok {
+				profiles = append(profiles, profile)
+			}
+		}
+	}
+
+	return profiles
 }
 
 func flattenInstancesCustomVariables(retInstances *map[string]mc.Instance) []interface{} {
