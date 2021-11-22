@@ -76,6 +76,7 @@ resource "metalcloud_shared_drive" "datastore" {
     shared_drive_attached_instance_arrays = [metalcloud_instance_array.cluster.instance_array_id]  //this will create a dependency on the instance array
 }
 
+# Use this resource to effect deploys of the above resources.
 resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
 
   infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
@@ -83,19 +84,19 @@ resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
   # Set this to false to actually trigger deploys.
   prevent_deploy = false
 
-  #these options will make terraform apply operation will wait for the deploy to finish (when prevent_deploy is false)
-  #instead of exiting while the deploy is ongoing
+  # These options will make terraform apply operation will wait for the deploy to finish (when prevent_deploy is false)
+  # instead of exiting while the deploy is ongoing
 
   await_deploy_finished = true
   await_delete_finished = true
 
-  #this option disables a safety check that metalsoft performs to prevent accidental data loss
-  #it is required when testing delete operations
+  # This option disables a safety check that metalsoft performs to prevent accidental data loss
+  # It is required when testing delete operations
 
   allow_data_loss = true
 
-  //This is important to ensure that deploys happen after everything else. If you need to add or remove resources dinamically
-  //use either count or for_each in the resources or move everything that is dynamic into a module and make this depend on the module
+  # IMPORTANT. This is important to ensure that deploys happen after everything else. If you need to add or remove resources dynamically
+  # use either count or for_each in the resources or move everything that is dynamic into a module and make this depend on the module
   depends_on = [
     metalcloud_instance_array.cluster,
     metalcloud_shared_drive.datastore
