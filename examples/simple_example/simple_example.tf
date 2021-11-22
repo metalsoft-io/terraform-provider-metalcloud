@@ -14,9 +14,9 @@ provider "metalcloud" {
 
 }
 
-//this is an infrastructure reference. It is needed to avoid a cyclic dependency where the 
-//infrastructure depends on the resoruces and vice-versa. This will create the infrastructure if it does not exist
-//if the create_if_not_exists flag is set to true
+# This is an infrastructure reference. It is needed to avoid a cyclic dependency where the 
+# infrastructure depends on the resources and vice-versa. This will create the infrastructure if it does not exist
+# if the create_if_not_exists flag is set to true
 data "metalcloud_infrastructure" "infra" {
    
     infrastructure_label = "test-infra"
