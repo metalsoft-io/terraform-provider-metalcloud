@@ -44,7 +44,7 @@ func resourceNetwork() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"network_lan_autoallocate_ips": &schema.Schema{
+			"network_lan_auto_allocate_ips": &schema.Schema{
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
