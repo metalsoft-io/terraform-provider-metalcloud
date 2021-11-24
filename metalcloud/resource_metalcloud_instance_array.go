@@ -246,6 +246,11 @@ func resourceInstanceArrayCreate(ctx context.Context, d *schema.ResourceData, me
 	client := meta.(*mc.Client)
 
 	infrastructure_id := d.Get("infrastructure_id").(int)
+	_, err := client.InfrastructureGet(infrastructure_id)
+
+	if err != nil {
+		return diag.Errorf("Infrastructure with id %+v not found.", infrastructure_id)
+	}
 	ia := expandInstanceArray(d)
 
 	iaC, err := client.InstanceArrayCreate(infrastructure_id, ia)
@@ -270,7 +275,7 @@ func resourceInstanceArrayCreate(ctx context.Context, d *schema.ResourceData, me
 		for _, profileIntf := range profileSet.List() {
 			profileMap := profileIntf.(map[string]interface{})
 
-			_, err := client.NetworkProfileSet(id, profileMap["network_id"], profileMap["network_profile_id"])
+			_, err := client.NetworkProfileSet(iaC.InstanceArrayID, profileMap["network_id"].(int), profileMap["network_profile_id"].(int))
 
 			if err != nil {
 				return diag.FromErr(err)
@@ -384,7 +389,7 @@ func resourceInstanceArrayUpdate(ctx context.Context, d *schema.ResourceData, me
 
 		for _, profileIntf := range profileSet.List() {
 			profileMap := profileIntf.(map[string]interface{})
-			_, err := client.NetworkProfileSet(id, profileMap["network_id"], profileMap["network_profile_id"])
+			_, err := client.NetworkProfileSet(id, profileMap["network_id"].(int), profileMap["network_profile_id"].(int))
 
 			if err != nil {
 				return diag.FromErr(err)
@@ -490,6 +495,7 @@ func flattenInstanceArray(d *schema.ResourceData, instanceArray mc.InstanceArray
 	d.Set("volume_template_id", instanceArray.VolumeTemplateID)
 	d.Set("instance_array_firewall_managed", instanceArray.InstanceArrayFirewallManaged)
 	d.Set("instance_array_additional_wan_ipv4_json", instanceArray.InstanceArrayAdditionalWanIPv4JSON)
+	d.Set("infrastructure_id", instanceArray.InfrastructureID)
 
 	/* INSTANCE ARRAY CUSTOM VARIABLES */
 	switch instanceArray.InstanceArrayCustomVariables.(type) {

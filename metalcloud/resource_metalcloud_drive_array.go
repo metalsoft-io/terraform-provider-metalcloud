@@ -30,7 +30,9 @@ func resourceDriveArray() *schema.Resource {
 			},
 			"drive_array_label": &schema.Schema{
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				Default:  nil,
+				Computed: true,
 				//this required as the serverside will convert to lowercase and generate a diff
 				//also helpful to prevent other
 				ValidateDiagFunc: validateLabel,
@@ -43,7 +45,9 @@ func resourceDriveArray() *schema.Resource {
 			},
 			"drive_array_storage_type": &schema.Schema{
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				Default:  nil,
+				Computed: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if new == "auto" {
 						return true
@@ -72,9 +76,19 @@ func resourceDriveArrayCreate(ctx context.Context, d *schema.ResourceData, meta 
 
 	infrastructure_id := d.Get("infrastructure_id").(int)
 
+	_, err := client.InfrastructureGet(infrastructure_id)
+
+	if err != nil {
+		return diag.Errorf("Infrastructure with id %+v not found.", infrastructure_id)
+	}
+
 	da := expandDriveArray(d)
 
 	createdObj, err := client.DriveArrayCreate(infrastructure_id, da)
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	if da.InstanceArrayID == 0 {
 		diags = append(diags, diag.Diagnostic{
@@ -82,10 +96,6 @@ func resourceDriveArrayCreate(ctx context.Context, d *schema.ResourceData, meta 
 			Summary:  "Unattached drive",
 			Detail:   fmt.Sprintf("Drive array %s is not attached to any instance array. It will not be usable!", createdObj.DriveArrayLabel),
 		})
-	}
-
-	if err != nil {
-		return diag.FromErr(err)
 	}
 
 	d.SetId(fmt.Sprintf("%d", createdObj.DriveArrayID))
@@ -174,6 +184,7 @@ func flattenDriveArray(d *schema.ResourceData, driveArray mc.DriveArray) error {
 	d.Set("drive_size_mbytes_default", driveArray.DriveSizeMBytesDefault)
 	d.Set("volume_template_id", driveArray.VolumeTemplateID)
 	d.Set("instance_array_id", driveArray.InstanceArrayID)
+	d.Set("infrastructure_id", driveArray.InfrastructureID)
 
 	return nil
 }

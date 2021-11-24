@@ -127,7 +127,7 @@ func resourceInfrastructureDeployerCreate(ctx context.Context, d *schema.Resourc
 	d.SetId(fmt.Sprintf("%d", iRet.InfrastructureID))
 
 	//we will continue to configure the properties on the infrastructure such as custom variables with an update operation
-	return resourceInfrastructureDeployerRead(ctx, d, meta)
+	return resourceInfrastructureDeployerUpdate(ctx, d, meta)
 }
 
 //resourceInfrastructureDeployerRead reads the serverside status of elements
@@ -167,11 +167,14 @@ func resourceInfrastructureDeployerRead(ctx context.Context, d *schema.ResourceD
 //resourceInfrastructureDeployerUpdate applies changes on the serverside
 //attempts to merge serverside changes into the current state
 func resourceInfrastructureDeployerUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	client := meta.(*mc.Client)
 
 	infrastructure_id := d.Get("infrastructure_id").(int)
 
 	needsDeploy := d.Get("edited").(bool)
 	preventDeploy := d.Get("prevent_deploy").(bool)
+
+	updateInfrastructureCustomVariables(d, infrastructure_id, client)
 
 	//This is where the magic happens.
 	if needsDeploy && !preventDeploy {
@@ -196,6 +199,32 @@ func resourceInfrastructureDeployerUpdate(ctx context.Context, d *schema.Resourc
 	return nil
 }
 
+func updateInfrastructureCustomVariables(d *schema.ResourceData, infrastructure_id int, client *mc.Client) diag.Diagnostics {
+	if d.HasChange("infrastructure_custom_variables") || d.Get("id") == nil {
+		cvIntf := d.Get("infrastructure_custom_variables")
+		infrastructure, err := client.InfrastructureGet(infrastructure_id)
+		if err != nil {
+			diag.FromErr(err)
+		}
+
+		operation := infrastructure.InfrastructureOperation
+
+		cv := make(map[string]string)
+
+		for k, v := range cvIntf.(map[string]interface{}) {
+			cv[k] = v.(string)
+		}
+
+		operation.InfrastructureCustomVariables = cv
+
+		if infrastructure, err = client.InfrastructureEdit(infrastructure_id, operation); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	return nil
+}
+
 func resourceInfrastructureDeployerDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
 	client := meta.(*mc.Client)
@@ -205,7 +234,7 @@ func resourceInfrastructureDeployerDelete(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
-	if d.Get("keep_infrastructure_on_resource_destroy").(bool) {
+	if !d.Get("keep_infrastructure_on_resource_destroy").(bool) {
 
 		if err := client.InfrastructureDelete(infrastructureID); err != nil {
 			return diag.FromErr(err)
@@ -217,6 +246,7 @@ func resourceInfrastructureDeployerDelete(ctx context.Context, d *schema.Resourc
 			}
 			if d.Get("await_delete_finished").(bool) {
 				dg := waitForInfrastructureFinished(infrastructureID, ctx, d, meta, d.Timeout(schema.TimeoutUpdate), DEPLOY_STATUS_DELETED)
+
 				if dg.HasError() {
 					return dg
 				}
@@ -248,6 +278,7 @@ func waitForInfrastructureFinished(infrastructureID int, ctx context.Context, d 
 				if targetStatus == DEPLOY_STATUS_DELETED {
 					return 0, targetStatus, nil
 				}
+
 				return 0, "", err
 			}
 			return resp, resp.InfrastructureOperation.InfrastructureDeployStatus, nil
@@ -262,6 +293,9 @@ func waitForInfrastructureFinished(infrastructureID int, ctx context.Context, d 
 		return diag.Errorf("Error waiting for example instance (%s) to be created: %s", d.Id(), err)
 	}
 
+	if targetStatus == DEPLOY_STATUS_DELETED {
+		return nil
+	}
 	return resourceInfrastructureDeployerRead(ctx, d, meta)
 
 }

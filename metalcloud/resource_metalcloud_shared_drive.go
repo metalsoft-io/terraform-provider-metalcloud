@@ -26,7 +26,9 @@ func resourceSharedDrive() *schema.Resource {
 			},
 			"shared_drive_label": &schema.Schema{
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				Default:  nil,
+				Computed: true,
 				//this required as the serverside will convert to lowercase and generate a diff
 				//also helpful to prevent other
 				ValidateDiagFunc: validateLabel,
@@ -43,6 +45,8 @@ func resourceSharedDrive() *schema.Resource {
 			"shared_drive_storage_type": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+				Default:  nil,
+				Computed: true,
 			},
 			"shared_drive_has_gfs": &schema.Schema{
 				Type:     schema.TypeBool,
@@ -68,6 +72,12 @@ func resourceSharedDriveCreate(ctx context.Context, d *schema.ResourceData, meta
 	sda := expandSharedDrive(d)
 
 	infrastructure_id := d.Get("infrastructure_id").(int)
+
+	_, err := client.InfrastructureGet(infrastructure_id)
+
+	if err != nil {
+		return diag.Errorf("Infrastructure with id %+v not found.", infrastructure_id)
+	}
 
 	retSDA, err := client.SharedDriveCreate(infrastructure_id, sda)
 	if err != nil {
@@ -142,6 +152,7 @@ func flattenSharedDrive(d *schema.ResourceData, sharedDrive mc.SharedDrive) erro
 	d.Set("shared_drive_storage_type", sharedDrive.SharedDriveStorageType)
 	d.Set("shared_drive_size_mbytes", sharedDrive.SharedDriveSizeMbytes)
 	d.Set("shared_drive_attached_instance_arrays", sharedDrive.SharedDriveAttachedInstanceArrays)
+	d.Set("infrastructure_id", sharedDrive.InfrastructureID)
 
 	return nil
 }

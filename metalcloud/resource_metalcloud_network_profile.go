@@ -162,7 +162,6 @@ func flattenNetworkProfile(d *schema.ResourceData, networkProfile mc.NetworkProf
 	d.Set("datacenter_name", networkProfile.DatacenterName)
 
 	/* VLANs */
-	// vlans := []interface{}{}
 	vlans := schema.NewSet(schema.HashResource(resourceNetworkProfileVLAN()), []interface{}{})
 
 	for _, vlan := range networkProfile.NetworkProfileVLANs {
@@ -170,11 +169,8 @@ func flattenNetworkProfile(d *schema.ResourceData, networkProfile mc.NetworkProf
 		v := flattenNetworkProfileVLAN(vlan)
 
 		vlans.Add(v)
-		// vlans = append(vlans, flattenNetworkProfileVLAN(vlan))
 	}
-	// if len(vlans) > 0 {
 	d.Set("network_profile_vlan", vlans)
-	// }
 
 	return nil
 }
@@ -208,7 +204,6 @@ func expandNetworkProfile(d *schema.ResourceData) mc.NetworkProfile {
 
 	if d.Get("network_profile_vlan") != nil {
 		vlanSet := d.Get("network_profile_vlan").(*schema.Set)
-		//TODO: if empty send empty array?
 		vlans := []mc.NetworkProfileVLAN{}
 
 		for _, vlanMap := range vlanSet.List() {
@@ -236,17 +231,6 @@ func expandNetworkProfileVLAN(d map[string]interface{}) mc.NetworkProfileVLAN {
 	}
 
 	networkProfileVLAN.ExternalConnectionIDs = connections
-
-	// networkProfileVLAN.ExternalConnectionIDs = []int{}
-
-	// for _, id := range d["external_connection_ids"].([]int) {
-
-	// 	networkProfileVLAN.ExternalConnectionIDs = append(networkProfileVLAN.ExternalConnectionIDs, id)
-	// }
-	// for _, id := range d["external_connection_ids"].(*schema.Set).List() {
-
-	// 	networkProfileVLAN.ExternalConnectionIDs = append(networkProfileVLAN.ExternalConnectionIDs, id.(int))
-	// }
 
 	return networkProfileVLAN
 }

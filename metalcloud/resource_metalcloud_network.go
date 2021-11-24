@@ -59,6 +59,12 @@ func resourceNetworkCreate(ctx context.Context, d *schema.ResourceData, meta int
 
 	infrastructure_id := d.Get("infrastructure_id").(int)
 
+	_, err := client.InfrastructureGet(infrastructure_id)
+
+	if err != nil {
+		return diag.Errorf("Infrastructure with id %+v not found.", infrastructure_id)
+	}
+
 	n := expandNetwork(d)
 
 	if n.NetworkType == NETWORK_TYPE_SAN || n.NetworkType == NETWORK_TYPE_WAN {
@@ -171,6 +177,7 @@ func flattenNetwork(d *schema.ResourceData, network mc.Network) map[string]inter
 	d.Set("network_label", network.NetworkLabel)
 	d.Set("network_type", network.NetworkType)
 	d.Set("network_lan_autoallocate_ips", network.NetworkLANAutoAllocateIPs)
+	d.Set("infrastructure_id", network.InfrastructureID)
 
 	return nil
 }
