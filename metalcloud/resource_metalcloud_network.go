@@ -24,6 +24,13 @@ func resourceNetwork() *schema.Resource {
 			"infrastructure_id": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					v := val.(int)
+					if v == 0 {
+						errs = append(errs, fmt.Errorf("%q is required. Provided value: %d", key, v))
+					}
+					return
+				},
 			},
 			"network_id": &schema.Schema{
 				Type:     schema.TypeInt,
@@ -32,9 +39,16 @@ func resourceNetwork() *schema.Resource {
 			},
 			"network_label": &schema.Schema{
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				Default:  nil,
+				Computed: true,
+				//this is required because on the serverside the labels are converted to lowercase automatically
 				DiffSuppressFunc: func(_, old, new string, d *schema.ResourceData) bool {
 					if strings.ToLower(old) == strings.ToLower(new) {
+						return true
+					}
+
+					if new == "" {
 						return true
 					}
 					return false
@@ -44,7 +58,7 @@ func resourceNetwork() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"network_lan_auto_allocate_ips": &schema.Schema{
+			"network_lan_autoallocate_ips": &schema.Schema{
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
@@ -80,10 +94,10 @@ func resourceNetworkCreate(ctx context.Context, d *schema.ResourceData, meta int
 				d.SetId(id)
 
 				if network.NetworkLabel != n.NetworkLabel {
-					diag := resourceNetworkUpdate(ctx, d, meta)
+					dg := resourceNetworkUpdate(ctx, d, meta)
 
-					if diag.HasError() {
-						return diag
+					if dg.HasError() {
+						return dg
 					}
 				}
 			}
@@ -167,7 +181,9 @@ func resourceNetworkDelete(ctx context.Context, d *schema.ResourceData, meta int
 
 func copyNetworkToOperation(n mc.Network, no *mc.NetworkOperation) {
 	no.NetworkID = n.NetworkID
-	no.NetworkLabel = n.NetworkLabel
+	if n.NetworkLabel != "" {
+		no.NetworkLabel = n.NetworkLabel
+	}
 	no.NetworkLANAutoAllocateIPs = n.NetworkLANAutoAllocateIPs
 }
 

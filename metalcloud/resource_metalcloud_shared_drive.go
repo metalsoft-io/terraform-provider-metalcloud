@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -23,6 +24,13 @@ func resourceSharedDrive() *schema.Resource {
 			"infrastructure_id": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					v := val.(int)
+					if v == 0 {
+						errs = append(errs, fmt.Errorf("%q is required. Provided value: %d", key, v))
+					}
+					return
+				},
 			},
 			"shared_drive_label": &schema.Schema{
 				Type:     schema.TypeString,
@@ -31,6 +39,16 @@ func resourceSharedDrive() *schema.Resource {
 				Computed: true,
 				//this required as the serverside will convert to lowercase and generate a diff
 				//also helpful to prevent other
+				DiffSuppressFunc: func(_, old, new string, d *schema.ResourceData) bool {
+					if strings.ToLower(old) == strings.ToLower(new) {
+						return true
+					}
+
+					if new == "" {
+						return true
+					}
+					return false
+				},
 				ValidateDiagFunc: validateLabel,
 			},
 			"shared_drive_id": &schema.Schema{
@@ -40,7 +58,16 @@ func resourceSharedDrive() *schema.Resource {
 			},
 			"shared_drive_size_mbytes": &schema.Schema{
 				Type:     schema.TypeInt,
-				Required: true,
+				Optional: true,
+				Default:  2048,
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					v := val.(int)
+
+					if v < 2048 || v > 104857600 {
+						errs = append(errs, fmt.Errorf("%s should be between 2048 and 104857600 MB.", key))
+					}
+					return
+				},
 			},
 			"shared_drive_storage_type": &schema.Schema{
 				Type:     schema.TypeString,
@@ -182,4 +209,13 @@ func expandSharedDrive(d *schema.ResourceData) mc.SharedDrive {
 	}
 
 	return sd
+}
+
+func copySharedDriveToOperation(sd mc.SharedDrive, sdo *mc.SharedDriveOperation) {
+	sdo.SharedDriveID = sd.SharedDriveID
+	sdo.SharedDriveHasGFS = sd.SharedDriveHasGFS
+	sdo.SharedDriveLabel = sd.SharedDriveLabel
+	sdo.SharedDriveSizeMbytes = sd.SharedDriveSizeMbytes
+	sdo.SharedDriveStorageType = sd.SharedDriveStorageType
+	sdo.SharedDriveAttachedInstanceArrays = sd.SharedDriveAttachedInstanceArrays
 }

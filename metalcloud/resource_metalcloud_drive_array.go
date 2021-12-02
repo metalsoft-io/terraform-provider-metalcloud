@@ -3,7 +3,9 @@ package metalcloud
 import (
 	"context"
 	"fmt"
+	"log"
 	"strconv"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -23,6 +25,13 @@ func resourceDriveArray() *schema.Resource {
 			"infrastructure_id": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					v := val.(int)
+					if v == 0 {
+						errs = append(errs, fmt.Errorf("%q is required. Provided value: %d", key, v))
+					}
+					return
+				},
 			},
 			"drive_array_id": &schema.Schema{
 				Type:     schema.TypeInt,
@@ -35,6 +44,16 @@ func resourceDriveArray() *schema.Resource {
 				Computed: true,
 				//this required as the serverside will convert to lowercase and generate a diff
 				//also helpful to prevent other
+				DiffSuppressFunc: func(_, old, new string, d *schema.ResourceData) bool {
+					if strings.ToLower(old) == strings.ToLower(new) {
+						return true
+					}
+
+					if new == "" {
+						return true
+					}
+					return false
+				},
 				ValidateDiagFunc: validateLabel,
 			},
 			"volume_template_id": &schema.Schema{
@@ -59,6 +78,14 @@ func resourceDriveArray() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  40960,
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					v := val.(int)
+
+					if v < 1024 || v > 2046976 {
+						errs = append(errs, fmt.Errorf("%s should be between 1024 and 2046976 MB.", key))
+					}
+					return
+				},
 			},
 			"instance_array_id": &schema.Schema{
 				Type:     schema.TypeInt,
@@ -205,4 +232,17 @@ func expandDriveArray(d *schema.ResourceData) mc.DriveArray {
 	}
 
 	return da
+}
+
+func copyDriveArrayToOperation(da mc.DriveArray, dao *mc.DriveArrayOperation) {
+	dao.DriveArrayID = da.DriveArrayID
+	dao.DriveArrayLabel = da.DriveArrayLabel
+	dao.VolumeTemplateID = da.VolumeTemplateID
+	dao.DriveArrayStorageType = da.DriveArrayStorageType
+	dao.DriveSizeMBytesDefault = da.DriveSizeMBytesDefault
+	if da.InstanceArrayID == 0 {
+		dao.InstanceArrayID = nil
+	} else {
+		dao.InstanceArrayID = da.InstanceArrayID
+	}
 }

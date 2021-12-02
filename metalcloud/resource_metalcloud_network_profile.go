@@ -37,6 +37,10 @@ func resourceNetworkProfile() *schema.Resource {
 					if strings.ToLower(old) == strings.ToLower(new) {
 						return true
 					}
+
+					if new == "" {
+						return true
+					}
 					return false
 				},
 			},

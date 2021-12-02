@@ -28,8 +28,14 @@ func ResourceInfrastructureDeployer() *schema.Resource {
 			"infrastructure_id": {
 				Type:     schema.TypeInt,
 				Required: true,
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					v := val.(int)
+					if v == 0 {
+						errs = append(errs, fmt.Errorf("%q is required. Provided value: %d", key, v))
+					}
+					return
+				},
 			},
-
 			"infrastructure_custom_variables": {
 				Type:     schema.TypeMap,
 				Elem:     schema.TypeString,

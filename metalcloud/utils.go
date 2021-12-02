@@ -12,12 +12,11 @@ func validateLabel(v interface{}, path cty.Path) diag.Diagnostics {
 
 	value := v.(string)
 	var diags diag.Diagnostics
-	if !regexp.MustCompile(`^[a-z0-9.-]{0,61}$`).MatchString(value) {
-		diags = append(diags, diag.Errorf("Label %s is not a valid label: Labels should use only lowercase letters, numbers, '-', '.' and should be at most 6 characters", value)...)
+	if ok, _ := regexp.MatchString("^[a-zA-Z]{1,1}[a-zA-Z0-9-]{0,61}[a-zA-Z0-9]{1,1}$", value); !ok {
+		diags = append(diags, diag.Errorf("Label \"%s\" is not valid: Labels should use only lowercase letters, numbers, '-', '.' and should be at most 63 characters", value)...)
 	}
 
 	return diags
-
 }
 
 func validateMaxOne(v interface{}, path cty.Path) diag.Diagnostics {

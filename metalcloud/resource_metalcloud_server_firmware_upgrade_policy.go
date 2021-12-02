@@ -132,28 +132,28 @@ func resourceServerFirmwareUpgradePolicyUpdate(ctx context.Context, d *schema.Re
 	firmwarePolicy := expandFirmwarePolicy(d)
 
 	if d.HasChange("server_firmware_upgrade_policy_rules") {
-		diag := updateServerFirmwarePolicyRules(
+		dg := updateServerFirmwarePolicyRules(
 			firmwarePolicy.ServerFirmwareUpgradePolicyRules,
 			retFirmwarePolicy.ServerFirmwareUpgradePolicyRules,
 			retFirmwarePolicy.ServerFirmwareUpgradePolicyID,
 			client,
 		)
 
-		if diag.HasError() {
-			return diag
+		if dg.HasError() {
+			return dg
 		}
 	}
 
 	if d.HasChange("instance_array_list") {
-		diag := updateServerFirmwarePolicyInstanceArrays(
+		dg := updateServerFirmwarePolicyInstanceArrays(
 			firmwarePolicy.InstanceArrayIDList,
 			retFirmwarePolicy.InstanceArrayIDList,
 			retFirmwarePolicy.ServerFirmwareUpgradePolicyID,
 			client,
 		)
 
-		if diag.HasError() {
-			return diag
+		if dg.HasError() {
+			return dg
 		}
 	}
 

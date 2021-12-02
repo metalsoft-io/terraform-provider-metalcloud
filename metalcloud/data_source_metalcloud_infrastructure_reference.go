@@ -80,6 +80,8 @@ func dataSourceInfrastructureReferenceRead(ctx context.Context, d *schema.Resour
 		}
 
 		iRet = *obj
+	} else {
+		return diag.Errorf("Infrastructure \"%s\" does not exist and you specified not to create it.", infrastructure_label)
 	}
 
 	d.SetId(fmt.Sprintf("%d", iRet.InfrastructureID))

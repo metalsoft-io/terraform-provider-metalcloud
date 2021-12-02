@@ -7,6 +7,7 @@ import (
 	"log"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -26,6 +27,13 @@ func resourceInstanceArray() *schema.Resource {
 			"infrastructure_id": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					v := val.(int)
+					if v == 0 {
+						errs = append(errs, fmt.Errorf("%q is required. Provided value: %d", key, v))
+					}
+					return
+				},
 			},
 			"instance_array_id": &schema.Schema{
 				Type:     schema.TypeInt,
@@ -33,9 +41,20 @@ func resourceInstanceArray() *schema.Resource {
 			},
 			"instance_array_label": &schema.Schema{
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				Default:  nil,
+				Computed: true,
 				//this is required because on the serverside the labels are converted to lowercase automatically
-				ValidateDiagFunc: validateLabel,
+				DiffSuppressFunc: func(_, old, new string, d *schema.ResourceData) bool {
+					if strings.ToLower(old) == strings.ToLower(new) {
+						return true
+					}
+
+					if new == "" {
+						return true
+					}
+					return false
+				},
 			},
 			"instance_array_instance_count": &schema.Schema{
 				Type:             schema.TypeInt,
@@ -265,6 +284,7 @@ func resourceInstanceArrayCreate(ctx context.Context, d *schema.ResourceData, me
 	for _, intf := range ia.InstanceArrayInterfaces {
 		_, err := client.InstanceArrayInterfaceAttachNetwork(iaC.InstanceArrayID, intf.InstanceArrayInterfaceIndex, intf.NetworkID)
 		if err != nil {
+			resourceInstanceArrayRead(ctx, d, meta)
 			return diag.FromErr(err)
 		}
 	}
@@ -275,9 +295,10 @@ func resourceInstanceArrayCreate(ctx context.Context, d *schema.ResourceData, me
 		for _, profileIntf := range profileSet.List() {
 			profileMap := profileIntf.(map[string]interface{})
 
-			_, err := client.NetworkProfileSet(iaC.InstanceArrayID, profileMap["network_id"].(int), profileMap["network_profile_id"].(int))
+			_, err := client.InstanceArrayNetworkProfileSet(iaC.InstanceArrayID, profileMap["network_id"].(int), profileMap["network_profile_id"].(int))
 
 			if err != nil {
+				resourceInstanceArrayRead(ctx, d, meta)
 				return diag.FromErr(err)
 			}
 		}
@@ -384,19 +405,6 @@ func resourceInstanceArrayUpdate(ctx context.Context, d *schema.ResourceData, me
 
 	ia := expandInstanceArray(d)
 
-	if d.Get("network_profile") != nil {
-		profileSet := d.Get("network_profile").(*schema.Set)
-
-		for _, profileIntf := range profileSet.List() {
-			profileMap := profileIntf.(map[string]interface{})
-			_, err := client.NetworkProfileSet(id, profileMap["network_id"].(int), profileMap["network_profile_id"].(int))
-
-			if err != nil {
-				return diag.FromErr(err)
-			}
-		}
-	}
-
 	//update interface operations
 	for _, intf := range ia.InstanceArrayInterfaces {
 		for _, opIntf := range retIA.InstanceArrayOperation.InstanceArrayInterfaces {
@@ -420,18 +428,43 @@ func resourceInstanceArrayUpdate(ctx context.Context, d *schema.ResourceData, me
 
 	/* custom variables for instances */
 	cvList := d.Get("instance_custom_variables").([]interface{})
-	diag := updateInstancesCustomVariables(cvList, id, client)
+	dg := updateInstancesCustomVariables(cvList, id, client)
 
-	if diag.HasError() {
-		return diag
+	if dg.HasError() {
+		resourceInstanceArrayRead(ctx, d, meta)
+		return diag.FromErr(err)
 	}
 
 	//update interfaces
 	if d.HasChange("interface") {
-		diag := updateInstanceArrayInterfaces(ia.InstanceArrayInterfaces, editedIA.InstanceArrayInterfaces, client)
+		dg := updateInstanceArrayInterfaces(ia.InstanceArrayInterfaces, editedIA.InstanceArrayInterfaces, client)
 
-		if diag.HasError() {
-			return diag
+		if dg.HasError() {
+			resourceInstanceArrayRead(ctx, d, meta)
+			return diag.FromErr(err)
+		}
+	}
+
+	if d.Get("network_profile") != nil {
+		profileSet := d.Get("network_profile").(*schema.Set)
+
+		for _, profileIntf := range profileSet.List() {
+			profileMap := profileIntf.(map[string]interface{})
+			if profileMap["network_profile_id"].(int) != 0 {
+				_, err := client.InstanceArrayNetworkProfileSet(id, profileMap["network_id"].(int), profileMap["network_profile_id"].(int))
+
+				if err != nil {
+					resourceInstanceArrayRead(ctx, d, meta)
+					return diag.FromErr(err)
+				}
+			} else {
+				err := client.InstanceArrayNetworkProfileClear(id, profileMap["network_id"].(int))
+
+				if err != nil {
+					resourceInstanceArrayRead(ctx, d, meta)
+					return diag.FromErr(err)
+				}
+			}
 		}
 	}
 
