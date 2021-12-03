@@ -3,7 +3,6 @@ package metalcloud
 import (
 	"context"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 

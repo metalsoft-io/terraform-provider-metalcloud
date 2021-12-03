@@ -33,12 +33,20 @@ func resourceServerFirmwareUpgradePolicy() *schema.Resource {
 					if strings.ToLower(old) == strings.ToLower(new) {
 						return true
 					}
+
+					if new == "" {
+						return true
+					}
+
 					return false
 				},
+				ValidateDiagFunc: validateLabel,
 			},
 			"server_firmware_upgrade_policy_action": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Default:  nil,
+				Computed: true,
 			},
 			"instance_array_list": {
 				Type:     schema.TypeList,

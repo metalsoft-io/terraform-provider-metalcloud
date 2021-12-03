@@ -55,6 +55,7 @@ func resourceInstanceArray() *schema.Resource {
 					}
 					return false
 				},
+				ValidateDiagFunc: validateLabel,
 			},
 			"instance_array_instance_count": &schema.Schema{
 				Type:             schema.TypeInt,
