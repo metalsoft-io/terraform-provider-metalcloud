@@ -43,6 +43,10 @@ func ResourceInfrastructureDeployer() *schema.Resource {
 				Computed: true,
 				Default:  nil,
 			},
+			"infrastructure_service_status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"prevent_deploy": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -148,6 +152,8 @@ func resourceInfrastructureDeployerRead(ctx context.Context, d *schema.ResourceD
 		return diag.FromErr(err)
 	}
 
+	d.Set("infrastructure_service_status", infrastructure.InfrastructureServiceStatus)
+
 	switch infrastructure.InfrastructureCustomVariables.(type) {
 	case []interface{}:
 		err := d.Set("infrastructure_custom_variables", make(map[string]string))
@@ -189,6 +195,10 @@ func resourceInfrastructureDeployerUpdate(ctx context.Context, d *schema.Resourc
 		err := deployInfrastructure(infrastructure_id, d, meta)
 
 		if err != nil {
+			dg := resourceInfrastructureDeployerRead(ctx, d, meta)
+			if dg.HasError() {
+				return dg
+			}
 			return diag.FromErr(err)
 		}
 
@@ -246,7 +256,10 @@ func resourceInfrastructureDeployerDelete(ctx context.Context, d *schema.Resourc
 			return diag.FromErr(err)
 		}
 
-		if preventDeploy := d.Get("prevent_deploy"); preventDeploy == false {
+		preventDeploy := d.Get("prevent_deploy").(bool)
+		serviceStatus := d.Get("infrastructure_service_status").(string)
+
+		if preventDeploy == false && serviceStatus == SERVICE_STATUS_ACTIVE {
 			if err := deployInfrastructure(infrastructureID, d, meta); err != nil {
 				return diag.FromErr(err)
 			}
@@ -330,3 +343,4 @@ const DEPLOY_STATUS_NOT_STARTED = "not_started"
 const NETWORK_TYPE_LAN = "lan"
 const NETWORK_TYPE_SAN = "san"
 const NETWORK_TYPE_WAN = "wan"
+const SERVICE_STATUS_ACTIVE = "active"
