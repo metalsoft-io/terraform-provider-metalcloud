@@ -190,6 +190,7 @@ func resourceInfrastructureDeployerUpdate(ctx context.Context, d *schema.Resourc
 
 	//This is where the magic happens.
 	if needsDeploy && !preventDeploy {
+		var diags diag.Diagnostics
 		d.Set("edited", false) //clear the taint flag. This ensures that we will be able to deploy again next time
 
 		err := deployInfrastructure(infrastructure_id, d, meta)
@@ -199,7 +200,13 @@ func resourceInfrastructureDeployerUpdate(ctx context.Context, d *schema.Resourc
 			if dg.HasError() {
 				return dg
 			}
-			return diag.FromErr(err)
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Warning,
+				Summary:  fmt.Sprintf("The deploy could not finish for infrastructure #%d. Correct the configuration and try again.", infrastructure_id),
+				Detail:   fmt.Sprintf("The deploy encountered the following error: %s.", err),
+			})
+
+			return diags
 		}
 
 		if d.Get("await_deploy_finished").(bool) {

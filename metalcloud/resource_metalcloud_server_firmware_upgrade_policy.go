@@ -139,6 +139,28 @@ func resourceServerFirmwareUpgradePolicyUpdate(ctx context.Context, d *schema.Re
 
 	firmwarePolicy := expandFirmwarePolicy(d)
 
+	if d.HasChange("server_firmware_upgrade_policy_action") {
+		err := client.ServerFirmwareUpgradePolicyActionSet(
+			retFirmwarePolicy.ServerFirmwareUpgradePolicyID,
+			firmwarePolicy.ServerFirmwareUpgradePolicyAction,
+		)
+
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	if d.HasChange("server_firmware_upgrade_policy_label") {
+		err := client.ServerFirmwareUpgradePolicyLabelSet(
+			retFirmwarePolicy.ServerFirmwareUpgradePolicyID,
+			firmwarePolicy.ServerFirmwareUpgradePolicyLabel,
+		)
+
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	if d.HasChange("server_firmware_upgrade_policy_rules") {
 		dg := updateServerFirmwarePolicyRules(
 			firmwarePolicy.ServerFirmwareUpgradePolicyRules,
