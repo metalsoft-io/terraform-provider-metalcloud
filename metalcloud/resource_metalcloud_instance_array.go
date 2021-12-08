@@ -58,10 +58,10 @@ func resourceInstanceArray() *schema.Resource {
 				ValidateDiagFunc: validateLabel,
 			},
 			"instance_array_instance_count": &schema.Schema{
-				Type:             schema.TypeInt,
-				Optional:         true,
-				Default:          nil,
-				ValidateDiagFunc: validateMaxOne,
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  nil,
+				// ValidateDiagFunc: validateMaxOne,
 			},
 			"instance_array_boot_method": &schema.Schema{
 				Type:     schema.TypeString,

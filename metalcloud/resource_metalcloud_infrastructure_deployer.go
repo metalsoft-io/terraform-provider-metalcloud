@@ -183,6 +183,16 @@ func resourceInfrastructureDeployerUpdate(ctx context.Context, d *schema.Resourc
 
 	infrastructure_id := d.Get("infrastructure_id").(int)
 
+	id, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if id != infrastructure_id {
+		d.SetId(fmt.Sprintf("%d", infrastructure_id))
+
+	}
+
 	needsDeploy := d.Get("edited").(bool)
 	preventDeploy := d.Get("prevent_deploy").(bool)
 

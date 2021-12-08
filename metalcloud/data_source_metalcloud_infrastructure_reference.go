@@ -3,6 +3,7 @@ package metalcloud
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -21,6 +22,16 @@ func DataSourceInfrastructureReference() *schema.Resource {
 				//also helpful to prevent other
 				ValidateDiagFunc: validateLabel,
 				ForceNew:         true,
+				DiffSuppressFunc: func(_, old, new string, d *schema.ResourceData) bool {
+					if strings.ToLower(old) == strings.ToLower(new) {
+						return true
+					}
+
+					if new == "" {
+						return true
+					}
+					return false
+				},
 			},
 			"datacenter_name": &schema.Schema{
 				Type:     schema.TypeString,
