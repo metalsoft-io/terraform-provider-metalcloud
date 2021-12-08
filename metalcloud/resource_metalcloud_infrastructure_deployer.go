@@ -70,7 +70,7 @@ func ResourceInfrastructureDeployer() *schema.Resource {
 			"allow_data_loss": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  true,
+				Default:  false,
 			},
 			"skip_ansible": {
 				Type:     schema.TypeBool,
@@ -267,25 +267,25 @@ func resourceInfrastructureDeployerDelete(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
-	if !d.Get("keep_infrastructure_on_resource_destroy").(bool) {
+	// if !d.Get("keep_infrastructure_on_resource_destroy").(bool) {
 
-		if err := client.InfrastructureDelete(infrastructureID); err != nil {
+	if err := client.InfrastructureDelete(infrastructureID); err != nil {
+		return diag.FromErr(err)
+	}
+	// }
+	//the infrastructure is deleted first, because it is the last one created (the deploy). so the other resources are deleted last
+	preventDeploy := d.Get("prevent_deploy").(bool)
+	serviceStatus := d.Get("infrastructure_service_status").(string)
+
+	if preventDeploy == false && serviceStatus == SERVICE_STATUS_ACTIVE {
+		if err := deployInfrastructure(infrastructureID, d, meta); err != nil {
 			return diag.FromErr(err)
 		}
+		if d.Get("await_delete_finished").(bool) {
+			dg := waitForInfrastructureFinished(infrastructureID, ctx, d, meta, d.Timeout(schema.TimeoutUpdate), DEPLOY_STATUS_DELETED)
 
-		preventDeploy := d.Get("prevent_deploy").(bool)
-		serviceStatus := d.Get("infrastructure_service_status").(string)
-
-		if preventDeploy == false && serviceStatus == SERVICE_STATUS_ACTIVE {
-			if err := deployInfrastructure(infrastructureID, d, meta); err != nil {
-				return diag.FromErr(err)
-			}
-			if d.Get("await_delete_finished").(bool) {
-				dg := waitForInfrastructureFinished(infrastructureID, ctx, d, meta, d.Timeout(schema.TimeoutUpdate), DEPLOY_STATUS_DELETED)
-
-				if dg.HasError() {
-					return dg
-				}
+			if dg.HasError() {
+				return dg
 			}
 		}
 	}
