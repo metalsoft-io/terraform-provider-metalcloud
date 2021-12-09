@@ -16,7 +16,7 @@ terraform {
 
 provider "metalcloud" {
    user_email = var.user_email
-   api_key = "7:pQicZDBGhIFLYpesb7copJzOllbZVSruboyT3wc348DMTUQDw3hb2goifXAcpFL" #var.api_key
+   api_key = ""
    endpoint = var.endpoint
 
 }
