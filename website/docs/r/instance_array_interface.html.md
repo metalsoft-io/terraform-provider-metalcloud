@@ -5,7 +5,7 @@ description: |-
   Controls where an InstanceArray's Instances network interface will be connected.
 ---
 
-# metalcloud_infrastructure/instance_array/interface
+# instance_array/interface
 
 An **InstanceArrayInterface** controls where an InstanceArray's Instances **Network** interface will be connected. It is part of an [instance_array](/docs/providers/metalcloud/r/instance_array.html) block. It is related to a [network](/docs/providers/metalcloud/r/network.html) block.
 

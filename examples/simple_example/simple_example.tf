@@ -1,20 +1,4 @@
----
-layout: "metalcloud"
-page_title: "Metalcloud: Getting started"
-description: |-
-  Getting started guide with the metalcloud provider.
----
-
-# Metalcloud: Getting started
-
-The Metalcloud provider allows users to provision bare metal resources such as physical servers, switch configurations, iSCSI drives etc.
-
-
-## Provisioning a server
-
-To provision a server:
-
-```hcl
+/* Simple example of using metalcloud */
 terraform {
   required_providers {
     metalcloud = {
@@ -36,7 +20,7 @@ provider "metalcloud" {
 data "metalcloud_infrastructure" "infra" {
    
     infrastructure_label = "test-infra"
-    datacenter_name = "dc-1" 
+    datacenter_name = "${var.datacenter}" 
 
     create_if_not_exists = true
 }
@@ -81,6 +65,17 @@ resource "metalcloud_instance_array" "cluster" {
 
 }
 
+resource "metalcloud_shared_drive" "datastore" {
+
+    infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+  
+    shared_drive_label = "test-da-1"
+    shared_drive_size_mbytes = 40966
+    shared_drive_storage_type = "iscsi_hdd"
+
+    shared_drive_attached_instance_arrays = [metalcloud_instance_array.cluster.instance_array_id]  //this will create a dependency on the instance array
+}
+
 # Use this resource to effect deploys of the above resources.
 resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
 
@@ -108,20 +103,3 @@ resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
   ]
 
 }
-```
-
-## Authentication
-
-Getting the API Key is typically done via the  Metal Cloud's API key section. Use it with a -var or as an env variable:
-
-```bash
-export TF_VAR_api_key="<yourkey>"
-export TF_VAR_user_email="test@test.com"
-export TF_VAR_endpoint="https://api.poc.metalsoft.io"
-export TF_VAR_datacenter="uk-reading"
-
-terraform plan
-```
-
-!> Warning: Hard-coding credentials into any Terraform configuration is not recommended, and risks secret leakage should this file ever be committed to a public version control system. 
-

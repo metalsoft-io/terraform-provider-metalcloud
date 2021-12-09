@@ -1,7 +1,7 @@
 package metalcloud
 
 import (
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v2"
 )
 
@@ -17,13 +17,21 @@ func Provider() *schema.Provider {
 
 func providerResources() map[string]*schema.Resource {
 	return map[string]*schema.Resource{
-		"metalcloud_infrastructure": ResourceInfrastructure(),
+		"metalcloud_infrastructure_deployer": ResourceInfrastructureDeployer(),
+		"metalcloud_instance_array":          resourceInstanceArray(),
+		"metalcloud_drive_array":             resourceDriveArray(),
+		"metalcloud_shared_drive":            resourceSharedDrive(),
+		"metalcloud_network":                 resourceNetwork(),
+		"metalcloud_network_profile":         resourceNetworkProfile(),
+		// "metalcloud_external_connection":     resourceExternalConnection(),
+		"metalcloud_firmware_policy": resourceServerFirmwareUpgradePolicy(),
 	}
 }
 
 func providerDataSources() map[string]*schema.Resource {
 	return map[string]*schema.Resource{
 		"metalcloud_volume_template": DataSourceVolumeTemplate(),
+		"metalcloud_infrastructure":  DataSourceInfrastructureReference(),
 	}
 }
 

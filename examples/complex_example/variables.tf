@@ -1,3 +1,5 @@
+
+
 variable "user_email" {
   default = ""
 }
@@ -7,12 +9,20 @@ variable "api_key" {
 }
 
 variable "endpoint" {
-  default = "https://api.bigstep.com/metal-cloud"
+  default =""
 }
 
 variable "datacenter" {
-  default = "uk-reading"
+  default=""
 }
+
+
+variable "tenancy_config" {
+   # type = map
+   default = {}
+}
+
+
 
 
 variable "user_id" {

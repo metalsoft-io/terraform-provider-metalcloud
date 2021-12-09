@@ -12,107 +12,101 @@ Using the Provider
 A terraform `main.tf` template file, for an infrastructure with a single server would look something like this:
 
 ```terraform
-# List required providers
+/* Simple example of using metalcloud */
 terraform {
   required_providers {
     metalcloud = {
       source = "metalsoft-io/metalcloud"
-      version = "1.0.12"
     }
   }
 }
 
-# Configure the metalcloud provider
 provider "metalcloud" {
    user_email = var.user_email
-   api_key = var.api_key 
+   api_key = var.api_key
    endpoint = var.endpoint
+
 }
 
-# Identity the ID of the volume template we want
-data "metalcloud_volume_template" "centos76" {
-  volume_template_label = "centos7-6"
+//this is an infrastructure reference. It is needed to avoid a cyclic dependency where the 
+//infrastructure depends on the resoruces and vice-versa. This will create the infrastructure if it does not exist
+//if the create_if_not_exists flag is set to true
+data "metalcloud_infrastructure" "infra" {
+   
+    infrastructure_label = "test-infra"
+    datacenter_name = "${var.datacenter}" 
+
+    create_if_not_exists = true
 }
 
+data "metalcloud_volume_template" "esxi7" {
+  volume_template_label = "esxi-700-uefi-v2"
+}
 
-resource "metalcloud_infrastructure" "my-infra92" {
-  
-  infrastructure_label = "my-terraform-infra92"
-  datacenter_name = var.datacenter
+resource "metalcloud_instance_array" "cluster" {
 
-  # Set this to false to actually deploy the changes, otherwise all changes will remain in edit mode only.
-  prevent_deploy = true 
+    infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
 
-  shared_drive {
-    shared_drive_label = "my-shared-drive"
-    shared_drive_size_mbytes = 40965
-    shared_drive_storage_type = "iscsi_ssd"
-    shared_drive_attached_instance_arrays = ["web-servers","web-servers-2"]
-  }
-  
-  instance_array {
-    # Name of your cluster. Needs to obey DNS rules as it will translate into a DNS record.
-    instance_array_label = "web-servers"
+    instance_array_label = "test-2"
 
-    instance_array_instance_count = 1
-    instance_array_ram_gbytes = 2
+    instance_array_instance_count = 1 //deprecated, keep equal to 1
+    instance_array_ram_gbytes = "16"
     instance_array_processor_count = 1
-    instance_array_processor_core_count = 2
+    instance_array_processor_core_count = 1
+    instance_array_boot_method = "local_drives"
 
-    drive_array{
-      drive_array_label = "web-servers-centos"
-      drive_array_storage_type = "iscsi_hdd"
+    volume_template_id = tonumber(data.metalcloud_volume_template.esxi7.id)
 
-      # The size of the drive array in MBytes
-      drive_size_mbytes_default = 49000
+    instance_array_firewall_managed = false
 
-      # The id of the template we located earlier
-      volume_template_id = tonumber(data.metalcloud_volume_template.centos76.id)
+    interface{
+      interface_index = 0
+      network_label = "storage-network"
     }
 
-    #one or more FW rules. By default all traffic is denied so we need at least one entry.
-    firewall_rule {
-      firewall_rule_description = "test fw rule"
-      firewall_rule_port_range_start = 22
-      firewall_rule_port_range_end = 22
-      firewall_rule_source_ip_address_range_start="0.0.0.0"
-      firewall_rule_source_ip_address_range_end="0.0.0.0"
-      firewall_rule_protocol="tcp"
-      firewall_rule_ip_address_type="ipv4"
-    }
-  }
-
-  instance_array {
-    # Name of your cluster. Needs to obey DNS rules as it will translate into a DNS record.
-    instance_array_label = "web-servers-2"
-
-    instance_array_instance_count = 1
-    instance_array_ram_gbytes = 2
-    instance_array_processor_count = 1
-    instance_array_processor_core_count = 2
-
-    drive_array{
-      drive_array_label = "web-servers-centos-2"
-      drive_array_storage_type = "iscsi_hdd"
-
-      # The size of the drive array in MBytes
-      drive_size_mbytes_default = 49000
-
-      # The id of the template we located earlier
-      volume_template_id = tonumber(data.metalcloud_volume_template.centos76.id)
+    interface{
+      interface_index = 1
+      network_label = "data-network"
     }
 
-    #one or more FW rules. By default all traffic is denied so we need at least one entry.
-    firewall_rule {
-      firewall_rule_description = "test fw rule-2"
-      firewall_rule_port_range_start = 22
-      firewall_rule_port_range_end = 22
-      firewall_rule_source_ip_address_range_start="0.0.0.0"
-      firewall_rule_source_ip_address_range_end="0.0.0.0"
-      firewall_rule_protocol="tcp"
-      firewall_rule_ip_address_type="ipv4"
-    }
-  }
+}
+
+resource "metalcloud_shared_drive" "datastore" {
+
+    infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+  
+    shared_drive_label = "test-da"
+    shared_drive_size_mbytes = 40966
+    shared_drive_storage_type = "iscsi_hdd"
+
+    shared_drive_attached_instance_arrays = [metalcloud_instance_array.cluster.instance_array_id]  //this will create a dependency on the instance array
+}
+
+resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
+
+  infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+
+  # Set this to false to actually trigger deploys.
+  prevent_deploy = true
+
+  #these options will make terraform apply operation will wait for the deploy to finish (when prevent_deploy is false)
+  #instead of exiting while the deploy is ongoing
+
+  await_deploy_finished = true
+  await_delete_finished = true
+
+  #this option disables a safety check that metalsoft performs to prevent accidental data loss
+  #it is required when testing delete operations
+
+  allow_data_loss = true
+
+  //This is important to ensure that deploys happen after everything else. If you need to add or remove resources dinamically
+  //use either count or for_each in the resources or move everything that is dynamic into a module and make this depend on the module
+  depends_on = [
+    metalcloud_instance_array.cluster,
+    metalcloud_shared_drive.datastore
+  ]
+
 }
 ```
 
@@ -120,9 +114,9 @@ To deploy this infrastructure export the following variables (or use -var):
 
 ```bash
 export TF_VAR_api_key="<yourkey>"
-export TF_VAR_user_email="test@test.com"
-export TF_VAR_endpoint="https://api.bigstep.com/metal-cloud"
-export TF_VAR_datacenter="uk-reading"
+export TF_VAR_user_email="<your user email>"
+export TF_VAR_endpoint="<your endpoint>"
+export TF_VAR_datacenter="<your datacenter>"
 ```
 
 The plan phase:
@@ -176,4 +170,9 @@ export METALCLOUD_USER_EMAIL="user"
 export METALCLOUD_ENDPOINT="https://your-endpoint"
 
 make testacc
+```
+
+Troubleshooting
+```
+export METALCLOUD_LOGGING_ENABLED=true 
 ```

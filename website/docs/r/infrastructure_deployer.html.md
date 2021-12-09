@@ -16,160 +16,48 @@ This is the main (and only) resource that the metal cloud provider implements as
 
 ## Example Usage
 
-The following example deployes 3 servers, each with a 40TB drive with Centos 7.6. The servers are groupped into "master" (with 1 server) and "slave" (with 2 servers):
+The following example deploys 3 servers, each with a 40TB drive with CentOS 7.6. The servers are grouped into "master" (with 1 server) and "slave" (with 2 servers):
 
 ```hcl
-resource "metalcloud_infrastructure" "foo" {
 
-			infrastructure_label = "my-terraform-infra-1"
-			datacenter_name = "uk-reading"
+data "metalcloud_infrastructure" "infra" {
+   
+    infrastructure_label = "test" 
+    datacenter_name = "dc-1" 
 
-			infrastructure_custom_variables  = {
-				a = "b"
-				b = "a"
-				c = "c"
-				d = "f"
-			}
+}
 
-			prevent_deploy = true
+resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
 
-			network{
-			  network_type = "san"
-			  network_label = "san"
-			}
-		  
-			network{
-			  network_type = "wan"
-			  network_label = "internet"
-			}
-		  
-			network{
-			  network_type = "lan"
-			  network_label = "private"
-			}
-		  
-		  
-			instance_array {
-				  instance_array_label = "master"
-				  instance_array_instance_count = 1
-				  interface{
-					  interface_index = 0
-					  network_label = "san"
-				  }
-		  
-				  interface{
-					  interface_index = 1
-					  network_label = "internet"
-				  }
-		  
-				  interface{
-					  interface_index = 2
-					  network_label = "private"
-				  }
-				  
-				  drive_array{
-					drive_array_label = "testia2-centos"
-					drive_array_storage_type = "iscsi_hdd"
-					drive_size_mbytes_default = 49000
-					volume_template_id = tonumber(data.metalcloud_volume_template.centos76.id)
-				  }
-		  
-				  firewall_rule {
-							  firewall_rule_description = "test fw rule"
-							  firewall_rule_port_range_start = 22
-							  firewall_rule_port_range_end = 22
-							  firewall_rule_source_ip_address_range_start="0.0.0.0"
-							  firewall_rule_source_ip_address_range_end="0.0.0.0"
-							  firewall_rule_protocol="tcp"
-							  firewall_rule_ip_address_type="ipv4"
-						  }
-			}
-		  
-			instance_array {
-				instance_array_label = "slave"  
-				instance_array_instance_count = 2
+  infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
 
-				instance_array_custom_variables = {
-					b = "c"
-					d = "e"
-					c = "f"
-					r = "p"
-				}
+  # Set this to false to trigger deploys.
+  prevent_deploy = true
 
-				instance_custom_variables {
-					instance_index = 0
-					custom_variables = {
-						aa = "00"
-						bb = "00"
+  # These options will make terraform apply operation will wait for the deploy to finish (when prevent_deploy is false)
+  # instead of exiting while the deploy is ongoing
+  await_deploy_finished = true
+  await_delete_finished = true
 
-					}
-				}
-				instance_custom_variables {
-					instance_index = 1
-					custom_variables = {
-						# aa = "11"
-						bb = "11"
-						cc = "11"
-						# d = "11"
-					}
-				}
-		
-				drive_array{
-					drive_array_label="asd2-centos"
-					drive_array_storage_type = "iscsi_hdd"
-					drive_size_mbytes_default = 49000
-					volume_template_id = tonumber(data.metalcloud_volume_template.centos76.id)
-				}
-		
-				firewall_rule {
-					firewall_rule_description = "test fw rule"
-					firewall_rule_port_range_start = 22
-					firewall_rule_port_range_end = 22
-					firewall_rule_source_ip_address_range_start="0.0.0.0"
-					firewall_rule_source_ip_address_range_end="0.0.0.0"
-					firewall_rule_protocol="tcp"
-					firewall_rule_ip_address_type="ipv4"
-				}
-			}
+  # This option disables a safety check that MetalSoft performs to prevent accidental data loss.
+  # It is required when testing delete operations.
+  allow_data_loss = true
 
+  # IMPORTANT: All resources that are part of this infrastructure need to be referenced here in order 
+  # for the deploy operation to happen AFTER all of the create or edit operations
+  depends_on = [
+    module.tenancy_cluster
+  ]
 
-			firmware_upgrade_policy {
-				server_firmware_upgrade_policy_label = "test1"
-				server_firmware_upgrade_policy_action = "accept"
-				instance_array_label = "web-servers"
-				server_firmware_upgrade_policy_rules {
-					operation = "string_equal"
-					property = "datacenter_name"
-					value = "slavedatacenter-138"
-				}
-			}
-
-			firmware_upgrade_policy {
-				server_firmware_upgrade_policy_label = "test2"
-				server_firmware_upgrade_policy_action = "accept"
-				instance_array_label = "web-servers"
-				server_firmware_upgrade_policy_rules {
-					operation = "string_equal"
-					property = "datacenter_name"
-					value = "slavedatacenter-138"
-				}
-
-				server_firmware_upgrade_policy_rules {
-					operation = "string_equal"
-					property = "server_vendor"
-					value = "dell"
-				}
-			}
-
-		}
+}
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-
+* `infrastructure_id` - (Required) The id of the infrastructure to which this object belongs to. Use the `infrastructure_reference` data source to retrieve this id. 
 * `infrastructure_label` - (Required) **Infrastructure** name. Use only alphanumeric and dashes '-'. Cannot start with a number, cannot include underscore (_). Try to keep this under 30 chars.
-* `datacenter_name` - (Required) The name of the **Datacenter** where the provisioning will take place. Check the MetalCloud provider for available options.
+
 * `network` (Optional) Zero or more blocks of this type define **Networks**. If zero, the default 'WAN' network type is provisioned. In Cloud metal cloud deploymnets the deployment also includes the SAN network. In local deployments the SAN network is by default omitted to allow servers with a local drive to be deployed. Reffer to [network](/docs/providers/metalcloud/r/network.html) for more details.
 * `instance_array` - (Required) One or more blocks of this type define **InstanceArrays** within this infrastructure. Reffer to [instance_array](/docs/providers/metalcloud/r/instance_array.html) for more details.
 * `prevent_deploy` (Optional) If **True** provisioning will be omitted. From terraform's point of view everything would have finished successfully. This is usefull mainly during testing & development to prevent spending money on resources. The default value is **True**.

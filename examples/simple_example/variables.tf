@@ -6,11 +6,10 @@ variable "api_key" {
   default = ""
 }
 
-
 variable "endpoint" {
-  default ="https://api.bigstep.com/metal-cloud"
+  default =""
 }
 
 variable "datacenter" {
-  default="uk-reading"
+  default="us-chi-qts01-dc"
 }
