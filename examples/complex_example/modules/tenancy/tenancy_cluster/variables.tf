@@ -24,6 +24,9 @@ variable "infrastructure_label" {
     }
 }
 
+
+*/
+
 variable "datacenter_name" {
   
    description = "Datacenter to use."
@@ -35,7 +38,7 @@ variable "datacenter_name" {
       error_message = "The datacenter_name must be provided."
     }
 }
-*/
+
 variable "clustername" {
    description = "Cluster's name"
    type = string
@@ -84,7 +87,6 @@ variable "instance_array_processor_core_count" {
   type = number
   default = 1
 }
-
 
 variable "esxi_vlan_id" {
   description = "ESXI VLAN ID"
