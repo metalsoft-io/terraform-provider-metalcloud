@@ -75,11 +75,11 @@ func resourceSharedDrive() *schema.Resource {
 				Default:  nil,
 				Computed: true,
 			},
-			"shared_drive_has_gfs": &schema.Schema{
-				Type:     schema.TypeBool,
-				Default:  false,
-				Optional: true,
-			},
+			// "shared_drive_has_gfs": &schema.Schema{
+			// 	Type:     schema.TypeBool,
+			// 	Default:  false,
+			// 	Optional: true,
+			// },
 			"shared_drive_attached_instance_arrays": &schema.Schema{
 				Type:        schema.TypeSet,
 				Description: "List of instance array IDs to which to attach this shared drive",
@@ -195,7 +195,7 @@ func expandSharedDrive(d *schema.ResourceData) mc.SharedDrive {
 		sd.SharedDriveLabel = v.(string)
 	}
 
-	sd.SharedDriveHasGFS = d.Get("shared_drive_has_gfs").(bool)
+	// sd.SharedDriveHasGFS = d.Get("shared_drive_has_gfs").(bool)
 	sd.SharedDriveStorageType = d.Get("shared_drive_storage_type").(string)
 	sd.SharedDriveSizeMbytes = d.Get("shared_drive_size_mbytes").(int)
 

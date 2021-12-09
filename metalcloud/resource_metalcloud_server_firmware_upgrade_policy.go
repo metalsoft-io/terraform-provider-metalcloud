@@ -97,6 +97,16 @@ func resourceServerFirmwareUpgradePolicyCreate(ctx context.Context, d *schema.Re
 	id := fmt.Sprintf("%d", firmwarePolicy.ServerFirmwareUpgradePolicyID)
 	d.SetId(id)
 
+	dg := updateServerFirmwarePolicyInstanceArrays(
+		policy.InstanceArrayIDList,
+		nil,
+		firmwarePolicy.ServerFirmwareUpgradePolicyID,
+		client,
+	)
+
+	if dg.HasError() {
+		return dg
+	}
 	return resourceServerFirmwareUpgradePolicyRead(ctx, d, meta)
 }
 
@@ -237,6 +247,7 @@ func updateServerFirmwarePolicyInstanceArrays(newIDs, oldIDs []int, policyID int
 			for index, id := range policiesList {
 				if id == policyID {
 					policiesList[index] = policiesList[len(policiesList)-1]
+					policiesList = policiesList[:len(policiesList)-1]
 				}
 			}
 

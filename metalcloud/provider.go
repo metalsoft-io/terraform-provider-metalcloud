@@ -23,8 +23,8 @@ func providerResources() map[string]*schema.Resource {
 		"metalcloud_shared_drive":            resourceSharedDrive(),
 		"metalcloud_network":                 resourceNetwork(),
 		"metalcloud_network_profile":         resourceNetworkProfile(),
-		"metalcloud_external_connection":     resourceExternalConnection(),
-		"metalcloud_firmware_policy":         resourceServerFirmwareUpgradePolicy(),
+		// "metalcloud_external_connection":     resourceExternalConnection(),
+		"metalcloud_firmware_policy": resourceServerFirmwareUpgradePolicy(),
 	}
 }
 
