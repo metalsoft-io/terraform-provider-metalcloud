@@ -81,6 +81,10 @@ resource "metalcloud_instance_array" "cluster" {
     network_profile_id = metalcloud_network_profile.profile.id
   }
 
+  instance_array_custom_variables = {
+    mgmt_vlan_id = 500
+  }
+
   depends_on = [
     metalcloud_network.data,
     metalcloud_network.storage
@@ -119,7 +123,7 @@ resource "metalcloud_shared_drive" "datastore" {
 }
 
 resource "metalcloud_network_profile" "profile" {
-    network_profile_label = "network-profile"
+    network_profile_label = var.clustername
     datacenter_name = var.datacenter_name
     network_type = "wan"
 
