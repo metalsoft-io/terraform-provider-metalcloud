@@ -86,6 +86,7 @@ variable "instance_array_processor_core_count" {
 }
 
 
-
-
-
+variable "esxi_vlan_id" {
+  description = "ESXI VLAN ID"
+  type = number
+}

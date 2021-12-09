@@ -31,6 +31,8 @@ module "tenancy_cluster" {
 
 
   infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+  datacenter_name = var.tenancy_config.datacenter
+  esxi_vlan_id = var.tenancy_config.esxi_vlan_id
 }
 
 

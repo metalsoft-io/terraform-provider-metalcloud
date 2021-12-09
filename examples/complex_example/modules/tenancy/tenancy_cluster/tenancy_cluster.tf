@@ -120,11 +120,11 @@ resource "metalcloud_shared_drive" "datastore" {
 
 resource "metalcloud_network_profile" "profile" {
     network_profile_label = "network-profile"
-    datacenter_name = "${var.tenancy_config.datacenter}" 
+    datacenter_name = var.datacenter_name
     network_type = "wan"
 
     network_profile_vlan {
-      vlan_id = "${var.tenancy_config.esxi_vlan_id}"
+      vlan_id = var.esxi_vlan_id
       port_mode = "trunk"
       provision_subnet_gateways = false
     }
