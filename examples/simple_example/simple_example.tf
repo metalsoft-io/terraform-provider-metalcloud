@@ -29,6 +29,17 @@ data "metalcloud_volume_template" "esxi7" {
   volume_template_label = "esxi-700-uefi-v2"
 }
 
+resource "metalcloud_network" "data" {
+    infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+    network_label = "data-network"
+    network_type = "wan"
+}
+
+resource "metalcloud_network" "storage" {
+    infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+    network_label = "storage-network"
+    network_type = "san"
+}
 resource "metalcloud_instance_array" "cluster" {
 
     infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
@@ -47,12 +58,12 @@ resource "metalcloud_instance_array" "cluster" {
 
     interface{
       interface_index = 0
-      network_label = "storage-network"
+      network_id = metalcloud_network.data.id
     }
 
     interface{
-      interface_index = 1
-      network_label = "data-network"
+      interface_index = 2
+      network_id = metalcloud_network.storage.id
     }
 
     instance_custom_variables {
