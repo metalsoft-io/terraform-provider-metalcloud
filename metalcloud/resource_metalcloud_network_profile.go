@@ -89,6 +89,18 @@ func resourceNetworkProfileCreate(ctx context.Context, d *schema.ResourceData, m
 
 	profile := expandNetworkProfile(d)
 
+	networkProfiles, err := client.NetworkProfiles(profile.DatacenterName)
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	for _, p := range *networkProfiles {
+		if p.NetworkProfileLabel == profile.NetworkProfileLabel {
+			return diag.FromErr(fmt.Errorf("A network profile with label %s already exists.", profile.NetworkProfileLabel))
+		}
+	}
+
 	newProfile, err := client.NetworkProfileCreate(profile.DatacenterName, profile)
 	if err != nil {
 		return diag.FromErr(err)

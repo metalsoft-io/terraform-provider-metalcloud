@@ -30,8 +30,9 @@ func providerResources() map[string]*schema.Resource {
 
 func providerDataSources() map[string]*schema.Resource {
 	return map[string]*schema.Resource{
-		"metalcloud_volume_template": DataSourceVolumeTemplate(),
-		"metalcloud_infrastructure":  DataSourceInfrastructureReference(),
+		"metalcloud_volume_template":     DataSourceVolumeTemplate(),
+		"metalcloud_infrastructure":      DataSourceInfrastructureReference(),
+		"metalcloud_external_connection": DataSourceExternalConnection(),
 	}
 }
 
