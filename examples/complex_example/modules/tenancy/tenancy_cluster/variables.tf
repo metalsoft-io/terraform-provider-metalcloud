@@ -88,7 +88,17 @@ variable "instance_array_processor_core_count" {
   default = 1
 }
 
-variable "esxi_vlan_id" {
-  description = "ESXI VLAN ID"
+variable "wan_network_id" {
+  description = "Id for the WAN network"
+  type = number
+}
+
+variable "san_network_id" {
+  description = "Id for the SAN network"
+  type = number
+}
+
+variable "wan_network_profile_id" {
+  description = "Id for the WAN network profile used"
   type = number
 }

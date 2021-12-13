@@ -25,16 +25,6 @@ data "metalcloud_volume_template" "esxi7" {
   volume_template_label = "esxi-700-uefi-v2"
 }
 
-resource "metalcloud_network" "data" {
-    infrastructure_id = var.infrastructure_id
-    network_label = "data-network"
-    network_type = "wan"
-}
-
-resource "metalcloud_network" "storage" {
-    infrastructure_id = var.infrastructure_id
-    network_label = "storage-network"
-    network_type = "san"
 }
 
 resource "metalcloud_instance_array" "cluster" {
@@ -58,37 +48,33 @@ resource "metalcloud_instance_array" "cluster" {
 
   interface{     
     interface_index = 0  
-    network_id = metalcloud_network.data.id
+    network_id = var.wan_network_id
   }
 
   interface{     
     interface_index = 1
-    network_id = metalcloud_network.data.id
+    network_id = var.wan_network_id
   }
 
   interface{     
     interface_index = 2 
-    network_id = metalcloud_network.storage.id
+    network_id = var.san_network_id
   }
 
   interface{     
     interface_index = 3 
-    network_id = metalcloud_network.storage.id
+    network_id = var.san_network_id
   }
 
   network_profile {
-    network_id = metalcloud_network.data.id
-    network_profile_id = metalcloud_network_profile.profile.id
+    network_id = var.wan_network_id
+    network_profile_id = var.wan_network_profile_id
   }
 
   instance_array_custom_variables = {
     mgmt_vlan_id = 500
   }
 
-  depends_on = [
-    metalcloud_network.data,
-    metalcloud_network.storage
-  ]
 }
 
 
@@ -122,14 +108,3 @@ resource "metalcloud_shared_drive" "datastore" {
     shared_drive_attached_instance_arrays = metalcloud_instance_array.cluster[*].instance_array_id
 }
 
-resource "metalcloud_network_profile" "profile" {
-    network_profile_label = "profile-network-${var.clustername}-${var.infrastructure_id}"
-    datacenter_name = var.datacenter_name
-    network_type = "wan"
-
-    network_profile_vlan {
-      vlan_id = var.esxi_vlan_id
-      port_mode = "trunk"
-      provision_subnet_gateways = false
-    }
-}

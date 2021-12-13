@@ -14,6 +14,30 @@ data "metalcloud_infrastructure" "infra" {
 
 }
 
+resource "metalcloud_network" "data" {
+    infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+    network_label = "data-network"
+    network_type = "wan"
+}
+
+resource "metalcloud_network" "storage" {
+    infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+    network_label = "storage-network"
+    network_type = "san"
+}
+
+resource "metalcloud_network_profile" "profile" {
+    network_profile_label = "network-profile-${var.tenancy_config.customer_name}"
+    datacenter_name = "${var.tenancy_config.datacenter}" 
+    network_type = "wan"
+
+    network_profile_vlan {
+      vlan_id = "${var.tenancy_config.esxi_vlan_id}"
+      port_mode = "trunk"
+      provision_subnet_gateways = false
+    }
+}
+
 
 module "tenancy_cluster" {
   source = "./tenancy_cluster"
@@ -29,13 +53,13 @@ module "tenancy_cluster" {
   instance_array_processor_count = var.tenancy_config.clusters[count.index].instance_array_processor_count
   instance_array_processor_core_count = var.tenancy_config.clusters[count.index].instance_array_processor_core_count
 
-
   infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
   datacenter_name = var.tenancy_config.datacenter
-  esxi_vlan_id = var.tenancy_config.esxi_vlan_id
+  
+  wan_network_id = metalcloud_network.data.id
+  san_network_id = metalcloud_network.storage.id
+  wan_network_profile_id = metalcloud_network_profile.profile.id
 }
-
-
 
 resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
 
