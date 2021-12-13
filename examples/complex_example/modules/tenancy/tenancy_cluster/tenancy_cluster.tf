@@ -106,5 +106,9 @@ resource "metalcloud_shared_drive" "datastore" {
    
 
     shared_drive_attached_instance_arrays = metalcloud_instance_array.cluster[*].instance_array_id
+
+    depends_on = [
+      metalcloud_instance_array.cluster
+    ]
 }
 
