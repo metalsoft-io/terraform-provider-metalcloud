@@ -10,8 +10,8 @@ description: |-
 This is the main (and only) resource that the metal cloud provider implements as all other elements are part of it. It has:
 
 * provision control flags & other properties
-* one or more [instance_array](/docs/providers/metalcloud/r/instance_array.html) blocks
-* one or mare [network](/docs/providers/metalcloud/r/network.html) blocks
+* one or more [instance_array](./instance_array.html.md) blocks
+* one or mare [network](./network.html.md) blocks
 
 
 ## Example Usage
@@ -58,8 +58,8 @@ The following arguments are supported:
 * `infrastructure_id` - (Required) The id of the infrastructure to which this object belongs to. Use the `infrastructure_reference` data source to retrieve this id. 
 * `infrastructure_label` - (Required) **Infrastructure** name. Use only alphanumeric and dashes '-'. Cannot start with a number, cannot include underscore (_). Try to keep this under 30 chars.
 
-* `network` (Optional) Zero or more blocks of this type define **Networks**. If zero, the default 'WAN' network type is provisioned. In Cloud metal cloud deploymnets the deployment also includes the SAN network. In local deployments the SAN network is by default omitted to allow servers with a local drive to be deployed. Reffer to [network](/docs/providers/metalcloud/r/network.html) for more details.
-* `instance_array` - (Required) One or more blocks of this type define **InstanceArrays** within this infrastructure. Reffer to [instance_array](/docs/providers/metalcloud/r/instance_array.html) for more details.
+* `network` (Optional) Zero or more blocks of this type define **Networks**. If zero, the default 'WAN' network type is provisioned. In Cloud metal cloud deploymnets the deployment also includes the SAN network. In local deployments the SAN network is by default omitted to allow servers with a local drive to be deployed. Reffer to [network](./network.html.md) for more details.
+* `instance_array` - (Required) One or more blocks of this type define **InstanceArrays** within this infrastructure. Reffer to [instance_array](./instance_array.html.md) for more details.
 * `prevent_deploy` (Optional) If **True** provisioning will be omitted. From terraform's point of view everything would have finished successfully. This is usefull mainly during testing & development to prevent spending money on resources. The default value is **True**.
 * `hard_shutdown_after_timeout` (Optional, default True) - The timeout can be configured with this object's `soft_shutdown_timeout_seconds property`. If false, the deploy will hang if at least a required server is still powered on. The servers may be powered off manually.
 * `attempt_soft_shutdown` (Optional, default True) - An ACPI soft shutdown command will be sent to corresponding servers. If false, a hard shutdown is executed.

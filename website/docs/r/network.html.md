@@ -8,7 +8,7 @@ description: |-
 
 # network
 
-A **Network** is an abstract concept connecting **Interfaces**. It needs to be part of an Infrastructure. Use the [infrastructure_reference](/docs/providers/metalcloud/d/infrastructure_reference.html) Data Source to determine the `infrastructure_id`.
+A **Network** is an abstract concept connecting **Interfaces**. It needs to be part of an Infrastructure. Use the [infrastructure_reference](../d/infrastructure_reference.md) Data Source to determine the `infrastructure_id`.
 
 There are 3 types of networks: WAN, LAN and SAN. 
 * WAN is typically the network through which users of the services exposed by servers reach the servers.
@@ -17,7 +17,7 @@ There are 3 types of networks: WAN, LAN and SAN.
 
 Currently, only Layer 2 networks are supported and thus common broadcast domains are created for both WAN and LAN network.
 
-Use the [network_profile](/docs/providers/metalcloud/r/network_profile.html)  to customize the behaviour of a network by specifying it as a block on the instance arrays and attaching the instance arrays to this network. 
+Use the [network_profile](./network_profile.html.md)  to customize the behaviour of a network by specifying it as a block on the instance arrays and attaching the instance arrays to this network. 
 
 ## Example usage
 

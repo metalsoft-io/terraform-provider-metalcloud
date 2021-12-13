@@ -45,6 +45,18 @@ data "metalcloud_volume_template" "esxi7" {
   volume_template_label = "esxi-700-uefi-v2"
 }
 
+resource "metalcloud_network" "data" {
+  network_label = "data-network"
+  network_type = "wan"
+  infrastructure_id = data.metalcloud_infrastructure.infra.id
+}
+
+resource "metalcloud_network" "storage" {
+  network_label = "storage-network"
+  network_type = "san"
+  infrastructure_id = data.metalcloud_infrastructure.infra.id
+}
+
 resource "metalcloud_instance_array" "cluster" {
 
     infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
@@ -63,12 +75,12 @@ resource "metalcloud_instance_array" "cluster" {
 
     interface{
       interface_index = 0
-      network_label = "storage-network"
+      network_id = metalcloud_network.storage.id
     }
 
     interface{
       interface_index = 1
-      network_label = "data-network"
+      network_id = metalcloud_network.data.id
     }
 
     instance_custom_variables {
@@ -78,6 +90,11 @@ resource "metalcloud_instance_array" "cluster" {
         "test3":"test4"
       }
     }
+
+    depends_on = [
+      metalcloud_network.data,
+      metalcloud_network.storage,
+    ]
 
 }
 
@@ -104,7 +121,9 @@ resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
   # use either count or for_each in the resources or move everything that is dynamic into a module and make this depend on the module
   depends_on = [
     metalcloud_instance_array.cluster,
-    metalcloud_shared_drive.datastore
+    metalcloud_shared_drive.datastore,
+    metalcloud_network.data,
+    metalcloud_network.storage,
   ]
 
 }

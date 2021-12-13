@@ -16,22 +16,36 @@ The following network_profile defines that a "WAN" port will be connected to two
 gateway interface and will also connect the VLAN to two external connections.
 
 ```hcl
+data "metalcloud_external_connection" "ext1" {
+  datacenter_name = var.datacenter
+  external_connection_label = "connection1"
+}
+
+data "metalcloud_external_connection" "ext2" {
+  datacenter_name = var.datacenter
+  external_connection_label = "connection2"
+}
+
 resource "metalcloud_network_profile" "myprofile" {
   network_profile_label ="test"
   datacenter_name = "asdasd"
   network_type = "wan"
 
   vlan {
-    vlan_id: 101
-    port_mode: "trunk",
-    provision_subnet_gateways: false,
+    vlan_id = 101
+    port_mode = "trunk",
+    provision_subnet_gateways = false,
   }
 
   vlan {
-    vlan_id: 102
-    port_mode: "trunk",
-    provision_subnet_gateways: true,
-    external_connections = ["uplink1", "uplink2"]}
+    vlan_id = 102
+    port_mode = "trunk",
+    provision_subnet_gateways = true,
+    external_connections = [
+      metalcloud_external_connection.ext1.id, 
+      metalcloud_external_connection.ext2.id, 
+    ]
+  }
   }  
 
 ```
@@ -55,7 +69,7 @@ vlan {
     provision_subnet_gateways: false,
 
     #if this vlan needs to be terminated on the gateway device  and to which external connections it should be connected to
-    external_connections = ["uplink1", "uplink2"]}
+    external_connections = [id1, id2]}
   }
 ```
 

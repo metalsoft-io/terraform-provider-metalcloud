@@ -18,6 +18,7 @@ The following example locates the volume_template_ID for 'Cenots 7.6'.
 data "metalcloud_volume_template" "centos76" {
 			volume_template_label = "centos7-6"
 }
+
 resource "metalcloud_infrastructure" "foo" {
 
   instance_array {

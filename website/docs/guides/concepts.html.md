@@ -28,15 +28,15 @@ The Metal Cloud uses a two stage approach to provisioning where a user would des
 
 To enable hardware replacement while keeping firewall rules, dns records etc, there is a mapping between the physical equipment and it's "logical" equivalent which is tied to a workload or a particular use. The logical allocation is called an "**Instance**" whereas the physical equipment is called a "**Server**".
 
-![logical-to-physical](/docs/providers/metalcloud/assets/introduction-2.svg)
+![logical-to-physical](../assets/introduction-2.svg)
 
 The mapping between an instance and a server is done at "provisioning" time and is created when the user "requests" a compute resource. An instance can be mapped to another server if the user needs more resources or needs a replacement.
 
-![logical-to-physical](/docs/providers/metalcloud/assets/introduction-3.svg)
+![logical-to-physical](../assets/introduction-3.svg)
 
 Instances have associated "Drives" and "Networks". Drives can be moved across storages and Networks typically span multiple switches.
 
-![logical-to-physical](/docs/providers/metalcloud/assets/introduction-4.svg)
+![logical-to-physical](../assets/introduction-4.svg)
 
 Instances can be "stopped" which will release the server to the pool but will keep all other configurations such as server type, network, OS, firewall configurations etc.
 
@@ -49,7 +49,7 @@ From the "user's" perspective Multiple Instances are grouped together in **Insta
 
 An InstanceArray can be connected to a DriveArray which in turn groups Drives. Each Instance will get an associated Drive. DriveArrays can be disconnected from each other.
 
-![logical-to-physical](/docs/providers/metalcloud/assets/introduction-5.svg)
+![logical-to-physical](../assets/introduction-5.svg)
 
 These concepts are logical-level concepts.
 

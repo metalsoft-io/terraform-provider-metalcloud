@@ -8,7 +8,7 @@ description: |-
 
 # shared_drive
 
-This structure represents a Metalcloud SharedDrive which is an iSCSI LUN that can be mounted on different InstanceArrays at the same time. This is typically used by VMWare or Kubernetes. It needs to be part of an Infrastructure.  Use the [infrastructure_reference](/docs/providers/metalcloud/d/infrastructure_reference.html) Data Source to determine the `infrastructure_id`.
+This structure represents a Metalcloud SharedDrive which is an iSCSI LUN that can be mounted on different InstanceArrays at the same time. This is typically used by VMWare or Kubernetes. It needs to be part of an Infrastructure.  Use the [infrastructure_reference](../d/infrastructure_reference.md) Data Source to determine the `infrastructure_id`.
 
 ## Example usage
 

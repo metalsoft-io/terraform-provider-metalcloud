@@ -7,16 +7,16 @@ description: |-
 
 # instance_array
 
-InstanceArrays are central to Metal Cloud. They operate on groups of identical Instances (that have servers associated to them). They need to be part of an Infrastructure.  Use the [infrastructure_reference](/docs/providers/metalcloud/d/infrastructure_reference.html) Data Source to determine the `infrastructure_id`.
+InstanceArrays are central to Metal Cloud. They operate on groups of identical Instances (that have servers associated to them). They need to be part of an Infrastructure.  Use the [infrastructure_reference](../d/infrastructure_reference.md) Data Source to determine the `infrastructure_id`.
 
 In general lines an InstanceArray has the following properties:
 
 * provision control flags & other properties
-* zero or more [interface](/docs/providers/metalcloud/r/interface.html) blocks
-* zero or more [firewall_rule](/docs/providers/metalcloud/r/interface.html) blocks
-* zero or more [instance_array_custom_variables](/docs/providers/metalcloud/r/instance_array_custom_variables.html) blocks
-* zero or more [instance_custom_variables](/docs/providers/metalcloud/r/instance_custom_variables.html) blocks
-* zero or more [network_profile](/docs/providers/metalcloud/r/network_profile.html) blocks
+* zero or more [interface](./instance_array_interface.html.md) blocks
+* zero or more [firewall_rule](./firewall_rule.html.md) blocks
+* zero or more [instance_array_custom_variables](./instance_array_custom_variables.html.md) blocks
+* zero or more [instance_custom_variables](./instance_custom_variables.html.md) blocks
+* zero or more [network_profile](./network_profile.html.md) blocks
 
 ## Example usage
 

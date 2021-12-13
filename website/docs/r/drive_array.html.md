@@ -8,11 +8,11 @@ description: |-
 
 # drive_array
 
-This structure represents a MetalCloud DriveArray which is a collection of Drives (iSCSI LUNs), associated to an InstanceArray. The LUNs can also be clones of an operating system template or another Drive. They need to be part of an Infrastructure. Use the [infrastructure_reference](/docs/providers/metalcloud/d/infrastructure_reference.html) Data Source to determine the `infrastructure_id`.
+This structure represents a MetalCloud DriveArray which is a collection of Drives (iSCSI LUNs), associated to an InstanceArray. The LUNs can also be clones of an operating system template or another Drive. They need to be part of an Infrastructure. Use the [infrastructure_reference](../d/infrastructure_reference.md) Data Source to determine the `infrastructure_id`.
 
-Note that these objects can only be attached to a single instance array at the same time. Use the [shared_drive](/docs/providers/metalcloud/d/shared_drive.html) object if you need it to attach to multiple instance arrays. 
+Note that these objects can only be attached to a single instance array at the same time. Use the [shared_drive](./shared_drive.html.md) object if you need it to attach to multiple instance arrays. 
 
-![instances-to-drive-arrays](/docs/providers/metalcloud/assets/introduction-5.svg)
+![instances-to-drive-arrays](../assets/introduction-5.svg)
 
 
 ## Example usage

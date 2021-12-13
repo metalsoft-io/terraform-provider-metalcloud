@@ -7,7 +7,7 @@ description: |-
 
 # metalcloud_infrastructure/instance_array/firewall_rule
 
-FirewallRules are a ACL-like rules that are applied on all instances of an instance array if the InstanceArray's `instance_array_firewall_managed` is set to **True**. It is part of an [instance_array](/docs/providers/metalcloud/r/instance_array.html) block.
+FirewallRules are a ACL-like rules that are applied on all instances of an instance array if the InstanceArray's `instance_array_firewall_managed` is set to **True**. It is part of an [instance_array](./instance_array.html.md) block.
 
 The default rule is **Deny all** thus the FirewallRule system is a whitelist.
 
@@ -16,11 +16,14 @@ The default rule is **Deny all** thus the FirewallRule system is a whitelist.
 The following rules allow access to SSH access only from the HQ and HTTPs traffic from anywhere:
 
 ```hcl
-resource "metalcloud_infrastructure" "foo" {
-    ...
-    
-    instance_array {
-        ...
+data "metalcloud_infrastructure" "infra" {
+   
+    infrastructure_label = "test-infra"
+    datacenter_name = "dc-1" 
+
+    create_if_not_exists = true
+}
+resource "metalcloud_instance_array" "instance" {
 
          firewall_rule {
             firewall_rule_description = "allow ssh from HQ"
@@ -30,7 +33,7 @@ resource "metalcloud_infrastructure" "foo" {
             firewall_rule_source_ip_address_range_end="84.84.12.255"
             firewall_rule_protocol="tcp"
             firewall_rule_ip_address_type="ipv4"
-		}
+		      }
 
         firewall_rule {
             firewall_rule_description = "allow https traffic from anywhere"
@@ -40,7 +43,7 @@ resource "metalcloud_infrastructure" "foo" {
             firewall_rule_source_ip_address_range_end="0.0.0.0"
             firewall_rule_protocol="tcp"
             firewall_rule_ip_address_type="ipv4"
-		}
+		    }
     }
 }
 ```
