@@ -123,7 +123,7 @@ resource "metalcloud_shared_drive" "datastore" {
 }
 
 resource "metalcloud_network_profile" "profile" {
-    network_profile_label = var.clustername
+    network_profile_label = "profile-network-${var.clustername}-${var.infrastructure_id}"
     datacenter_name = var.datacenter_name
     network_type = "wan"
 
