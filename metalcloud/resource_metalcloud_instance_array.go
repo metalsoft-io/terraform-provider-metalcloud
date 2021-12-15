@@ -344,7 +344,26 @@ func resourceInstanceArrayRead(ctx context.Context, d *schema.ResourceData, meta
 		d.Set("network_profile", schema.NewSet(schema.HashResource(resourceInstanceArrayNetworkProfile()), profiles))
 	}
 
-	retInstancesJSON, err := flattenInstances(retInstances)
+	//instances
+	keys := []int{}
+	instances := []mc.Instance{}
+
+	for _, v := range *retInstances {
+
+		keys = append(keys, v.InstanceID)
+	}
+
+	sort.Ints(keys)
+
+	for _, id := range keys {
+		i, err := client.InstanceGet(id)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		instances = append(instances, *i)
+	}
+
+	retInstancesJSON, err := flattenInstances(instances)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -363,24 +382,7 @@ func resourceInstanceArrayRead(ctx context.Context, d *schema.ResourceData, meta
 
 }
 
-func flattenInstances(val interface{}) (string, error) {
-
-	retInstances := val.(*map[string]mc.Instance)
-
-	instanceMap := make(map[int]mc.Instance, len(*retInstances))
-	keys := []int{}
-	instances := []mc.Instance{}
-
-	for _, v := range *retInstances {
-		instanceMap[v.InstanceID] = v
-		keys = append(keys, v.InstanceID)
-	}
-
-	sort.Ints(keys)
-
-	for _, id := range keys {
-		instances = append(instances, instanceMap[id])
-	}
+func flattenInstances(instances []mc.Instance) (string, error) {
 
 	bytes, err := json.Marshal(instances)
 	if err != nil {
