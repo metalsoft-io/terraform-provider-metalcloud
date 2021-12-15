@@ -88,6 +88,13 @@ func resourceSharedDrive() *schema.Resource {
 					Type: schema.TypeInt,
 				},
 			},
+
+			"shared_drive_targets_json": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: false,
+				Default:  nil,
+			},
 		},
 	}
 }
@@ -128,6 +135,8 @@ func resourceSharedDriveRead(ctx context.Context, d *schema.ResourceData, meta i
 	}
 
 	flattenSharedDrive(d, *retSDA)
+
+	d.Set("shared_drive_targets_json", retSDA.SharedDriveTargetsJSON)
 
 	return diags
 }
