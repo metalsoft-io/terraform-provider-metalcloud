@@ -277,6 +277,8 @@ github.com/metalsoft-io/metal-cloud-sdk-go/v2 v2.3.3 h1:avIJKsY6nWIe3jTjFWU+GRHd
 github.com/metalsoft-io/metal-cloud-sdk-go/v2 v2.3.3/go.mod h1:wuePDoPyCjJAsq2c8hPScwsfEipvvoAj9F6aIx/Zmg4=
 github.com/metalsoft-io/metal-cloud-sdk-go/v2 v2.3.4 h1:IgxCrICeimLV0d94iUYFtEJs20tjbm5mw7Wwh3moE30=
 github.com/metalsoft-io/metal-cloud-sdk-go/v2 v2.3.4/go.mod h1:wuePDoPyCjJAsq2c8hPScwsfEipvvoAj9F6aIx/Zmg4=
+github.com/metalsoft-io/metal-cloud-sdk-go/v2 v2.3.5 h1:UIAzZHuQ+Tire1w84Hho4g/WZw3xtZY5ZrWT/e2rE6E=
+github.com/metalsoft-io/metal-cloud-sdk-go/v2 v2.3.5/go.mod h1:wuePDoPyCjJAsq2c8hPScwsfEipvvoAj9F6aIx/Zmg4=
 github.com/mitchellh/cli v1.1.2 h1:PvH+lL2B7IQ101xQL63Of8yFS2y+aDlsFcsqNc+u/Kw=
 github.com/mitchellh/cli v1.1.2/go.mod h1:6iaV0fGdElS6dPBx0EApTxHrcWvmJphyh2n8YBLPPZ4=
 github.com/mitchellh/copystructure v1.0.0/go.mod h1:SNtv71yrdKgLRyLFxmLdkAbkKEFWgYaq1OVrnRcwhnw=
