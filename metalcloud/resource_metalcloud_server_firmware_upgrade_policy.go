@@ -313,6 +313,10 @@ func resourceServerFirmwareUpgradePolicyDelete(ctx context.Context, d *schema.Re
 	}
 
 	err = client.ServerFirmwareUpgradePolicyDelete(id)
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	d.SetId("")
 	return diags
 }
