@@ -14,6 +14,8 @@ terraform {
 
 locals{
   BOOT_METHOD = "local_drives"
+  SIZES={"MB"=1, "M"=1, "GB"=1024, "G"=1024, "TB"=1024*1024, "T"=1024*1024}
+  SIZE_FORMAT_REGEXP="^(\\d*)\\s*([MB|GB|TB]{1,2}$)"
 
   ISCSI_LUN_TYPE = "iscsi_hdd"
   instance_array_instance_count = "1"
@@ -77,22 +79,6 @@ resource "metalcloud_instance_array" "cluster" {
 
 }
 
-
-resource "metalcloud_drive_array" "drives" {
-
-    count =  length(var.compute_nodes)
-
-    infrastructure_id = var.infrastructure_id
-
-    drive_array_label = "${metalcloud_instance_array.cluster[count.index].instance_array_label}-da"
-
-    //to which instance array is this drive array attached
-    instance_array_id = metalcloud_instance_array.cluster[count.index].instance_array_id
-    
-    drive_array_storage_type = "iscsi_ssd"
-    drive_size_mbytes_default = 40960    
-}
-
 resource "metalcloud_shared_drive" "datastore" {
 
     count =  length(var.datastores)
@@ -100,7 +86,7 @@ resource "metalcloud_shared_drive" "datastore" {
     infrastructure_id = var.infrastructure_id
   
     shared_drive_label = "${var.datastores[count.index].datastore_name}"
-    shared_drive_size_mbytes = 40966
+    shared_drive_size_mbytes = regex(local.SIZE_FORMAT_REGEXP,upper(var.datastores[count.index].shared_drive_size))[0] * local.SIZES[regex(local.SIZE_FORMAT_REGEXP,upper(var.datastores[count.index].shared_drive_size))[1]]
 
     shared_drive_storage_type = "iscsi_hdd"
    
