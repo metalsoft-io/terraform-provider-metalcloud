@@ -3,6 +3,7 @@ terraform {
   required_providers {
     metalcloud = {
       source = "metalsoft-io/metalcloud"
+      version = "2.1.2"
     }
   }
 }
@@ -86,6 +87,7 @@ resource "metalcloud_shared_drive" "datastore" {
 
     shared_drive_attached_instance_arrays = [metalcloud_instance_array.cluster.instance_array_id]  //this will create a dependency on the instance array
 }
+
 
 # Use this resource to effect deploys of the above resources.
 resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {

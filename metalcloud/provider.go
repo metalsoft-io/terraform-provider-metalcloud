@@ -33,6 +33,7 @@ func providerDataSources() map[string]*schema.Resource {
 		"metalcloud_volume_template":     DataSourceVolumeTemplate(),
 		"metalcloud_infrastructure":      DataSourceInfrastructureReference(),
 		"metalcloud_external_connection": DataSourceExternalConnection(),
+		"metalcloud_server_type":         DataSourceServerType(),
 	}
 }
 

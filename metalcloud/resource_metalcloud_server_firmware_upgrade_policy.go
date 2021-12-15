@@ -55,7 +55,7 @@ func resourceServerFirmwareUpgradePolicy() *schema.Resource {
 					Type: schema.TypeInt,
 				},
 			},
-			"server_firmware_upgrade_policy_rules": {
+			"server_firmware_upgrade_policy_rule": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem:     resourceServerFirmwareUpgradePolicyRule(),
