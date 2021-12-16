@@ -12,5 +12,5 @@ output "credentials" {
 output "shared_drive_targets" {
    description = "the targets of the shared drives"
    sensitive = true
-   value = metalcloud_shared_drive.datastore.shared_drive_targets_json
+   value = metalcloud_shared_drive.datastore[*].shared_drive_targets_json
 }
