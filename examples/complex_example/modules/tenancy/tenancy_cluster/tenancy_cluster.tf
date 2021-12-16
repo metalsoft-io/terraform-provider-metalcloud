@@ -27,8 +27,6 @@ data "metalcloud_volume_template" "esxi7" {
   volume_template_label = "esxi-700-uefi-v2"
 }
 
-}
-
 resource "metalcloud_instance_array" "cluster" {
 
     #this will create a series of instances

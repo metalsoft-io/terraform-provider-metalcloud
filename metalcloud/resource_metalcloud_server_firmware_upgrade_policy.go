@@ -171,7 +171,7 @@ func resourceServerFirmwareUpgradePolicyUpdate(ctx context.Context, d *schema.Re
 		}
 	}
 
-	if d.HasChange("server_firmware_upgrade_policy_rules") {
+	if d.HasChange("server_firmware_upgrade_policy_rule") {
 		dg := updateServerFirmwarePolicyRules(
 			firmwarePolicy.ServerFirmwareUpgradePolicyRules,
 			retFirmwarePolicy.ServerFirmwareUpgradePolicyRules,
@@ -342,7 +342,7 @@ func expandFirmwarePolicy(d *schema.ResourceData) mc.ServerFirmwareUpgradePolicy
 	policy.ServerFirmwareUpgradePolicyAction = d.Get("server_firmware_upgrade_policy_action").(string)
 	ruleList := []mc.ServerFirmwareUpgradePolicyRule{}
 
-	if rules, ok := d.GetOk("server_firmware_upgrade_policy_rules"); ok {
+	if rules, ok := d.GetOk("server_firmware_upgrade_policy_rule"); ok {
 		for _, ruleIntf := range rules.(*schema.Set).List() {
 			rule := expandFirmwarePolicyRule(ruleIntf.(map[string]interface{}))
 			ruleList = append(ruleList, rule)
@@ -377,7 +377,7 @@ func flattenFirmwarePolicy(d *schema.ResourceData, firmwarePolicy mc.ServerFirmw
 		ruleSet.Add(flattenFirmwarePolicyRule(rule))
 	}
 
-	d.Set("server_firmware_upgrade_policy_rules", ruleSet)
+	d.Set("server_firmware_upgrade_policy_rule", ruleSet)
 
 	return nil
 }
