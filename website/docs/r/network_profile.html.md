@@ -31,17 +31,17 @@ resource "metalcloud_network_profile" "myprofile" {
   datacenter_name = "asdasd"
   network_type = "wan"
 
-  vlan {
+  network_profile_vlan {
     vlan_id = 101
     port_mode = "trunk",
     provision_subnet_gateways = false,
   }
 
-  vlan {
+  network_profile_vlan {
     vlan_id = 102
     port_mode = "trunk",
     provision_subnet_gateways = true,
-    external_connections = [
+    external_connection_ids = [
       metalcloud_external_connection.ext1.id, 
       metalcloud_external_connection.ext2.id, 
     ]
@@ -58,7 +58,7 @@ resource "metalcloud_network_profile" "myprofile" {
 * `network_type` - (Required) The type of the **Network Profile**. Can be one of: `wan`,`lan`, `san`.
 * `network_profile_vlan` - (Optional) A set of network profile VLAN objects:
 ```
-vlan {
+network_profile_vlan {
     #the id of the VLAN
     vlan_id: 102
     
@@ -69,7 +69,7 @@ vlan {
     provision_subnet_gateways: false,
 
     #if this vlan needs to be terminated on the gateway device  and to which external connections it should be connected to
-    external_connections = [id1, id2]}
+    external_connection_ids = [id1, id2]}
   }
 ```
 
