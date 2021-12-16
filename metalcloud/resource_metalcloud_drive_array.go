@@ -195,7 +195,15 @@ func resourceDriveArrayDelete(ctx context.Context, d *schema.ResourceData, meta 
 
 	client := meta.(*mc.Client)
 
-	client.DriveArrayDelete(id)
+	_, err = client.DriveArrayGet(id)
+
+	if err == nil {
+		client.DriveArrayDelete(id)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	d.SetId("")
 
 	return diags

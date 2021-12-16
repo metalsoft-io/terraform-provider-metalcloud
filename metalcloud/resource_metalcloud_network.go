@@ -174,7 +174,15 @@ func resourceNetworkDelete(ctx context.Context, d *schema.ResourceData, meta int
 		return diag.FromErr(err)
 	}
 
-	err = client.NetworkDelete(id)
+	_, err = client.NetworkGet(id)
+
+	if err == nil {
+		err = client.NetworkDelete(id)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	d.SetId("")
 	return diags
 }

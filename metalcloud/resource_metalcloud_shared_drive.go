@@ -170,10 +170,17 @@ func resourceSharedDriveDelete(ctx context.Context, d *schema.ResourceData, meta
 
 	id, err := strconv.Atoi(d.Id())
 
-	err = client.SharedDriveDelete(id)
-
 	if err != nil {
 		return diag.FromErr(err)
+	}
+
+	_, err = client.SharedDriveGet(id)
+
+	if err == nil {
+		err = client.SharedDriveDelete(id)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	d.SetId("")

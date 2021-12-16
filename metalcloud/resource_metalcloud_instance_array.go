@@ -511,7 +511,14 @@ func resourceInstanceArrayDelete(ctx context.Context, d *schema.ResourceData, me
 		return diag.FromErr(err)
 	}
 
-	err = client.InstanceArrayDelete(id)
+	_, err = client.InstanceArrayGet(id)
+	if err == nil {
+		err = client.InstanceArrayDelete(id)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	d.SetId("")
 	return diags
 }
