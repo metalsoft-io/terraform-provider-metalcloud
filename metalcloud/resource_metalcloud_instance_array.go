@@ -282,6 +282,15 @@ func resourceInstanceArrayCreate(ctx context.Context, d *schema.ResourceData, me
 
 	d.SetId(id)
 
+	/* custom variables for instances */
+	cvList := d.Get("instance_custom_variables").([]interface{})
+	dg := updateInstancesCustomVariables(cvList, iaC.InstanceArrayID, client)
+
+	if dg.HasError() {
+		resourceInstanceArrayRead(ctx, d, meta)
+		return dg
+	}
+
 	for _, intf := range ia.InstanceArrayInterfaces {
 		_, err := client.InstanceArrayInterfaceAttachNetwork(iaC.InstanceArrayID, intf.InstanceArrayInterfaceIndex, intf.NetworkID)
 		if err != nil {
@@ -435,7 +444,7 @@ func resourceInstanceArrayUpdate(ctx context.Context, d *schema.ResourceData, me
 
 	if dg.HasError() {
 		resourceInstanceArrayRead(ctx, d, meta)
-		return diag.FromErr(err)
+		return dg
 	}
 
 	//update interfaces
@@ -444,7 +453,7 @@ func resourceInstanceArrayUpdate(ctx context.Context, d *schema.ResourceData, me
 
 		if dg.HasError() {
 			resourceInstanceArrayRead(ctx, d, meta)
-			return diag.FromErr(err)
+			return dg
 		}
 	}
 
