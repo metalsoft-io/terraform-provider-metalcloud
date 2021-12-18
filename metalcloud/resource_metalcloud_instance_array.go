@@ -265,6 +265,8 @@ func resourceInstanceArrayInterface() *schema.Resource {
 func resourceInstanceArrayCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*mc.Client)
 
+	var diags diag.Diagnostics
+
 	infrastructure_id := d.Get("infrastructure_id").(int)
 	_, err := client.InfrastructureGet(infrastructure_id)
 
@@ -291,6 +293,8 @@ func resourceInstanceArrayCreate(ctx context.Context, d *schema.ResourceData, me
 		return dg
 	}
 
+	diags = append(diags, dg...)
+
 	for _, intf := range ia.InstanceArrayInterfaces {
 		_, err := client.InstanceArrayInterfaceAttachNetwork(iaC.InstanceArrayID, intf.InstanceArrayInterfaceIndex, intf.NetworkID)
 		if err != nil {
@@ -314,7 +318,10 @@ func resourceInstanceArrayCreate(ctx context.Context, d *schema.ResourceData, me
 		}
 	}
 
-	return resourceInstanceArrayRead(ctx, d, meta)
+	dg = resourceInstanceArrayRead(ctx, d, meta)
+	diags = append(diags, dg...)
+
+	return diags
 }
 
 func resourceInstanceArrayRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -805,16 +812,25 @@ func updateInstancesCustomVariables(cvList []interface{}, instanceArrayID int, c
 		for k, v := range cvIntf {
 			instance_custom_variables[k] = v.(string)
 		}
+
 		instance_index := icv["instance_index"].(int)
-		if instance_index < nInstances {
-			instance := instances[instance_index]
-			currentCVLabelList[instance.InstanceLabel] = instance.InstanceID
-			instance.InstanceOperation.InstanceCustomVariables = instance_custom_variables
-			_, err := client.InstanceEdit(instance.InstanceID, instance.InstanceOperation)
-			if err != nil {
-				return diag.FromErr(err)
-			}
+
+		if instance_index < 0 || instance_index >= nInstances {
+			return append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("instance_index in custom_variables block out of bounds"),
+				Detail:   fmt.Sprintf("Use a number between 0 and %v (instance_array_instance_count-1). ", nInstances-1),
+			})
 		}
+
+		instance := instances[instance_index]
+		currentCVLabelList[instance.InstanceLabel] = instance.InstanceID
+		instance.InstanceOperation.InstanceCustomVariables = instance_custom_variables
+		_, err := client.InstanceEdit(instance.InstanceID, instance.InstanceOperation)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
 	}
 
 	for _, instance := range *instanceList {

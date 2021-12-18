@@ -61,7 +61,8 @@ func resourceNetwork() *schema.Resource {
 			"network_lan_autoallocate_ips": &schema.Schema{
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  false,
+				Default:  nil,
+				Computed: true,
 			},
 		},
 	}
@@ -174,12 +175,17 @@ func resourceNetworkDelete(ctx context.Context, d *schema.ResourceData, meta int
 		return diag.FromErr(err)
 	}
 
-	_, err = client.NetworkGet(id)
+	n, err := client.NetworkGet(id)
 
+	//if the network has already been deleted by infrastructure delete we ignore it, else we actually delete because
+	//that might have been the intent. Note that only LAN networks can be deleted.
+	//SAN and WAN are automatically created and deleted
 	if err == nil {
-		err = client.NetworkDelete(id)
-		if err != nil {
-			return diag.FromErr(err)
+		if n.NetworkType == NETWORK_TYPE_LAN {
+			err = client.NetworkDelete(id)
+			if err != nil {
+				return diag.FromErr(err)
+			}
 		}
 	}
 

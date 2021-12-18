@@ -3,7 +3,7 @@ terraform {
   required_providers {
     metalcloud = {
       source = "metalsoft-io/metalcloud"
-      version = "2.1.2"
+       version = ">= 2.2.1"
     }
   }
 }
@@ -20,7 +20,7 @@ provider "metalcloud" {
 # if the create_if_not_exists flag is set to true
 data "metalcloud_infrastructure" "infra" {
    
-    infrastructure_label = "test-infra"
+    infrastructure_label = "test-infra7"
     datacenter_name = "${var.datacenter}" 
 
     create_if_not_exists = true
@@ -48,7 +48,7 @@ resource "metalcloud_instance_array" "cluster" {
     instance_array_label = "test-3"
 
     instance_array_instance_count = 1 //deprecated, keep equal to 1
-    instance_array_ram_gbytes = "16"
+    instance_array_ram_gbytes = "1"
     instance_array_processor_count = 1
     instance_array_processor_core_count = 1
     instance_array_boot_method = "local_drives"
@@ -63,12 +63,12 @@ resource "metalcloud_instance_array" "cluster" {
     }
 
     interface{
-      interface_index = 2
+      interface_index = 1
       network_id = metalcloud_network.storage.id
     }
 
     instance_custom_variables {
-      instance_index = 1
+      instance_index = 0
       custom_variables={
         "test1":"test2"
         "test3":"test4"
@@ -83,7 +83,7 @@ resource "metalcloud_shared_drive" "datastore" {
   
     shared_drive_label = "test-da-1"
     shared_drive_size_mbytes = 40966
-    shared_drive_storage_type = "iscsi_hdd"
+    shared_drive_storage_type = "iscsi_ssd"
 
     shared_drive_attached_instance_arrays = [metalcloud_instance_array.cluster.instance_array_id]  //this will create a dependency on the instance array
 }
@@ -95,7 +95,7 @@ resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
   infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
 
   # Set this to false to actually trigger deploys.
-  prevent_deploy = false
+  prevent_deploy = true
 
   # These options will make terraform apply operation will wait for the deploy to finish (when prevent_deploy is false)
   # instead of exiting while the deploy is ongoing
