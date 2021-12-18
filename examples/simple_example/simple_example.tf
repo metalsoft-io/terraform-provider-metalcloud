@@ -41,6 +41,12 @@ resource "metalcloud_network" "storage" {
     network_label = "storage-network"
     network_type = "san"
 }
+
+data "metalcloud_server_type" "large"{
+  server_type_name = "M.16.16.1.v3"
+}
+
+
 resource "metalcloud_instance_array" "cluster" {
 
     infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
@@ -48,10 +54,11 @@ resource "metalcloud_instance_array" "cluster" {
     instance_array_label = "test-3"
 
     instance_array_instance_count = 1 //deprecated, keep equal to 1
-    instance_array_ram_gbytes = "1"
-    instance_array_processor_count = 1
-    instance_array_processor_core_count = 1
-    instance_array_boot_method = "local_drives"
+
+    instance_server_type{
+      instance_index=0
+      server_type_id=data.metalcloud_server_type.large.server_type_id
+    }
 
     volume_template_id = tonumber(data.metalcloud_volume_template.esxi7.id)
 

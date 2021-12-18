@@ -19,15 +19,24 @@ data "metalcloud_volume_template" "centos76" {
 			volume_template_label = "centos7-6"
 }
 
-resource "metalcloud_infrastructure" "foo" {
+//example usage
+resource "metalcloud_instance_array" "cluster" {
 
-  instance_array {
+    ...
 
-    volume_template_id = tonumber(data.metalcloud_volume_template.centos76.id)
-  }
+    volume_template_id = tonumber(data.metalcloud_volume_template.esxi7.id)
+    ...
 }
 ```
 
 ## Arguments
 
 `volume_template_label` (Required) String used to locate the template. Values such as centos7-7, rhel7-6 etc. are permitted. If the provided name does not mach any valid templates,a list of possible templates is returned in the error message.
+
+
+## Attributes
+
+This resource exports the following attributes:
+
+* `volume_template_id` - The id of the volume template.
+* `id` - Same as `volume_template_id`

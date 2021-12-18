@@ -35,3 +35,4 @@ data "metalcloud_infrastructure" "infra" {
 This resource exports the following attributes:
 
 * `infrastructure_id` - The id of the infrastructure is used for many operations. It is also the ID of the data object.
+* `id` - Same as `infrastructure_id`

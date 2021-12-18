@@ -123,6 +123,18 @@ The following arguments are supported:
       netowork_profile_id = metalcloud_network_profile.myprofile.network_profile_id
    }
   ```
+* `instance_server_type` (Optional, default []) - Configures the  server_types of instances part of this instance array. This is an alternative method to using `instance_array_ram_gbytes` and the other "minimums" and if set will take precedence. Example:
+  ```
+    data "metalcloud_server_type" "large"{
+      server_type_name = "M.16.16.1.v3"
+    }
+
+    instance_server_type{
+      instance_index=0
+      server_type_id=data.metalcloud_server_type.large.server_type_id
+    }
+  ```
+
 
 ## Attributes
 

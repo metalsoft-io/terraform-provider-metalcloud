@@ -43,5 +43,11 @@ resource "network_profile" "profile" {
 ## Arguments
 
 `external_connection_label` (Required) String used to locate the external connection.
-
 `datacenter_name` (Required) The datacenter where the external connection was created.
+
+## Attributes
+
+This resource exports the following attributes:
+
+* `external_connection_id` - The id of the external connection.
+* `id` - Same as `external_connection_id`

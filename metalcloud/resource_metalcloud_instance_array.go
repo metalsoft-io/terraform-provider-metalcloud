@@ -156,6 +156,11 @@ func resourceInstanceArray() *schema.Resource {
 				Computed: true,
 				Elem:     resourceInstanceArrayNetworkProfile(),
 			},
+			"instance_server_type": {
+				Type:     schema.TypeList,
+				Elem:     instanceServerTypeResource(),
+				Optional: true,
+			},
 		},
 	}
 }
@@ -185,6 +190,21 @@ func instanceCustomVariableResource() *schema.Resource {
 			"custom_variables": &schema.Schema{
 				Type:     schema.TypeMap,
 				Elem:     schema.TypeString,
+				Required: true,
+			},
+		},
+	}
+}
+
+func instanceServerTypeResource() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"instance_index": &schema.Schema{
+				Type:     schema.TypeInt,
+				Required: true,
+			},
+			"server_type_id": &schema.Schema{
+				Type:     schema.TypeInt,
 				Required: true,
 			},
 		},
@@ -287,6 +307,17 @@ func resourceInstanceArrayCreate(ctx context.Context, d *schema.ResourceData, me
 	/* custom variables for instances */
 	cvList := d.Get("instance_custom_variables").([]interface{})
 	dg := updateInstancesCustomVariables(cvList, iaC.InstanceArrayID, client)
+
+	if dg.HasError() {
+		resourceInstanceArrayRead(ctx, d, meta)
+		return dg
+	}
+
+	diags = append(diags, dg...)
+
+	/* update server types */
+	iList := d.Get("instance_server_type").([]interface{})
+	dg = updateInstancesServerTypes(iList, iaC.InstanceArrayID, client)
 
 	if dg.HasError() {
 		resourceInstanceArrayRead(ctx, d, meta)
@@ -410,6 +441,8 @@ func flattenInstances(instances []mc.Instance) (string, error) {
 
 func resourceInstanceArrayUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
+	var diags diag.Diagnostics
+
 	client := meta.(*mc.Client)
 
 	id, err := strconv.Atoi(d.Id())
@@ -454,6 +487,19 @@ func resourceInstanceArrayUpdate(ctx context.Context, d *schema.ResourceData, me
 		return dg
 	}
 
+	diags = append(diags, dg...)
+
+	/* update server types */
+	iList := d.Get("instance_server_type").([]interface{})
+	dg = updateInstancesServerTypes(iList, id, client)
+
+	if dg.HasError() {
+		resourceInstanceArrayRead(ctx, d, meta)
+		return dg
+	}
+
+	diags = append(diags, dg...)
+
 	//update interfaces
 	if d.HasChange("interface") {
 		dg := updateInstanceArrayInterfaces(ia.InstanceArrayInterfaces, editedIA.InstanceArrayInterfaces, client)
@@ -487,7 +533,9 @@ func resourceInstanceArrayUpdate(ctx context.Context, d *schema.ResourceData, me
 		}
 	}
 
-	return resourceInstanceArrayRead(ctx, d, meta)
+	dg = resourceInstanceArrayRead(ctx, d, meta)
+
+	return diags
 }
 
 func updateInstanceArrayInterfaces(configuredInterfaces []mc.InstanceArrayInterface, intfList []mc.InstanceArrayInterface, client *mc.Client) diag.Diagnostics {
@@ -842,6 +890,59 @@ func updateInstancesCustomVariables(cvList []interface{}, instanceArrayID int, c
 			}
 		}
 	}
+	return diags
+}
+
+//* sets the server types on each of the instances
+func updateInstancesServerTypes(iList []interface{}, instanceArrayID int, client *mc.Client) diag.Diagnostics {
+
+	var diags diag.Diagnostics
+	instanceList, err := client.InstanceArrayInstances(instanceArrayID)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	//TODO: flatten instances
+	instanceMap := make(map[int]mc.Instance, len(*instanceList))
+	nInstances := len(*instanceList)
+	keys := []int{}
+	instances := []mc.Instance{}
+
+	for _, v := range *instanceList {
+		instanceMap[v.InstanceID] = v
+		keys = append(keys, v.InstanceID)
+	}
+
+	sort.Ints(keys)
+
+	for _, id := range keys {
+		instances = append(instances, instanceMap[id])
+	}
+
+	for _, iIntf := range iList {
+		imap := iIntf.(map[string]interface{})
+
+		instance_index := imap["instance_index"].(int)
+		server_type_id := imap["server_type_id"].(int)
+
+		if instance_index < 0 || instance_index >= nInstances {
+			return append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("instance_index in instance_server_type block out of bounds"),
+				Detail:   fmt.Sprintf("Use a number between 0 and %v (instance_array_instance_count-1). ", nInstances-1),
+			})
+		}
+
+		instance := instances[instance_index]
+
+		instance.InstanceOperation.ServerTypeID = server_type_id
+
+		_, err := client.InstanceEdit(instance.InstanceID, instance.InstanceOperation)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+	}
+
 	return diags
 }
 
