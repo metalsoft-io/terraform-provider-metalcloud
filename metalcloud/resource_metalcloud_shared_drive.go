@@ -174,9 +174,9 @@ func resourceSharedDriveDelete(ctx context.Context, d *schema.ResourceData, meta
 		return diag.FromErr(err)
 	}
 
-	_, err = client.SharedDriveGet(id)
+	sd, err := client.SharedDriveGet(id)
 
-	if err == nil {
+	if err == nil && sd.SharedDriveServiceStatus != SERVICE_STATUS_DELETED {
 		err = client.SharedDriveDelete(id)
 		if err != nil {
 			return diag.FromErr(err)

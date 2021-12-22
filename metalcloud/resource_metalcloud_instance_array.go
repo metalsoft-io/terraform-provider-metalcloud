@@ -575,8 +575,9 @@ func resourceInstanceArrayDelete(ctx context.Context, d *schema.ResourceData, me
 		return diag.FromErr(err)
 	}
 
-	_, err = client.InstanceArrayGet(id)
-	if err == nil {
+	ia, err := client.InstanceArrayGet(id)
+
+	if err == nil && ia.InstanceArrayServiceStatus != SERVICE_STATUS_DELETED {
 		err = client.InstanceArrayDelete(id)
 		if err != nil {
 			return diag.FromErr(err)

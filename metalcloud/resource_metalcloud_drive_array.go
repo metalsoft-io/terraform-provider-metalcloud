@@ -195,9 +195,9 @@ func resourceDriveArrayDelete(ctx context.Context, d *schema.ResourceData, meta 
 
 	client := meta.(*mc.Client)
 
-	_, err = client.DriveArrayGet(id)
+	drive, err := client.DriveArrayGet(id)
 
-	if err == nil {
+	if err == nil && drive.DriveArrayServiceStatus != SERVICE_STATUS_DELETED {
 		client.DriveArrayDelete(id)
 		if err != nil {
 			return diag.FromErr(err)
