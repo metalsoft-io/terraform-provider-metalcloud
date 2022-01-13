@@ -91,6 +91,12 @@ func resourceDriveArray() *schema.Resource {
 				Optional: true,
 				Default:  0,
 			},
+			"drive_array_io_limit_policy": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: false,
+				Default:  nil,
+			},
 		},
 	}
 }
@@ -233,6 +239,7 @@ func expandDriveArray(d *schema.ResourceData) mc.DriveArray {
 	da.DriveArrayStorageType = d.Get("drive_array_storage_type").(string)
 	da.DriveSizeMBytesDefault = d.Get("drive_size_mbytes_default").(int)
 	da.VolumeTemplateID = d.Get("volume_template_id").(int)
+	da.DriveArrayIOLimitPolicy = d.Get("drive_array_io_limit_policy").(string)
 
 	if d.Get("instance_array_id") != nil {
 		da.InstanceArrayID = d.Get("instance_array_id").(int)

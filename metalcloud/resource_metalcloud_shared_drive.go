@@ -95,6 +95,12 @@ func resourceSharedDrive() *schema.Resource {
 				Optional: false,
 				Default:  nil,
 			},
+			"shared_drive_io_limit_policy": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: false,
+				Default:  nil,
+			},
 		},
 	}
 }
@@ -214,6 +220,7 @@ func expandSharedDrive(d *schema.ResourceData) mc.SharedDrive {
 	// sd.SharedDriveHasGFS = d.Get("shared_drive_has_gfs").(bool)
 	sd.SharedDriveStorageType = d.Get("shared_drive_storage_type").(string)
 	sd.SharedDriveSizeMbytes = d.Get("shared_drive_size_mbytes").(int)
+	sd.SharedDriveIOLimitPolicy = d.Get("shared_drive_io_limit_policy").(string)
 
 	if v, ok := d.GetOk("shared_drive_attached_instance_arrays"); ok {
 		sd.SharedDriveAttachedInstanceArrays = []int{}
