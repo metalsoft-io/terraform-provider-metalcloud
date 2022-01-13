@@ -47,10 +47,9 @@ func providerSchema() map[string]*schema.Schema {
 		},
 		"endpoint": &schema.Schema{
 			Type:        schema.TypeString,
-			Optional:    true,
+			Required:    true,
 			Description: "The URL to the API",
 			DefaultFunc: schema.EnvDefaultFunc("METALCLOUD_ENDPOINT", nil),
-			Default:     mc.DefaultEndpoint(),
 		},
 		"user_email": &schema.Schema{
 			Type:        schema.TypeString,
