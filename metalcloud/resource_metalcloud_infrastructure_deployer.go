@@ -99,6 +99,14 @@ func ResourceInfrastructureDeployer() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+
+			"server_allocation_policy": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Default:  nil,
+				Computed: true,
+				Elem:     resourceServerAllocationPolicy(),
+			},
 			"edited": {
 				Type:     schema.TypeBool,
 				Computed: true,
@@ -107,6 +115,46 @@ func ResourceInfrastructureDeployer() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(45 * time.Minute),
 			Update: schema.DefaultTimeout(45 * time.Minute),
+		},
+	}
+}
+
+func resourceServerAllocationPolicy() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"instance_array_id": &schema.Schema{
+				Type:        schema.TypeInt,
+				Description: "Instance_array ID",
+				Required:    true,
+			},
+			"allocation_policy": &schema.Schema{
+				Type:        schema.TypeSet,
+				Description: "Server allocation policy",
+				Optional:    true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"server_type_id": &schema.Schema{
+							Type:        schema.TypeInt,
+							Description: "Server type to allocate to instance array.",
+							Required:    true,
+						},
+						"server_count": &schema.Schema{
+							Type:        schema.TypeInt,
+							Description: "Count of servers of this server type.",
+							Optional:    true,
+							Computed:    true,
+						},
+						"server_ids": &schema.Schema{
+							Type:        schema.TypeSet,
+							Description: "List of server IDs to associate with this instance array on this server type id.",
+							Optional:    true,
+							Elem: &schema.Schema{
+								Type: schema.TypeInt,
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -344,6 +392,49 @@ func deployInfrastructure(infrastructureID int, d *schema.ResourceData, meta int
 		HardShutdownAfterTimeout:   d.Get("hard_shutdown_after_timeout").(bool),
 		AttemptSoftShutdown:        d.Get("attempt_soft_shutdown").(bool),
 		SoftShutdownTimeoutSeconds: d.Get("soft_shutdown_timeout_seconds").(int),
+	}
+
+	deployOptions := mc.DeployOptions{}
+
+	if allocationPolicy, ok := d.GetOk("server_allocation_policy"); ok {
+		allocationPolicyObj := allocationPolicy.(*schema.Set)
+		deployOptions.InstanceArrayMapping = map[int]map[string]mc.DeployOptionsServerTypeMappingObject{}
+
+		for _, instanceArrayPolicy := range allocationPolicyObj.List() {
+			instanceArrayPolicyMap := instanceArrayPolicy.(map[string]interface{})
+
+			instanceArrayID := instanceArrayPolicyMap["instance_array_id"].(int)
+			allocationPolicies := instanceArrayPolicyMap["allocation_policy"].(*schema.Set)
+
+			deployOptionsServerTypeMappings := map[string]mc.DeployOptionsServerTypeMappingObject{}
+
+			for _, policy := range allocationPolicies.List() {
+				policyMap := policy.(map[string]interface{})
+
+				serverTypeID := policyMap["server_type_id"].(int)
+				serverCount := policyMap["server_count"].(int)
+
+				serverIDs := []int{}
+
+				for _, id := range policyMap["server_ids"].(*schema.Set).List() {
+					serverIDs = append(serverIDs, id.(int))
+				}
+
+				deployOptionsServerTypeMappings[fmt.Sprintf("%d", serverTypeID)] = mc.DeployOptionsServerTypeMappingObject{
+					ServerCount: serverCount,
+					ServerIDs:   serverIDs,
+				}
+			}
+
+			deployOptions.InstanceArrayMapping[instanceArrayID] = deployOptionsServerTypeMappings
+
+		}
+
+		return client.InfrastructureDeployWithOptions(
+			infrastructureID, shutDownOptions, &deployOptions,
+			d.Get("allow_data_loss").(bool),
+			d.Get("skip_ansible").(bool),
+		)
 	}
 
 	return client.InfrastructureDeploy(
