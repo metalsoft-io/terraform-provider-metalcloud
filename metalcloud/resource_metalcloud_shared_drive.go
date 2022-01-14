@@ -101,6 +101,12 @@ func resourceSharedDrive() *schema.Resource {
 				Optional: false,
 				Default:  nil,
 			},
+			"shared_drive_wwn": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: false,
+				Default:  nil,
+			},
 		},
 	}
 }
@@ -141,8 +147,6 @@ func resourceSharedDriveRead(ctx context.Context, d *schema.ResourceData, meta i
 	}
 
 	flattenSharedDrive(d, *retSDA)
-
-	d.Set("shared_drive_targets_json", retSDA.SharedDriveTargetsJSON)
 
 	return diags
 }
@@ -195,13 +199,14 @@ func resourceSharedDriveDelete(ctx context.Context, d *schema.ResourceData, meta
 }
 
 func flattenSharedDrive(d *schema.ResourceData, sharedDrive mc.SharedDrive) error {
-
 	d.Set("shared_drive_id", sharedDrive.SharedDriveID)
 	d.Set("shared_drive_label", sharedDrive.SharedDriveLabel)
 	d.Set("shared_drive_storage_type", sharedDrive.SharedDriveStorageType)
 	d.Set("shared_drive_size_mbytes", sharedDrive.SharedDriveSizeMbytes)
 	d.Set("shared_drive_attached_instance_arrays", sharedDrive.SharedDriveAttachedInstanceArrays)
 	d.Set("infrastructure_id", sharedDrive.InfrastructureID)
+	d.Set("shared_drive_targets_json", sharedDrive.SharedDriveTargetsJSON)
+	d.Set("shared_drive_wwn", sharedDrive.SharedDriveWWN)
 
 	return nil
 }

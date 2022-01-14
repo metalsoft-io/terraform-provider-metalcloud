@@ -97,6 +97,13 @@ func resourceDriveArray() *schema.Resource {
 				Optional: false,
 				Default:  nil,
 			},
+			"drive_array_wwn": {
+				Type:     schema.TypeMap,
+				Elem:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				Default:  nil,
+			},
 		},
 	}
 }
@@ -161,6 +168,19 @@ func resourceDriveArrayRead(ctx context.Context, d *schema.ResourceData, meta in
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
+	drives, err := client.DriveArrayDrives(id)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	wwnMap := make(map[string]string)
+
+	for k, v := range *drives {
+		wwnMap[k] = v.DriveWWN
+	}
+
+	d.Set("drive_array_wwn", wwnMap)
 
 	return diags
 }
