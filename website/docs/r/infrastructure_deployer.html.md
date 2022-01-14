@@ -70,6 +70,23 @@ The following arguments are supported:
 * `await_delete_finished` (Optional, default false) - If **true**, the provider will wait for a deploy (involving delete) to finish before exiting. If **false**, the delete operation (really a deploy) will continue after the provider existed. This operation is generally quick.
 * `keep_detaching_drives` (Optional, default true) - If **true**, the detaching Drive objects will not be deleted. If **false**, and the number of Instance objects is reduced, then the detaching Drive objects will be deleted.
 * `infrastructure_custom_variables` (Optional, default []) - All of the variables specified as a map of *string* = *string* such as { var_a="var_value" } will be sent to the underlying deploy process and referenced in operating system templates and workflows. 
+* `server_allocation_policy` (DEPRECATED, Optional, default []) - Server allocation policies control how servers are allocated to instance arrays. This option allows the user to specify a particular server or a list of server types per instance array. Example:
+  ```
+    server_allocation_policy{
+      instance_array_id  = metalcloud_instance_array.cluster1.instance_array_id
+      allocation_policy {
+        server_type_id = data.metalcloud_server_type.small.server_type_id
+        server_count = 1
+        server_ids = [10,22]
+      }
+
+      allocation_policy {
+        server_type_id = data.metalcloud_server_type.small.server_type_id
+        server_count = 1
+        server_ids = [44,55]
+      }
+    }
+  ```
 
 
 ## Attributes

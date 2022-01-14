@@ -41,6 +41,8 @@ resource "metalcloud_drive_array" "drives" {
 * `drive_array_storage_type` (Required) Possible values: `iscsi_ssd`, `iscsi_hdd`.
 * `drive_size_mbytes_default` (Optional, default: 40960) The capacity of each Drive in MBytes.
 * `volume_template_id` (Optional, default: nil) The volume template ID or name. Use the `volume_template` data source to get the right id.
+* `drive_array_io_limit_policy` (Optional, default: none) Set I/O limit (tiering) on the LUN. The accepted value is a string that needs to match the tier names which are environment dependent.
+
 
 ## InstanceArray expand and contract behavior
 
