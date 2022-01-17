@@ -3,7 +3,7 @@ terraform {
   required_providers {
     metalcloud = {
       source = "metalsoft-io/metalcloud"
-       version = ">= 2.2.1"
+       version = ">= 2.2.7"
     }
   }
 }
