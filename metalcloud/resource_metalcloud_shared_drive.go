@@ -98,13 +98,13 @@ func resourceSharedDrive() *schema.Resource {
 			"shared_drive_io_limit_policy": {
 				Type:     schema.TypeString,
 				Computed: true,
-				Optional: false,
+				Optional: true,
 				Default:  nil,
 			},
 			"shared_drive_wwn": {
 				Type:     schema.TypeString,
 				Computed: true,
-				Optional: false,
+				Optional: true,
 				Default:  nil,
 			},
 		},
