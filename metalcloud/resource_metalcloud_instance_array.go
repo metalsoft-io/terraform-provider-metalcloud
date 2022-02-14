@@ -417,6 +417,8 @@ func resourceInstanceArrayRead(ctx context.Context, d *schema.ResourceData, meta
 
 	d.Set("instances", retInstancesJSON)
 
+	d.Set("instance_array_instance_count", len(instances))
+
 	/* INSTANCES CUSTOM VARS */
 	instancesCustomVariables := flattenInstancesCustomVariables(retInstances)
 
@@ -592,7 +594,6 @@ func flattenInstanceArray(d *schema.ResourceData, instanceArray mc.InstanceArray
 
 	d.Set("instance_array_id", instanceArray.InstanceArrayID)
 	d.Set("instance_array_label", instanceArray.InstanceArrayLabel)
-	d.Set("instance_array_instance_count", instanceArray.InstanceArrayInstanceCount)
 	d.Set("instance_array_boot_method", instanceArray.InstanceArrayBootMethod)
 	d.Set("instance_array_ram_gbytes", instanceArray.InstanceArrayRAMGbytes)
 	d.Set("instance_array_processor_count", instanceArray.InstanceArrayProcessorCount)
@@ -971,4 +972,5 @@ func copyInstanceArrayInterfaceToOperation(i mc.InstanceArrayInterface, io *mc.I
 	io.InstanceArrayInterfaceLAGGIndexes = i.InstanceArrayInterfaceLAGGIndexes
 	io.InstanceArrayInterfaceIndex = i.InstanceArrayInterfaceIndex
 	io.NetworkID = i.NetworkID
+	io.InstanceArrayInterfaceChangeID = i.InstanceArrayInterfaceOperation.InstanceArrayInterfaceChangeID
 }
