@@ -161,6 +161,11 @@ func resourceInstanceArray() *schema.Resource {
 				Elem:     instanceServerTypeResource(),
 				Optional: true,
 			},
+			"drive_array_id_boot": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  0,
+			},
 		},
 	}
 }
@@ -168,11 +173,11 @@ func resourceInstanceArray() *schema.Resource {
 func resourceInstanceArrayNetworkProfile() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
-			"network_id": &schema.Schema{
+			"network_id": {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
-			"network_profile_id": &schema.Schema{
+			"network_profile_id": {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
@@ -294,6 +299,14 @@ func resourceInstanceArrayCreate(ctx context.Context, d *schema.ResourceData, me
 		return diag.Errorf("Infrastructure with id %+v not found.", infrastructure_id)
 	}
 	ia := expandInstanceArray(d)
+
+	if ia.VolumeTemplateID != 0 && ia.DriveArrayIDBoot == 0 && ia.InstanceArrayBootMethod != LOCAL_DRIVES {
+		return diag.Errorf("Current instance array configuration is only valid for %s boot method", LOCAL_DRIVES)
+	}
+
+	if ia.DriveArrayIDBoot != 0 && ia.InstanceArrayBootMethod != PXE_ISCSI {
+		return diag.Errorf("Current instance array configuration is only valid for %s boot method", PXE_ISCSI)
+	}
 
 	iaC, err := client.InstanceArrayCreate(infrastructure_id, ia)
 	if err != nil {
@@ -459,6 +472,14 @@ func resourceInstanceArrayUpdate(ctx context.Context, d *schema.ResourceData, me
 
 	ia := expandInstanceArray(d)
 
+	if ia.VolumeTemplateID != 0 && ia.DriveArrayIDBoot == 0 && ia.InstanceArrayBootMethod != LOCAL_DRIVES {
+		return diag.Errorf("Current instance array configuration is only valid for '%s' boot method", LOCAL_DRIVES)
+	}
+
+	if ia.DriveArrayIDBoot != 0 && ia.InstanceArrayBootMethod != PXE_ISCSI {
+		return diag.Errorf("Current instance array configuration is only valid for '%s' boot method", PXE_ISCSI)
+	}
+
 	//update interface operations
 	for _, intf := range ia.InstanceArrayInterfaces {
 		for _, opIntf := range retIA.InstanceArrayOperation.InstanceArrayInterfaces {
@@ -605,6 +626,7 @@ func flattenInstanceArray(d *schema.ResourceData, instanceArray mc.InstanceArray
 	d.Set("instance_array_firewall_managed", instanceArray.InstanceArrayFirewallManaged)
 	d.Set("instance_array_additional_wan_ipv4_json", instanceArray.InstanceArrayAdditionalWanIPv4JSON)
 	d.Set("infrastructure_id", instanceArray.InfrastructureID)
+	d.Set("drive_array_id_boot", instanceArray.DriveArrayIDBoot)
 
 	/* INSTANCE ARRAY CUSTOM VARIABLES */
 	switch instanceArray.InstanceArrayCustomVariables.(type) {
@@ -675,7 +697,7 @@ func expandInstanceArray(d *schema.ResourceData) mc.InstanceArray {
 	ia.InstanceArrayDiskSizeMBytes = d.Get("instance_array_disk_size_mbytes").(int)
 	ia.VolumeTemplateID = d.Get("volume_template_id").(int)
 	ia.InstanceArrayAdditionalWanIPv4JSON = d.Get("instance_array_additional_wan_ipv4_json").(string)
-
+	ia.DriveArrayIDBoot = d.Get("drive_array_id_boot").(int)
 	ia.InstanceArrayFirewallManaged = d.Get("instance_array_firewall_managed").(bool)
 
 	if d.Get("firewall_rule") != nil {
@@ -972,5 +994,8 @@ func copyInstanceArrayInterfaceToOperation(i mc.InstanceArrayInterface, io *mc.I
 	io.InstanceArrayInterfaceLAGGIndexes = i.InstanceArrayInterfaceLAGGIndexes
 	io.InstanceArrayInterfaceIndex = i.InstanceArrayInterfaceIndex
 	io.NetworkID = i.NetworkID
-	io.InstanceArrayInterfaceChangeID = i.InstanceArrayInterfaceOperation.InstanceArrayInterfaceChangeID
+	io.InstanceArrayInterfaceChangeID = i.InstanceArrayInterfaceChangeID
 }
+
+const PXE_ISCSI = "pxe_iscsi"
+const LOCAL_DRIVES = "local_drives"
