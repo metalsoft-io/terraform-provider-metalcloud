@@ -94,7 +94,7 @@ func resourceDriveArray() *schema.Resource {
 			"drive_array_io_limit_policy": {
 				Type:     schema.TypeString,
 				Computed: true,
-				Optional: false,
+				Optional: true,
 				Default:  nil,
 			},
 			"drive_array_wwn": {
