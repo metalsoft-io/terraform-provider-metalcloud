@@ -315,12 +315,11 @@ func resourceInfrastructureDeployerDelete(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
-	// if !d.Get("keep_infrastructure_on_resource_destroy").(bool) {
-
-	if err := client.InfrastructureDelete(infrastructureID); err != nil {
-		return diag.FromErr(err)
+	if !d.Get("keep_infrastructure_on_resource_destroy").(bool) {
+		if err := client.InfrastructureDelete(infrastructureID); err != nil {
+			return diag.FromErr(err)
+		}
 	}
-	// }
 	//the infrastructure is deleted first, because it is the last one created (the deploy). so the other resources are deleted last
 	preventDeploy := d.Get("prevent_deploy").(bool)
 	serviceStatus := d.Get("infrastructure_service_status").(string)
