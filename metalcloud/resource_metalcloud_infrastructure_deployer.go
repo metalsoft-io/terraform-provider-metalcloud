@@ -111,6 +111,18 @@ func ResourceInfrastructureDeployer() *schema.Resource {
 				Type:     schema.TypeBool,
 				Computed: true,
 			},
+			"instances": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: false,
+				Default:  nil,
+			},
+			"shared_drives": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: false,
+				Default:  nil,
+			},
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(45 * time.Minute),
@@ -221,6 +233,33 @@ func resourceInfrastructureDeployerRead(ctx context.Context, d *schema.ResourceD
 		}
 	}
 
+	instances, err := client.InfrastructureInstances(infrastructure_id)
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	instancesOutput, err := flattenInstancesInfo(instances)
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	d.Set("instances", instancesOutput)
+
+	sharedDrives, err := client.SharedDrives(infrastructure_id)
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	sharedDrivesOutput, err := flattenSharedDrives(sharedDrives)
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	d.Set("shared_drives", sharedDrivesOutput)
 	return nil
 }
 
@@ -441,6 +480,46 @@ func deployInfrastructure(infrastructureID int, d *schema.ResourceData, meta int
 		d.Get("allow_data_loss").(bool),
 		d.Get("skip_ansible").(bool),
 	)
+}
+
+func flattenInstancesInfo(instances *map[string]interface{}) (string, error) {
+	instancesOutput := make(map[string]interface{})
+
+	for _, instanceIntf := range *instances {
+		instanceInfo := instanceIntf.(map[string]interface{})
+		instance := instanceInfo["instance"].(map[string]interface{})
+		label := instance["instance_label"].(string)
+
+		instanceDetails := make(map[string]interface{})
+		instanceDetails["instance_credentials"] = instance["instance_credentials"]
+		instancesOutput[label] = instanceDetails
+	}
+
+	bytes, err := json.Marshal(instancesOutput)
+
+	if err != nil {
+		return "", fmt.Errorf("error serializing instances array: %s", err)
+	}
+
+	return string(bytes), nil
+}
+
+func flattenSharedDrives(sharedDrives *map[string]mc.SharedDrive) (string, error) {
+	sharedDrivesOutput := make(map[string]interface{})
+
+	for label, sharedDrive := range *sharedDrives {
+		sharedDriveDetails := make(map[string]interface{})
+		sharedDriveDetails["shared_drive_targets_json"] = sharedDrive.SharedDriveTargetsJSON
+		sharedDrivesOutput[label] = sharedDriveDetails
+	}
+
+	bytes, err := json.Marshal(sharedDrivesOutput)
+
+	if err != nil {
+		return "", fmt.Errorf("error serializing shared drives: %s", err)
+	}
+
+	return string(bytes), nil
 }
 
 const DEPLOY_STATUS_FINISHED = "finished"
