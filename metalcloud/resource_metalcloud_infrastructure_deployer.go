@@ -365,7 +365,7 @@ func resourceInfrastructureDeployerDelete(ctx context.Context, d *schema.Resourc
 			return diag.FromErr(err)
 		}
 
-		dg := waitForInfrastructureFinished(infrastructureID, ctx, d, meta, d.Timeout(schema.TimeoutUpdate), DEPLOY_STATUS_FINISHED)
+		dg := waitForInfrastructureFinished(infrastructureID, ctx, d, meta, d.Timeout(schema.TimeoutUpdate), DEPLOY_STATUS_DELETED)
 
 		if dg.HasError() {
 			return dg
