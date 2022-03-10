@@ -93,7 +93,6 @@ resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
   #instead of exiting while the deploy is ongoing
 
   await_deploy_finished = true
-  await_delete_finished = true
 
   #this option disables a safety check that metalsoft performs to prevent accidental data loss
   #it is required when testing delete operations

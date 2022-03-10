@@ -84,11 +84,6 @@ func ResourceInfrastructureDeployer() *schema.Resource {
 				Optional: true,
 				Default:  true,
 			},
-			"await_delete_finished": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-			},
 			"keep_detaching_drives": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -100,7 +95,6 @@ func ResourceInfrastructureDeployer() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
-
 			"server_allocation_policy": {
 				Type:     schema.TypeSet,
 				Optional: true,

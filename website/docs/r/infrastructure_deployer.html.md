@@ -40,7 +40,6 @@ resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
   # These options will make terraform apply operation will wait for the deploy to finish (when prevent_deploy is false)
   # instead of exiting while the deploy is ongoing
   await_deploy_finished = true
-  await_delete_finished = true
 
   # This option disables a safety check that MetalSoft performs to prevent accidental data loss.
   # It is required when testing delete operations.
@@ -70,7 +69,6 @@ The following arguments are supported:
 * `allow_data_loss` (Optional, default true) - If **true**, any operations that might cause data loss (stopping or deleting drives) will be conducted as if the "I understand that this operation is irreversible and that all snapshots will also be destroyed" checkbox in the interface has been checked. If **false** then the function will throw an error whenever an operation that might cause data loss (stopping or deleting drives) is encountered. The parameter servers to facilitate automatic infrastructure operations without risking the accidental loss of data.
 * `skip_ansible`(Optional, default false) - If **true** some automatic provisioning steps will be skipped. This parameter should generally be ignored.
 * `await_deploy_finished` (Optional, default true) - If **true**, the provider will wait until the deploy has finished before exiting. If **false**, the deploy will continue after the provider exited. No other operations are permitted on theis infrastructure during deploy.
-* `await_delete_finished` (Optional, default false) - If **true**, the provider will wait for a deploy (involving delete) to finish before exiting. If **false**, the delete operation (really a deploy) will continue after the provider existed. This operation is generally quick.
 * `keep_detaching_drives` (Optional, default true) - If **true**, the detaching Drive objects will not be deleted. If **false**, and the number of Instance objects is reduced, then the detaching Drive objects will be deleted.
 * `keep_infrastructure_on_resource_destroy` (Optional, default false) - If **true**, the infrastructure will not be deleted on destroy or in case of the "taint" flag. If **false**, the infrastructure is deleted.
 * `infrastructure_custom_variables` (Optional, default []) - All of the variables specified as a map of *string* = *string* such as { var_a="var_value" } will be sent to the underlying deploy process and referenced in operating system templates and workflows. 
