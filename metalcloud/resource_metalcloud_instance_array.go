@@ -2,7 +2,6 @@ package metalcloud
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"sort"
@@ -135,19 +134,12 @@ func resourceInstanceArray() *schema.Resource {
 				Computed: true, //default is computed serverside
 				Elem:     resourceFirewallRule(),
 			},
-
 			"interface": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Default:  nil,
 				Computed: true,
 				Elem:     resourceInstanceArrayInterface(),
-			},
-			"instances": {
-				Type:     schema.TypeString,
-				Computed: true,
-				Optional: false,
-				Default:  nil,
 			},
 			"network_profile": {
 				Type:     schema.TypeSet,
@@ -423,13 +415,6 @@ func resourceInstanceArrayRead(ctx context.Context, d *schema.ResourceData, meta
 		instances = append(instances, *i)
 	}
 
-	retInstancesJSON, err := flattenInstances(instances)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	d.Set("instances", retInstancesJSON)
-
 	d.Set("instance_array_instance_count", len(instances))
 
 	/* INSTANCES CUSTOM VARS */
@@ -441,17 +426,6 @@ func resourceInstanceArrayRead(ctx context.Context, d *schema.ResourceData, meta
 	}
 
 	return diags
-
-}
-
-func flattenInstances(instances []mc.Instance) (string, error) {
-
-	bytes, err := json.Marshal(instances)
-	if err != nil {
-		return "", fmt.Errorf("error serializing instances array: %s", err)
-	}
-
-	return string(bytes), nil
 }
 
 func resourceInstanceArrayUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
