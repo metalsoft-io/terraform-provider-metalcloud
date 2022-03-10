@@ -113,6 +113,12 @@ func ResourceInfrastructureDeployer() *schema.Resource {
 				Optional: false,
 				Default:  nil,
 			},
+			"drives": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: false,
+				Default:  nil,
+			},
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(45 * time.Minute),
@@ -250,6 +256,32 @@ func resourceInfrastructureDeployerRead(ctx context.Context, d *schema.ResourceD
 	}
 
 	d.Set("shared_drives", sharedDrivesOutput)
+
+	driveArrays, err := client.DriveArrays(infrastructure_id)
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	var drivesMap = make(map[string]map[string]mc.Drive)
+
+	for _, driveArray := range *driveArrays {
+		drives, err := client.DriveArrayDrives(driveArray.DriveArrayID)
+
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		drivesMap[driveArray.DriveArrayLabel] = *drives
+	}
+
+	drivesOutput, err := flattenDrives(&drivesMap)
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	d.Set("drives", drivesOutput)
 	return nil
 }
 
@@ -516,6 +548,29 @@ func flattenSharedDrives(sharedDrives *map[string]mc.SharedDrive) (string, error
 
 	if err != nil {
 		return "", fmt.Errorf("error serializing shared drives: %s", err)
+	}
+
+	return string(bytes), nil
+}
+
+func flattenDrives(drivesMap *map[string]map[string]mc.Drive) (string, error) {
+	drivesOutput := make(map[string]interface{})
+
+	for label, drives := range *drivesMap {
+
+		driveDetails := make(map[string]string)
+
+		for k, v := range drives {
+			driveDetails[k] = v.DriveWWN
+		}
+
+		drivesOutput[label] = driveDetails
+	}
+
+	bytes, err := json.Marshal(drivesOutput)
+
+	if err != nil {
+		return "", fmt.Errorf("error serializing drives: %s", err)
 	}
 
 	return string(bytes), nil

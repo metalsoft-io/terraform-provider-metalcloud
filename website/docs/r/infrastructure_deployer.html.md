@@ -332,3 +332,13 @@ shared_drives = {
   }
 }
 ```
+* `drives` A list of drives belonging to the infrastructure, which includes the WWN.
+```
+drives = jsonencode(
+  {
+    test-da = {
+      drive-265 = "60:06:01:60:B2:44:08:2B:C7:04:2A:62:28:8F:91:DE"
+    }
+  }
+)
+```
