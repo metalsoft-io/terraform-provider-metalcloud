@@ -88,13 +88,6 @@ func resourceSharedDrive() *schema.Resource {
 					Type: schema.TypeInt,
 				},
 			},
-
-			"shared_drive_targets_json": {
-				Type:     schema.TypeString,
-				Computed: true,
-				Optional: false,
-				Default:  nil,
-			},
 			"shared_drive_io_limit_policy": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -205,7 +198,6 @@ func flattenSharedDrive(d *schema.ResourceData, sharedDrive mc.SharedDrive) erro
 	d.Set("shared_drive_size_mbytes", sharedDrive.SharedDriveSizeMbytes)
 	d.Set("shared_drive_attached_instance_arrays", sharedDrive.SharedDriveAttachedInstanceArrays)
 	d.Set("infrastructure_id", sharedDrive.InfrastructureID)
-	d.Set("shared_drive_targets_json", sharedDrive.SharedDriveTargetsJSON)
 	d.Set("shared_drive_wwn", sharedDrive.SharedDriveWWN)
 
 	return nil
