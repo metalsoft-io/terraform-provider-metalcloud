@@ -282,7 +282,7 @@ This resource exports the following attributes:
     }
   }
 ```
-* `shared_drives` A list of shared drives belonging to the infrastructure, which includes information about the targets.
+* `shared_drives` A list of shared drives belonging to the infrastructure, which includes information about the targets and WWN.
 ```
 shared_drives = {
   shared-drive-306 = {
@@ -305,7 +305,8 @@ shared_drives = {
             strTargetIQN = "iqn.1992-04.com.emc:cx.virt2133vnq80x.a1"
           },
       ]
-    )
+    ),
+    shared_drive_wwn = "60:06:01:60:B2:44:08:2B:78:6A:27:62:AB:DD:F9:9B"
   },
   shared-drive-307 = {
     shared_drive_targets_json = jsonencode(

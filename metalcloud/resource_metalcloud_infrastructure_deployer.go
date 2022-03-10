@@ -508,6 +508,7 @@ func flattenSharedDrives(sharedDrives *map[string]mc.SharedDrive) (string, error
 	for label, sharedDrive := range *sharedDrives {
 		sharedDriveDetails := make(map[string]interface{})
 		sharedDriveDetails["shared_drive_targets_json"] = sharedDrive.SharedDriveTargetsJSON
+		sharedDriveDetails["shared_drive_wwn"] = sharedDrive.SharedDriveWWN
 		sharedDrivesOutput[label] = sharedDriveDetails
 	}
 
