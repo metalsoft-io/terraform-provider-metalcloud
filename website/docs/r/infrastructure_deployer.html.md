@@ -32,7 +32,6 @@ resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
   infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
 
   # Set this to true to preserve the empty infrastructure after "terraform destroy"
-  keep_infrastructure_on_resource_destroy = false
 
   # Set this to false to trigger deploys.
   prevent_deploy = true
@@ -70,7 +69,6 @@ The following arguments are supported:
 * `skip_ansible`(Optional, default false) - If **true** some automatic provisioning steps will be skipped. This parameter should generally be ignored.
 * `await_deploy_finished` (Optional, default true) - If **true**, the provider will wait until the deploy has finished before exiting. If **false**, the deploy will continue after the provider exited. No other operations are permitted on theis infrastructure during deploy.
 * `keep_detaching_drives` (Optional, default true) - If **true**, the detaching Drive objects will not be deleted. If **false**, and the number of Instance objects is reduced, then the detaching Drive objects will be deleted.
-* `keep_infrastructure_on_resource_destroy` (Optional, default false) - If **true**, the infrastructure will not be deleted on destroy or in case of the "taint" flag. If **false**, the infrastructure is deleted.
 * `infrastructure_custom_variables` (Optional, default []) - All of the variables specified as a map of *string* = *string* such as { var_a="var_value" } will be sent to the underlying deploy process and referenced in operating system templates and workflows. 
 * `server_allocation_policy` (DEPRECATED, Optional, default []) - Server allocation policies control how servers are allocated to instance arrays. This option allows the user to specify a particular server or a list of server types per instance array. Example:
   ```
@@ -96,3 +94,240 @@ The following arguments are supported:
 This resource exports the following attributes:
 
 * `infrastructure_id` - The id of the infrastructure is used for many operations. It is also the ID of the resource object.
+* `instances` A property of type JSON which includes many details returned by the server-side including credentials and ips.
+```
+  "instance-258" = {
+    "instance_array_id" = 255
+    "instance_credentials" = {
+      "SharedDrives" = {
+        "my-shared-drive" = {
+          "storage_ip_address" = "100.98.0.6"
+          "storage_port" = 3260
+          "target_iqn" = "iqn.2013-01.com.redacted:storage.redacted.redacted.redacted"
+        }
+      }
+      "idrac" = {}
+      "ilo" = {
+        "control_panel_url" = "https://172.18.34.34:443"
+        "initial_password" = "redacted"
+        "username" = "redacted"
+      }
+      "ip_addresses_public" = [
+        {
+          "instance_interface_id" = 1030
+          "ip_change_id" = 1046
+          "ip_hex" = "2a02cb80100000000000000000000002"
+          "ip_human_readable" = "2a02:cb80:1000:0000:0000:0000:0000:0002"
+          "ip_id" = 764
+          "ip_lease_expires" = "0000-00-00T00:00:00Z"
+          "ip_operation" = {
+            "instance_interface_id" = 1030
+            "ip_change_id" = 1046
+            "ip_deploy_status" = "finished"
+            "ip_deploy_type" = "create"
+            "ip_hex" = "2a02cb80100000000000000000000002"
+            "ip_human_readable" = "2a02:cb80:1000:0000:0000:0000:0000:0002"
+            "ip_id" = 764
+            "ip_label" = "ip-764"
+            "ip_lease_expires" = "0000-00-00T00:00:00Z"
+            "ip_subdomain" = "ip-764.subnet-362.data-network.tf-simple-test.7.us01.metalsoft.io"
+            "ip_type" = "ipv6"
+            "ip_updated_timestamp" = "2021-08-23T14:51:43Z"
+            "subnet_id" = 362
+          }
+          "ip_type" = "ipv6"
+          "subnet_destination" = "wan"
+          "subnet_gateway_human_readable" = "2a02:cb80:1000:0000:0000:0000:0000:0001"
+          "subnet_id" = 362
+          "subnet_netmask_human_readable" = "ffff:ffff:ffff:ffff:0000:0000:0000:0000"
+        },
+        {
+          "instance_interface_id" = 1030
+          "ip_change_id" = 1047
+          "ip_hex" = "b0dff882"
+          "ip_human_readable" = "176.223.248.130"
+          "ip_id" = 765
+          "ip_lease_expires" = "0000-00-00T00:00:00Z"
+          "ip_operation" = {
+            "instance_interface_id" = 1030
+            "ip_change_id" = 1047
+            "ip_deploy_status" = "finished"
+            "ip_deploy_type" = "create"
+            "ip_hex" = "b0dff882"
+            "ip_human_readable" = "176.223.248.130"
+            "ip_id" = 765
+            "ip_label" = "ip-765"
+            "ip_lease_expires" = "0000-00-00T00:00:00Z"
+            "ip_subdomain" = "ip-765.subnet-363.data-network.tf-simple-test.7.us01.metalsoft.io"
+            "ip_type" = "ipv4"
+            "ip_updated_timestamp" = "2021-08-23T14:51:43Z"
+            "subnet_id" = 363
+          }
+          "ip_type" = "ipv4"
+          "subnet_destination" = "wan"
+          "subnet_gateway_human_readable" = "176.223.248.129"
+          "subnet_id" = 363
+          "subnet_netmask_human_readable" = "255.255.255.252"
+        },
+        {
+          "instance_interface_id" = 1030
+          "ip_change_id" = 1048
+          "ip_hex" = "ac010002"
+          "ip_human_readable" = "172.1.0.2"
+          "ip_id" = 766
+          "ip_lease_expires" = "0000-00-00T00:00:00Z"
+          "ip_operation" = {
+            "instance_interface_id" = 1030
+            "ip_change_id" = 1048
+            "ip_deploy_status" = "finished"
+            "ip_deploy_type" = "create"
+            "ip_hex" = "ac010002"
+            "ip_human_readable" = "172.1.0.2"
+            "ip_id" = 766
+            "ip_label" = "ip-766"
+            "ip_lease_expires" = "0000-00-00T00:00:00Z"
+            "ip_subdomain" = "ip-766.subnet-364.data-network.tf-simple-test.7.us01.metalsoft.io"
+            "ip_type" = "ipv4"
+            "ip_updated_timestamp" = "2021-08-23T14:51:43Z"
+            "subnet_id" = 364
+          }
+          "ip_type" = "ipv4"
+          "subnet_destination" = "wan"
+          "subnet_gateway_human_readable" = "172.1.0.1"
+          "subnet_id" = 364
+          "subnet_netmask_human_readable" = "255.255.255.252"
+        },
+        {
+          "instance_interface_id" = 1030
+          "ip_change_id" = 1049
+          "ip_hex" = "ac020002"
+          "ip_human_readable" = "172.2.0.2"
+          "ip_id" = 767
+          "ip_lease_expires" = "0000-00-00T00:00:00Z"
+          "ip_operation" = {
+            "instance_interface_id" = 1030
+            "ip_change_id" = 1049
+            "ip_deploy_status" = "finished"
+            "ip_deploy_type" = "create"
+            "ip_hex" = "ac020002"
+            "ip_human_readable" = "172.2.0.2"
+            "ip_id" = 767
+            "ip_label" = "ip-767"
+            "ip_lease_expires" = "0000-00-00T00:00:00Z"
+            "ip_subdomain" = "ip-767.subnet-365.data-network.tf-simple-test.7.us01.metalsoft.io"
+            "ip_type" = "ipv4"
+            "ip_updated_timestamp" = "2021-08-23T14:51:43Z"
+            "subnet_id" = 365
+          }
+          "ip_type" = "ipv4"
+          "subnet_destination" = "wan"
+          "subnet_gateway_human_readable" = "172.2.0.1"
+          "subnet_id" = 365
+          "subnet_netmask_human_readable" = "255.255.255.252"
+        },
+        {
+          "instance_interface_id" = 1030
+          "ip_change_id" = 1050
+          "ip_hex" = "ac030002"
+          "ip_human_readable" = "172.3.0.2"
+          "ip_id" = 768
+          "ip_lease_expires" = "0000-00-00T00:00:00Z"
+          "ip_operation" = {
+            "instance_interface_id" = 1030
+            "ip_change_id" = 1050
+            "ip_deploy_status" = "finished"
+            "ip_deploy_type" = "create"
+            "ip_hex" = "ac030002"
+            "ip_human_readable" = "172.3.0.2"
+            "ip_id" = 768
+            "ip_label" = "ip-768"
+            "ip_lease_expires" = "0000-00-00T00:00:00Z"
+            "ip_subdomain" = "ip-768.subnet-366.data-network.tf-simple-test.7.us01.metalsoft.io"
+            "ip_type" = "ipv4"
+            "ip_updated_timestamp" = "2021-08-23T14:51:43Z"
+            "subnet_id" = 366
+          }
+          "ip_type" = "ipv4"
+          "subnet_destination" = "wan"
+          "subnet_gateway_human_readable" = "172.3.0.1"
+          "subnet_id" = 366
+          "subnet_netmask_human_readable" = "255.255.255.252"
+        },
+      ]
+      "ipmi" = {
+        "initial_password" = "redacted"
+        "ip_address" = "172.18.34.xx"
+        "username" = "clientSd4bf"
+        "version" = "2"
+      }
+      "iscsi" = {
+        "gateway" = "100.64.0.1"
+        "initiator_ip_address" = "100.64.0.6"
+        "initiator_iqn" = "iqn.2021-08.com.redacted.redacted:instance-258"
+        "netmask" = "255.255.255.248"
+        "password" = "redacted"
+        "username" = "redacted"
+      }
+      "rdp" = {}
+      "remote_console" = {
+        "remote_control_panel_url" = "?product=instance&id=258"
+        "remote_protocol" = "ssh"
+        "tunnel_path_url" = "https://us-chi-qts01-dc-api.us01.metalsoft.io/remote-console/instance-tunnel"
+      }
+      "ssh" = {
+        "initial_password" = "redacted"
+        "port" = 22
+        "username" = "root"
+      }
+    }
+  }
+```
+* `shared_drives` A list of shared drives belonging to the infrastructure, which includes information about the targets.
+```
+shared_drives = {
+  shared-drive-306 = {
+    shared_drive_targets_json = jsonencode(
+      [
+        {
+            nPrefixSize  = 64
+            nVLANID      = 200
+            strIPAddress = "fdb6:959b:4444:1:0:0:0:2"
+            strPort      = "spa_eth2"
+            strPortalID  = "if_690"
+            strTargetIQN = "iqn.1992-04.com.emc:cx.virt2133vnq80x.a2"
+          },
+        - {
+            nPrefixSize  = 64
+            nVLANID      = 200
+            strIPAddress = "fdb6:959b:4444:1:0:0:0:1"
+            strPort      = "spa_eth1"
+            strPortalID  = "if_691"
+            strTargetIQN = "iqn.1992-04.com.emc:cx.virt2133vnq80x.a1"
+          },
+      ]
+    )
+  },
+  shared-drive-307 = {
+    shared_drive_targets_json = jsonencode(
+      [
+        {
+            nPrefixSize  = 64
+            nVLANID      = 200
+            strIPAddress = "fdb6:959b:4444:1:0:0:0:2"
+            strPort      = "spa_eth2"
+            strPortalID  = "if_690"
+            strTargetIQN = "iqn.1992-04.com.emc:cx.virt2133vnq80x.a2"
+          },
+        {
+            nPrefixSize  = 64
+            nVLANID      = 200
+            strIPAddress = "fdb6:959b:4444:1:0:0:0:1"
+            strPort      = "spa_eth1"
+            strPortalID  = "if_691"
+            strTargetIQN = "iqn.1992-04.com.emc:cx.virt2133vnq80x.a1"
+        },
+      ]
+    )
+  }
+}
+```
