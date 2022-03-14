@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -237,23 +238,29 @@ func resourceInfrastructureDeployerUpdate(ctx context.Context, d *schema.Resourc
 
 	//This is where the magic happens.
 	if needsDeploy && !preventDeploy {
-		var diags diag.Diagnostics
 		d.Set("edited", false) //clear the taint flag. This ensures that we will be able to deploy again next time
 
 		err := deployInfrastructure(infrastructure_id, d, meta)
 
 		if err != nil {
 			dg := resourceInfrastructureDeployerRead(ctx, d, meta)
+
 			if dg.HasError() {
 				return dg
 			}
-			diags = append(diags, diag.Diagnostic{
-				Severity: diag.Warning,
-				Summary:  fmt.Sprintf("The deploy could not finish for infrastructure #%d. Correct the configuration and try again.", infrastructure_id),
-				Detail:   fmt.Sprintf("The deploy encountered the following error: %s.", err),
-			})
 
-			return diags
+			if strings.Contains(err.Error(), UNMODIFIED_INFRASTRUCTURE_WARNING) {
+				var diags diag.Diagnostics
+
+				diags = append(diags, diag.Diagnostic{
+					Severity: diag.Warning,
+					Summary:  fmt.Sprintf("The deploy could not finish for infrastructure #%d. Correct the configuration and try again.", infrastructure_id),
+					Detail:   fmt.Sprintf("The deploy encountered the following error: %s.", err),
+				})
+				return diags
+			} else {
+				return diag.FromErr(err)
+			}
 		}
 
 		if d.Get("await_deploy_finished").(bool) {
@@ -375,6 +382,7 @@ func waitForInfrastructureFinished(infrastructureID int, ctx context.Context, d 
 	if targetStatus == DEPLOY_STATUS_DELETED {
 		return nil
 	}
+
 	return resourceInfrastructureDeployerRead(ctx, d, meta)
 
 }
@@ -448,3 +456,4 @@ const NETWORK_TYPE_SAN = "san"
 const NETWORK_TYPE_WAN = "wan"
 const SERVICE_STATUS_ACTIVE = "active"
 const SERVICE_STATUS_DELETED = "deleted"
+const UNMODIFIED_INFRASTRUCTURE_WARNING = "Unable to deploy an unmodified infrastructure"
