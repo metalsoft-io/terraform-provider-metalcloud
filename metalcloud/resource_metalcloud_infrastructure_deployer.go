@@ -2,7 +2,6 @@ package metalcloud
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"strconv"
@@ -100,24 +99,6 @@ func ResourceInfrastructureDeployer() *schema.Resource {
 			"edited": {
 				Type:     schema.TypeBool,
 				Computed: true,
-			},
-			"instances": {
-				Type:     schema.TypeString,
-				Computed: true,
-				Optional: false,
-				Default:  nil,
-			},
-			"shared_drives": {
-				Type:     schema.TypeString,
-				Computed: true,
-				Optional: false,
-				Default:  nil,
-			},
-			"drives": {
-				Type:     schema.TypeString,
-				Computed: true,
-				Optional: false,
-				Default:  nil,
 			},
 		},
 		Timeouts: &schema.ResourceTimeout{
@@ -229,59 +210,6 @@ func resourceInfrastructureDeployerRead(ctx context.Context, d *schema.ResourceD
 		}
 	}
 
-	instances, err := client.InfrastructureInstances(infrastructure_id)
-
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	instancesOutput, err := flattenInstancesInfo(instances)
-
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	d.Set("instances", instancesOutput)
-
-	sharedDrives, err := client.SharedDrives(infrastructure_id)
-
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	sharedDrivesOutput, err := flattenSharedDrives(sharedDrives)
-
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	d.Set("shared_drives", sharedDrivesOutput)
-
-	driveArrays, err := client.DriveArrays(infrastructure_id)
-
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	var drivesMap = make(map[string]map[string]mc.Drive)
-
-	for _, driveArray := range *driveArrays {
-		drives, err := client.DriveArrayDrives(driveArray.DriveArrayID)
-
-		if err != nil {
-			return diag.FromErr(err)
-		}
-
-		drivesMap[driveArray.DriveArrayLabel] = *drives
-	}
-
-	drivesOutput, err := flattenDrives(&drivesMap)
-
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	d.Set("drives", drivesOutput)
 	return nil
 }
 
@@ -509,71 +437,6 @@ func deployInfrastructure(infrastructureID int, d *schema.ResourceData, meta int
 		d.Get("allow_data_loss").(bool),
 		d.Get("skip_ansible").(bool),
 	)
-}
-
-func flattenInstancesInfo(instances *map[string]interface{}) (string, error) {
-	instancesOutput := make(map[string]interface{})
-
-	for _, instanceIntf := range *instances {
-		instanceInfo := instanceIntf.(map[string]interface{})
-		instance := instanceInfo["instance"].(map[string]interface{})
-		label := instance["instance_label"].(string)
-
-		instanceDetails := make(map[string]interface{})
-		instanceDetails["instance_credentials"] = instance["instance_credentials"]
-		instanceDetails["instance_array_id"] = instance["instance_array_id"]
-		instancesOutput[label] = instanceDetails
-	}
-
-	bytes, err := json.Marshal(instancesOutput)
-
-	if err != nil {
-		return "", fmt.Errorf("error serializing instances array: %s", err)
-	}
-
-	return string(bytes), nil
-}
-
-func flattenSharedDrives(sharedDrives *map[string]mc.SharedDrive) (string, error) {
-	sharedDrivesOutput := make(map[string]interface{})
-
-	for label, sharedDrive := range *sharedDrives {
-		sharedDriveDetails := make(map[string]interface{})
-		sharedDriveDetails["shared_drive_targets_json"] = sharedDrive.SharedDriveTargetsJSON
-		sharedDriveDetails["shared_drive_wwn"] = sharedDrive.SharedDriveWWN
-		sharedDrivesOutput[label] = sharedDriveDetails
-	}
-
-	bytes, err := json.Marshal(sharedDrivesOutput)
-
-	if err != nil {
-		return "", fmt.Errorf("error serializing shared drives: %s", err)
-	}
-
-	return string(bytes), nil
-}
-
-func flattenDrives(drivesMap *map[string]map[string]mc.Drive) (string, error) {
-	drivesOutput := make(map[string]interface{})
-
-	for label, drives := range *drivesMap {
-
-		driveDetails := make(map[string]string)
-
-		for k, v := range drives {
-			driveDetails[k] = v.DriveWWN
-		}
-
-		drivesOutput[label] = driveDetails
-	}
-
-	bytes, err := json.Marshal(drivesOutput)
-
-	if err != nil {
-		return "", fmt.Errorf("error serializing drives: %s", err)
-	}
-
-	return string(bytes), nil
 }
 
 const DEPLOY_STATUS_FINISHED = "finished"

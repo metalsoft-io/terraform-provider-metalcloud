@@ -15,7 +15,7 @@ func DataSourceInfrastructureReference() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: dataSourceInfrastructureReferenceRead,
 		Schema: map[string]*schema.Schema{
-			"infrastructure_label": &schema.Schema{
+			"infrastructure_label": {
 				Type:     schema.TypeString,
 				Required: true,
 				//this required as the serverside will convert to lowercase and generate a diff
@@ -33,19 +33,19 @@ func DataSourceInfrastructureReference() *schema.Resource {
 					return false
 				},
 			},
-			"datacenter_name": &schema.Schema{
+			"datacenter_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				//this required as the serverside will convert to lowercase and generate a diff
 				//also helpful to prevent other
 				ValidateDiagFunc: validateLabel,
 			},
-			"create_if_not_exists": &schema.Schema{
+			"create_if_not_exists": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
 			},
-			"infrastructure_id": &schema.Schema{
+			"infrastructure_id": {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
