@@ -84,10 +84,29 @@ func dataSourceInfrastructureOutputRead(ctx context.Context, d *schema.ResourceD
 
 	d.Set("drives", drivesOutput)
 
-	instances, err := client.InfrastructureInstances(infrastructure_id)
+	instances := []mc.Instance{}
+
+	instanceArrays, err := client.InstanceArrays(infrastructure_id)
 
 	if err != nil {
 		return diag.FromErr(err)
+	}
+
+	for _, instanceArray := range *instanceArrays {
+		retInstances, err := client.InstanceArrayInstances(instanceArray.InstanceArrayID)
+
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		for _, instance := range *retInstances {
+			i, err := client.InstanceGet(instance.InstanceID)
+
+			if err != nil {
+				return diag.FromErr(err)
+			}
+			instances = append(instances, *i)
+		}
 	}
 
 	instancesOutput, err := flattenInstancesInfo(instances)
@@ -141,17 +160,15 @@ func flattenDrives(drivesMap *map[string]map[string]mc.Drive) (string, error) {
 	return string(bytes), nil
 }
 
-func flattenInstancesInfo(instances *map[string]interface{}) (string, error) {
+func flattenInstancesInfo(instances []mc.Instance) (string, error) {
 	instancesOutput := make(map[string]interface{})
 
-	for _, instanceIntf := range *instances {
-		instanceInfo := instanceIntf.(map[string]interface{})
-		instance := instanceInfo["instance"].(map[string]interface{})
-		label := instance["instance_label"].(string)
+	for _, instance := range instances {
+		label := instance.InstanceLabel
 
 		instanceDetails := make(map[string]interface{})
-		instanceDetails["instance_credentials"] = instance["instance_credentials"]
-		instanceDetails["instance_array_id"] = instance["instance_array_id"]
+		instanceDetails["instance_credentials"] = instance.InstanceCredentials
+		instanceDetails["instance_array_id"] = instance.InstanceArrayID
 		instancesOutput[label] = instanceDetails
 	}
 
