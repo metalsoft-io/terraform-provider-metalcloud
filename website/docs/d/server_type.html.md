@@ -1,11 +1,11 @@
 ---
 layout: "metalcloud"
-page_title: "Template: volume_template"
+page_title: "Template: server_type"
 description: |-
-  Provides a mechanism to search for template ids.
+  Provides a mechanism to search for a server type.
 ---
 
-# volume_template
+# server_type
 
 This data source provides a mechanism to identify the ID of a server type based on its name.
 
