@@ -76,18 +76,21 @@ jobs:
         timestampUrl: 'http://timestamp.sectigo.com'
         folder: '.'
         recursive: false
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=VERSION::$(echo $GITHUB_REF_NAME | cut -c 2-)
       -
         name: Create Archive
         uses: TheDoctor0/zip-release@0.6.1
         with:
           type: 'zip'
           path: '*.exe'
-          filename: 'terraform-provider-metalcloud_${{github.ref_name}}_windows_amd64.zip'
+          filename: 'terraform-provider-metalcloud_${{steps.get_version.outputs.VERSION}}_windows_amd64.zip'
           exclusions: '*.git* /*node_modules/* .editorconfig'
       -
         name: Upload Release
         uses: ncipollo/release-action@v1
         with:
-            artifacts: 'terraform-provider-metalcloud_${{github.ref_name}}_windows_amd64.zip'
+            artifacts: 'terraform-provider-metalcloud_${{ steps.get_version.outputs.VERSION }}_windows_amd64.zip'
             token: ${{ secrets.GITHUB_TOKEN }}
             allowUpdates: true
