@@ -72,7 +72,7 @@ func dataSourceInfrastructureReferenceRead(ctx context.Context, d *schema.Resour
 	datacenter_name := d.Get("datacenter_name").(string)
 
 	//if the one we are looking forward exists we return it
-	iRet, ok := (*infrastructures)[infrastructure_label]
+	iRet, ok := (*infrastructures)[strings.ToLower(infrastructure_label)]
 	if ok {
 		//assert if datacenter name matches
 		if datacenter_name != iRet.DatacenterName {
