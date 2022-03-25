@@ -93,7 +93,6 @@ func resourceDriveArray() *schema.Resource {
 			},
 			"drive_array_io_limit_policy": {
 				Type:     schema.TypeString,
-				Computed: true,
 				Optional: true,
 				Default:  nil,
 			},
@@ -225,6 +224,7 @@ func flattenDriveArray(d *schema.ResourceData, driveArray mc.DriveArray) error {
 	d.Set("volume_template_id", driveArray.VolumeTemplateID)
 	d.Set("instance_array_id", driveArray.InstanceArrayID)
 	d.Set("infrastructure_id", driveArray.InfrastructureID)
+	d.Set("drive_array_io_limit_policy", driveArray.DriveArrayIOLimitPolicy)
 
 	return nil
 }
@@ -254,6 +254,8 @@ func copyDriveArrayToOperation(da mc.DriveArray, dao *mc.DriveArrayOperation) {
 	dao.VolumeTemplateID = da.VolumeTemplateID
 	dao.DriveArrayStorageType = da.DriveArrayStorageType
 	dao.DriveSizeMBytesDefault = da.DriveSizeMBytesDefault
+	dao.DriveArrayIOLimitPolicy = da.DriveArrayIOLimitPolicy
+
 	if da.InstanceArrayID == 0 {
 		dao.InstanceArrayID = nil
 	} else {

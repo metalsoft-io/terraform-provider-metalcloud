@@ -90,7 +90,6 @@ func resourceSharedDrive() *schema.Resource {
 			},
 			"shared_drive_io_limit_policy": {
 				Type:     schema.TypeString,
-				Computed: true,
 				Optional: true,
 				Default:  nil,
 			},
@@ -192,6 +191,7 @@ func flattenSharedDrive(d *schema.ResourceData, sharedDrive mc.SharedDrive) erro
 	d.Set("shared_drive_size_mbytes", sharedDrive.SharedDriveSizeMbytes)
 	d.Set("shared_drive_attached_instance_arrays", sharedDrive.SharedDriveAttachedInstanceArrays)
 	d.Set("infrastructure_id", sharedDrive.InfrastructureID)
+	d.Set("shared_drive_io_limit_policy", sharedDrive.SharedDriveIOLimitPolicy)
 
 	return nil
 }
@@ -231,4 +231,5 @@ func copySharedDriveToOperation(sd mc.SharedDrive, sdo *mc.SharedDriveOperation)
 	sdo.SharedDriveSizeMbytes = sd.SharedDriveSizeMbytes
 	sdo.SharedDriveStorageType = sd.SharedDriveStorageType
 	sdo.SharedDriveAttachedInstanceArrays = sd.SharedDriveAttachedInstanceArrays
+	sdo.SharedDriveIOLimitPolicy = sd.SharedDriveIOLimitPolicy
 }
