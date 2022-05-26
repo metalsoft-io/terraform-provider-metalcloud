@@ -415,7 +415,6 @@ func resourceInstanceArrayRead(ctx context.Context, d *schema.ResourceData, meta
 		instances = append(instances, *i)
 	}
 
-	d.Set("instance_array_instance_count", len(instances))
 
 	/* INSTANCES CUSTOM VARS */
 	instancesCustomVariables := flattenInstancesCustomVariables(retInstances)
@@ -475,16 +474,20 @@ func resourceInstanceArrayUpdate(ctx context.Context, d *schema.ResourceData, me
 		return diag.FromErr(err)
 	}
 
+	var dg diag.Diagnostics
+
 	/* custom variables for instances */
 	cvList := d.Get("instance_custom_variables").([]interface{})
-	dg := updateInstancesCustomVariables(cvList, id, client)
+	if d.HasChange("instance_custom_variables") {
+		dg = updateInstancesCustomVariables(cvList, id, client)
 
-	if dg.HasError() {
-		resourceInstanceArrayRead(ctx, d, meta)
-		return dg
+		if dg.HasError() {
+			resourceInstanceArrayRead(ctx, d, meta)
+			return dg
+		}
+
+		diags = append(diags, dg...)
 	}
-
-	diags = append(diags, dg...)
 
 	/* update server types */
 	iList := d.Get("instance_server_type").([]interface{})
@@ -601,6 +604,7 @@ func flattenInstanceArray(d *schema.ResourceData, instanceArray mc.InstanceArray
 	d.Set("instance_array_additional_wan_ipv4_json", instanceArray.InstanceArrayAdditionalWanIPv4JSON)
 	d.Set("infrastructure_id", instanceArray.InfrastructureID)
 	d.Set("drive_array_id_boot", instanceArray.DriveArrayIDBoot)
+	d.Set("instance_array_instance_count", instanceArray.InstanceArrayOperation.InstanceArrayInstanceCount)
 
 	/* INSTANCE ARRAY CUSTOM VARIABLES */
 	switch instanceArray.InstanceArrayCustomVariables.(type) {
