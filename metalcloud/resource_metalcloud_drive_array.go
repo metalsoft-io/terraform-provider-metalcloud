@@ -96,6 +96,11 @@ func resourceDriveArray() *schema.Resource {
 				Optional: true,
 				Default:  nil,
 			},
+			"drive_array_allocation_affinity": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  nil,
+			},
 		},
 	}
 }
@@ -225,6 +230,7 @@ func flattenDriveArray(d *schema.ResourceData, driveArray mc.DriveArray) error {
 	d.Set("instance_array_id", driveArray.InstanceArrayID)
 	d.Set("infrastructure_id", driveArray.InfrastructureID)
 	d.Set("drive_array_io_limit_policy", driveArray.DriveArrayIOLimitPolicy)
+	d.Set("drive_array_allocation_affinity", driveArray.DriveArrayAllocationAffinity)
 
 	return nil
 }
@@ -240,6 +246,7 @@ func expandDriveArray(d *schema.ResourceData) mc.DriveArray {
 	da.DriveSizeMBytesDefault = d.Get("drive_size_mbytes_default").(int)
 	da.VolumeTemplateID = d.Get("volume_template_id").(int)
 	da.DriveArrayIOLimitPolicy = d.Get("drive_array_io_limit_policy").(string)
+	da.DriveArrayAllocationAffinity = d.Get("drive_array_allocation_affinity").(string)
 
 	if d.Get("instance_array_id") != nil {
 		da.InstanceArrayID = d.Get("instance_array_id").(int)

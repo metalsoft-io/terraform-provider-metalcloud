@@ -42,7 +42,7 @@ resource "metalcloud_drive_array" "drives" {
 * `drive_size_mbytes_default` (Optional, default: 40960) The capacity of each Drive in MBytes.
 * `volume_template_id` (Optional, default: nil) The volume template ID or name. Use the `volume_template` data source to get the right id.
 * `drive_array_io_limit_policy` (Optional, default: none) Set I/O limit (tiering) on the LUN. The accepted value is a string that needs to match the tier names which are environment dependent.
-
+* `drive_array_allocation_affinity` (Optional) Possible values: `same_storage`,`different_storage`. Allocate drives from the same infrastructure on the same storage or a different one. 
 
 ## InstanceArray expand and contract behavior
 

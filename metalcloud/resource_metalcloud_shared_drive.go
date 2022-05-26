@@ -93,6 +93,11 @@ func resourceSharedDrive() *schema.Resource {
 				Optional: true,
 				Default:  nil,
 			},
+			"shared_drive_allocation_affinity": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  nil,
+			},
 		},
 	}
 }
@@ -192,6 +197,7 @@ func flattenSharedDrive(d *schema.ResourceData, sharedDrive mc.SharedDrive) erro
 	d.Set("shared_drive_attached_instance_arrays", sharedDrive.SharedDriveAttachedInstanceArrays)
 	d.Set("infrastructure_id", sharedDrive.InfrastructureID)
 	d.Set("shared_drive_io_limit_policy", sharedDrive.SharedDriveIOLimitPolicy)
+	d.Set("shared_drive_allocation_affinity", sharedDrive.SharedDriveAllocationAffinity)
 
 	return nil
 }
@@ -211,6 +217,7 @@ func expandSharedDrive(d *schema.ResourceData) mc.SharedDrive {
 	sd.SharedDriveStorageType = d.Get("shared_drive_storage_type").(string)
 	sd.SharedDriveSizeMbytes = d.Get("shared_drive_size_mbytes").(int)
 	sd.SharedDriveIOLimitPolicy = d.Get("shared_drive_io_limit_policy").(string)
+	sd.SharedDriveAllocationAffinity = d.Get("shared_drive_allocation_affinity").(string)
 
 	if v, ok := d.GetOk("shared_drive_attached_instance_arrays"); ok {
 		sd.SharedDriveAttachedInstanceArrays = []int{}
