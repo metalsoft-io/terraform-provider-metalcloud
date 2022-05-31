@@ -183,6 +183,10 @@ func resourceDriveArrayUpdate(ctx context.Context, d *schema.ResourceData, meta 
 		return diag.FromErr(err)
 	}
 
+	if d.HasChange("drive_array_allocation_affinity") {
+		return diag.Errorf("drive array allocation affinity cannot be updated")
+	}
+
 	da := expandDriveArray(d)
 	copyDriveArrayToOperation(da, retDA.DriveArrayOperation)
 

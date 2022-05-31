@@ -153,6 +153,10 @@ func resourceSharedDriveUpdate(ctx context.Context, d *schema.ResourceData, meta
 		return diag.FromErr(err)
 	}
 
+	if d.HasChange("shared_drive_allocation_affinity") {
+		return diag.Errorf("shared drive allocation affinity cannot be updated")
+	}
+
 	sd := expandSharedDrive(d)
 
 	copySharedDriveToOperation(sd, &retSD.SharedDriveOperation)

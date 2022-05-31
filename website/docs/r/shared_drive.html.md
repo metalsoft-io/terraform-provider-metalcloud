@@ -37,7 +37,7 @@ resource "metalcloud_shared_drive" "datastore" {
 * `shared_drive_size_mbytes` (Optional, default: 40960) The capacity of each Drive in MBytes.
 * `shared_drive_attached_instance_arrays` (Required, default: nil) An array of instance array labels to which this shared drive is to be attached to
 * `shared_drive_io_limit_policy` (Optional, default: none) Set I/O limit (tiering) on the LUN. The accepted value is a string that needs to match the tier names which are environment dependent. 
-* `shared_drive_allocation_affinity` (Optional) Possible values: `same_storage`,`different_storage`. Allocate shared drives from the same infrastructure on the same storage or a different one. 
+* `shared_drive_allocation_affinity` (Optional) Possible values: `same_storage`,`different_storage`. Allocate shared drives from the same infrastructure on the same storage or a different one. Cannot be modified on update.
 ## Expanding the shared drive
 
 It is possible to expand the block device (increase the LUN size) of a SharedDrive by changing the `shared_drive_size_mbytes` property. The filesystem will also need to be expanded from within the operating system on which this drive is mounted.
