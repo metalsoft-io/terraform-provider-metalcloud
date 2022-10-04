@@ -52,39 +52,12 @@ resource "metalcloud_firmware_policy" "upgrade-raid-controller" {
 * `server_firmware_upgrade_policy_label` (Required) *  **Policy** name. Use only alphanumeric and dashes '-'. Cannot start with a number, cannot include underscore (_). Try to keep this under 30 chars.
 * `server_firmware_upgrade_policy_action` (Required) Possible values: `accept`, `reject`,`accept_with_confirmation`. 
 * `instance_array_list` (Optional, default: 40960) The list of instance array ids to which this policy applies
-* `server_firmware_upgrade_policy_rule` (Required, default: []) An array of policy rules such as:
-  ```
-    server_firmware_upgrade_policy_rule {
-        operation = "string_equal"
-        property = "server_type_id"
-        value = "1"
-    }
-
-    server_firmware_upgrade_policy_rule {
-      operation = "string_contains"
-      property = "server_component_name"
-      value = "BIOS"
-    }
-  ```
-  Which should be interpreted as a series of logic tests `<property> <operation> <value>` joined by `AND`. All of the rules need to match before the action of the policy is executed.
-
-  Where: 
-    * `operation` is one of:
-      * `string_equal`
-      * `string_contains`
-    * `property` is one of:
-      * `server_component_name`
-      * `server_component_type`
-      * `server_component_firmware_version`
-      * `datacenter_name`
-      * `server_vendor`
-      * `server_id` (only string_equal operation is supported)
-      * `server_tags_json`
-      * `server_type_id` (only string_equal operation is supported)
-      * `server_component_target_version`. This is a special rule that will instruct the system to set a particular version on the component rather than the latest available. It is not a condition.
-    * `value` is the left hand operator, defined as a string value
+* `server_firmware_upgrade_policy_rule` (Required, default: []) An array of policy rules which should be interpreted as a series of logic tests `<property> <operation> <value>` joined by `AND`. All of the rules need to match before the action of the policy is executed. See below for possible values.
+* `server_firmware_upgrade_policy_rule.operation` is one of: `string_equal`, `string_contains`
+* `server_firmware_upgrade_policy_rule.property` is one of: `server_component_name`, `server_component_type`, `server_component_firmware_version`,`datacenter_name`,`server_vendor`, `server_id` ,`server_tags_json`, `server_type_id`, `server_component_target_version`. `server_component_target_version` Is a special rule that will instruct the system to set a particular version on the component rather than the latest available. It is not a condition.
+* `server_firmware_upgrade_policy_rule.value` is the left hand operator, defined as a string value.
  
-  Work with your service provider to get a list of valid component names. This list depends on the hardware vendor and generation used, as does the firmware version strings. 
+Work with your service provider to get a list of valid component names. This list depends on the hardware vendor and generation used, as does the firmware version strings.
 
 > Note that firmware downgrades might not be supported by all components. Check with your hardware vendor. 
 
