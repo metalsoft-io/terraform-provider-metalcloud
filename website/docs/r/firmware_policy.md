@@ -20,26 +20,32 @@ data "metalcloud_server_type" "large" {
   
 }
 
-resource "metalcloud_firmware_policy" "upgrade" {
+resource "metalcloud_firmware_policy" "upgrade-raid-controller" {
+  server_firmware_upgrade_policy_label = "upgrade-by-component-name-to-specific-version"
 
-  server_firmware_upgrade_policy_label = "policy-1"
+  //Possible values: accept, deny, accept_with_confirmation
   server_firmware_upgrade_policy_action = "accept"
-  
+
   server_firmware_upgrade_policy_rule {
     operation = "string_equal"
     property = "server_type_id"
     value = data.metalcloud_server_type.large.server_type_id
   }
 
-    server_firmware_upgrade_policy_rule {
+  server_firmware_upgrade_policy_rule {
     operation = "string_contains"
-    property = "server_component_name"
-    value = "BIOS"
+    property  = "server_component_name"
+    value     = "PERC H330 Adapter"
   }
-  
-  instance_array_list = [metalcloud_instance_array.cluster.instance_array_id]
+  server_firmware_upgrade_policy_rule {
+    operation = "string_equal"
+    property  = "server_component_target_version"
+    value     = "25.5.9.0001"
+  }
 
+  instance_array_list = [metalcloud_instance_array.cluster.instance_array_id]
 }
+
 ```
 ## Argument Reference
 
