@@ -10,7 +10,7 @@ import (
 	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v2"
 )
 
-//DataSourceInfrastructureOutput provides a way to export infrastructure information through terraform output blocks
+// DataSourceInfrastructureOutput provides a way to export infrastructure information through terraform output blocks
 func DataSourceInfrastructureOutput() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: dataSourceInfrastructureOutputRead,
@@ -39,6 +39,12 @@ func DataSourceInfrastructureOutput() *schema.Resource {
 				Default:  nil,
 			},
 			"shared_drives": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: false,
+				Default:  nil,
+			},
+			"clusters": {
 				Type:     schema.TypeString,
 				Computed: true,
 				Optional: false,
@@ -131,6 +137,41 @@ func dataSourceInfrastructureOutputRead(ctx context.Context, d *schema.ResourceD
 
 	d.Set("shared_drives", sharedDrivesOutput)
 
+	clusters, err := client.Clusters(infrastructure_id)
+	clusterAppObjects := map[string]interface{}{}
+
+	for label, cluster := range *clusters {
+
+		switch cluster.ClusterType {
+		case mc.CLUSTER_TYPE_VMWARE_VSPHERE:
+
+			c, err := client.ClusterAppVMWareVSphere(cluster.ClusterID, true)
+
+			if err != nil {
+				return diag.FromErr(err)
+			}
+			clusterAppObjects[label] = c
+
+		case mc.CLUSTER_TYPE_KUBERNETES:
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Warning,
+				Summary:  "kubernetes",
+				Detail:   fmt.Sprintf("The deploy encountered the following error: %+v.", cluster),
+			})
+			c, err := client.ClusterAppKubernetes(cluster.ClusterID, true)
+
+			if err != nil {
+				return diag.FromErr(err)
+			}
+			clusterAppObjects[label] = c
+		}
+
+	}
+
+	clustersOutput, err := flattenClusters(&clusterAppObjects)
+
+	d.Set("clusters", clustersOutput)
+
 	d.SetId(fmt.Sprintf("%d", infrastructure_id))
 
 	return diags
@@ -195,6 +236,17 @@ func flattenSharedDrives(sharedDrives *map[string]mc.SharedDrive) (string, error
 
 	if err != nil {
 		return "", fmt.Errorf("error serializing shared drives: %s", err)
+	}
+
+	return string(bytes), nil
+}
+
+func flattenClusters(clusters *map[string]interface{}) (string, error) {
+
+	bytes, err := json.Marshal(clusters)
+
+	if err != nil {
+		return "", fmt.Errorf("error serializing clusters: %s", err)
 	}
 
 	return string(bytes), nil

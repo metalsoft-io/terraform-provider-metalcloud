@@ -5,7 +5,7 @@ import (
 	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v2"
 )
 
-//Provider of Bigstep Metal Cloud resources
+// Provider of Bigstep Metal Cloud resources
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema:         providerSchema(),
@@ -25,6 +25,8 @@ func providerResources() map[string]*schema.Resource {
 		"metalcloud_network_profile":         resourceNetworkProfile(),
 		// "metalcloud_external_connection":     resourceExternalConnection(),
 		"metalcloud_firmware_policy": resourceServerFirmwareUpgradePolicy(),
+		"metalcloud_vmware_vsphere":  resourceVMWareVsphere(),
+		"metalcloud_kubernetes":      resourceKubernetes(),
 	}
 }
 

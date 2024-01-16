@@ -415,7 +415,6 @@ func resourceInstanceArrayRead(ctx context.Context, d *schema.ResourceData, meta
 		instances = append(instances, *i)
 	}
 
-
 	/* INSTANCES CUSTOM VARS */
 	instancesCustomVariables := flattenInstancesCustomVariables(retInstances)
 
@@ -827,8 +826,8 @@ func flattenInstancesCustomVariables(retInstances *map[string]mc.Instance) []int
 	return customVars
 }
 
-//* sets the custom variables on the instances object. Used by the Upgrade function
-//TODO: convert tot an actual expand function that doesn't use the client to set them to make it easier to test
+// * sets the custom variables on the instances object. Used by the Upgrade function
+// TODO: convert tot an actual expand function that doesn't use the client to set them to make it easier to test
 func updateInstancesCustomVariables(cvList []interface{}, instanceArrayID int, client *mc.Client) diag.Diagnostics {
 
 	var diags diag.Diagnostics
@@ -895,7 +894,7 @@ func updateInstancesCustomVariables(cvList []interface{}, instanceArrayID int, c
 	return diags
 }
 
-//* sets the server types on each of the instances
+// * sets the server types on each of the instances
 func updateInstancesServerTypes(iList []interface{}, instanceArrayID int, client *mc.Client) diag.Diagnostics {
 
 	var diags diag.Diagnostics
@@ -960,7 +959,7 @@ func copyInstanceArrayToOperation(ia mc.InstanceArray, iao *mc.InstanceArrayOper
 	iao.InstanceArrayDiskCount = ia.InstanceArrayDiskCount
 	iao.InstanceArrayDiskSizeMBytes = ia.InstanceArrayDiskSizeMBytes
 	iao.InstanceArrayDiskTypes = ia.InstanceArrayDiskTypes
-	iao.ClusterID = ia.ClusterID
+	//iao.ClusterID = ia.ClusterID
 	iao.InstanceArrayFirewallManaged = ia.InstanceArrayFirewallManaged
 	iao.InstanceArrayFirewallRules = ia.InstanceArrayFirewallRules
 	iao.VolumeTemplateID = ia.VolumeTemplateID

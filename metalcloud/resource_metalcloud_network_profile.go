@@ -236,7 +236,9 @@ func expandNetworkProfileVLAN(d map[string]interface{}) mc.NetworkProfileVLAN {
 	var networkProfileVLAN mc.NetworkProfileVLAN
 
 	networkProfileVLAN.PortMode = d["port_mode"].(string)
-	networkProfileVLAN.VlanID = d["vlan_id"].(int)
+	var vlanID = d["vlan_id"].(int)
+	networkProfileVLAN.VlanID = &vlanID
+
 	connections := []int{}
 
 	if len(d["external_connection_ids"].([]interface{})) > 0 {
