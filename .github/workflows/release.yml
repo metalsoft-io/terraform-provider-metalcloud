@@ -84,12 +84,12 @@ jobs:
         with:
           type: 'zip'
           path: '*.exe'
-          filename: 'terraform-provider-metalcloud_${{github.ref_name}}_windows_amd64-signed.zip'
+          filename: 'terraform-provider-metalcloud_${{github.ref_name}}_windows_x86-signed.zip'
           exclusions: '*.git* /*node_modules/* .editorconfig'
       -
         name: Upload Release
         uses: ncipollo/release-action@v1
         with:
-            artifacts: 'terraform-provider-metalcloud_${{github.ref_name}}_windows_amd64-signed.zip'
+            artifacts: 'terraform-provider-metalcloud_${{github.ref_name}}_windows_x86-signed.zip'
             token: ${{ secrets.GITHUB_TOKEN }}
             allowUpdates: true
