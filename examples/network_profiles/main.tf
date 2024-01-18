@@ -63,7 +63,7 @@ resource "metalcloud_network_profile" "myprofile" {
         provision_vxlan = true
         subnet_pool_ids = [
           data.metalcloud_subnet_pool.primary.id
-          ]
+        ]
    }
 
    network_profile_vlan {

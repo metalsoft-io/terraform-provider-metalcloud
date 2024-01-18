@@ -7,12 +7,12 @@ description: |-
 
 # external_connection
 
-This data source provides a mechanism to identify the ID of an external connection based on it's name.
+This data source provides a mechanism to identify the ID of an external connection based on label.
 
 
 ## Example usage
 
-The following example locates the external_connection_id for 'external_connection_10'.
+The following example locates the external_connection with label 'external_connection_10'.
 
 ```hcl
 data "metalcloud_external_connection" "ext10" {

@@ -56,21 +56,38 @@ resource "metalcloud_network_profile" "myprofile" {
 * `datacenter_name` - (Required) The name of the **Datacenter** where the provisioning will take place. Check the MetalCloud provider for available options.
 * `network_profile_label` - (Required) The name of the **Network Profile**.
 * `network_type` - (Required) The type of the **Network Profile**. Can be one of: `wan`,`lan`, `san`.
-* `network_profile_vlan` - (Optional) A set of network profile VLAN objects:
+* `network_profile_vlan` - (Optional) A set of network profile VLAN objects. Note that vlan_id is a string with a value equal to the id of the vlan or "auto".
 ```
-network_profile_vlan {
-    #the id of the VLAN
-    vlan_id: 102
-    
-    #the port mode, can be one of 'trunk','access'
-    port_mode: "trunk",
-    
-    #if subnets need to be allocated on this vlan
-    provision_subnet_gateways: false,
+resource "metalcloud_network_profile" "myprofile" {
+    network_profile_label ="test-1"
+    datacenter_name = "${var.datacenter}"
+    network_type = "wan"
 
-    #if this vlan needs to be terminated on the gateway device  and to which external connections it should be connected to
-    external_connection_ids = [id1, id2]}
-  }
+    network_profile_vlan {
+        vlan_id = "101"
+        port_mode = "trunk"
+        provision_subnet_gateways = false
+   }
+
+   network_profile_vlan {
+        vlan_id = "auto"
+        port_mode = "native"
+        provision_subnet_gateways = false
+        provision_vxlan = true
+        subnet_pool_ids = [
+          data.metalcloud_subnet_pool.primary.id
+          ]
+   }
+
+   network_profile_vlan {
+        vlan_id = "66"
+        port_mode = "trunk"
+        provision_subnet_gateways = false
+        external_connection_ids = [
+          data.metalcloud_external_connection.uplink1.id
+        ]
+   }
+}  
 ```
 
 # Attributes

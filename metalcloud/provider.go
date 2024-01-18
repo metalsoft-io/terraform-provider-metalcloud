@@ -37,6 +37,7 @@ func providerDataSources() map[string]*schema.Resource {
 		"metalcloud_external_connection":   DataSourceExternalConnection(),
 		"metalcloud_server_type":           DataSourceServerType(),
 		"metalcloud_infrastructure_output": DataSourceInfrastructureOutput(),
+		"metalcloud_subnet_pool":           DataSourceSubnetPool(),
 	}
 }
 

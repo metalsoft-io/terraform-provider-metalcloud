@@ -65,7 +65,7 @@ func resourceNetworkProfileVLAN() *schema.Resource {
 				Required: true,
 			},
 			"vlan_id": &schema.Schema{
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Required: true,
 			},
 			"provision_subnet_gateways": &schema.Schema{
@@ -73,7 +73,19 @@ func resourceNetworkProfileVLAN() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"provision_vxlan": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 			"external_connection_ids": &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeInt,
+				},
+			},
+			"subnet_pool_ids": &schema.Schema{
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Schema{
@@ -194,15 +206,30 @@ func flattenNetworkProfile(d *schema.ResourceData, networkProfile mc.NetworkProf
 func flattenNetworkProfileVLAN(networkProfileVLAN mc.NetworkProfileVLAN) map[string]interface{} {
 	d := make(map[string]interface{})
 
-	d["vlan_id"] = networkProfileVLAN.VlanID
+	if networkProfileVLAN.VlanID == nil {
+		d["vlan_id"] = "auto"
+	} else {
+		d["vlan_id"] = fmt.Sprintf("%d", *networkProfileVLAN.VlanID)
+	}
+
 	d["port_mode"] = networkProfileVLAN.PortMode
+
 	d["provision_subnet_gateways"] = networkProfileVLAN.ProvisionSubnetGateways
+	d["provision_vxlan"] = networkProfileVLAN.ProvisionVXLAN
+
 	var connections = []interface{}{}
 
 	for _, value := range networkProfileVLAN.ExternalConnectionIDs {
 		connections = append(connections, value)
 	}
 	d["external_connection_ids"] = connections
+
+	var subnetPools = []interface{}{}
+
+	for _, value := range networkProfileVLAN.SubnetPools {
+		subnetPools = append(connections, *value.SubnetPoolID)
+	}
+	d["subnet_pool_ids"] = subnetPools
 
 	return d
 }
@@ -236,8 +263,15 @@ func expandNetworkProfileVLAN(d map[string]interface{}) mc.NetworkProfileVLAN {
 	var networkProfileVLAN mc.NetworkProfileVLAN
 
 	networkProfileVLAN.PortMode = d["port_mode"].(string)
-	var vlanID = d["vlan_id"].(int)
-	networkProfileVLAN.VlanID = &vlanID
+	if d["vlan_id"] == "auto" {
+		networkProfileVLAN.VlanID = nil
+	} else {
+		vlan_id, err := strconv.Atoi(d["vlan_id"].(string))
+		if err != nil {
+			networkProfileVLAN.VlanID = nil
+		}
+		networkProfileVLAN.VlanID = &vlan_id
+	}
 
 	connections := []int{}
 
@@ -249,6 +283,24 @@ func expandNetworkProfileVLAN(d map[string]interface{}) mc.NetworkProfileVLAN {
 	}
 
 	networkProfileVLAN.ExternalConnectionIDs = connections
+
+	subnetPoolIds := []mc.NetworkProfileSubnetPool{}
+	if len(d["subnet_pool_ids"].([]interface{})) > 0 {
+
+		for _, value := range d["subnet_pool_ids"].([]interface{}) {
+			id := value.(int)
+
+			subnetPoolIds = append(subnetPoolIds, mc.NetworkProfileSubnetPool{
+				SubnetPoolID:   &id,
+				SubnetPoolType: "ipv4",
+			})
+		}
+	}
+
+	networkProfileVLAN.SubnetPools = subnetPoolIds
+
+	networkProfileVLAN.ProvisionSubnetGateways = d["provision_subnet_gateways"].(bool)
+	networkProfileVLAN.ProvisionVXLAN = d["provision_vxlan"].(bool)
 
 	return networkProfileVLAN
 }
