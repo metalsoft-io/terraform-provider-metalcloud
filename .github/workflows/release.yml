@@ -60,7 +60,7 @@ jobs:
         name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.18
+          go-version: 1.21
       -
        name: Build
        run: go build .
@@ -74,7 +74,7 @@ jobs:
         certificatename: '${{ secrets.CERTNAME }}'
         timestampUrl: 'http://timestamp.sectigo.com'
         folder: '.'
-        recursive: false
+        recursive: falseus
       - name: Get the version
         id: get_version
         run: echo ::set-output name=VERSION::$(echo $GITHUB_REF_NAME | cut -c 2-)

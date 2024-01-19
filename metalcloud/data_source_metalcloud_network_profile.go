@@ -10,16 +10,16 @@ import (
 	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v2"
 )
 
-func DataSourceExternalConnection() *schema.Resource {
+func DataSourceNetworkProfile() *schema.Resource {
 	return &schema.Resource{
-		ReadContext: dataSourceExternalConnectionRead,
+		ReadContext: dataSourceNetworkProfileRead,
 		Schema: map[string]*schema.Schema{
-			"external_connection_id": &schema.Schema{
+			"network_profile_id": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
 				Computed: true,
 			},
-			"external_connection_label": &schema.Schema{
+			"network_profile_label": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
 				DiffSuppressFunc: func(_, old, new string, d *schema.ResourceData) bool {
@@ -29,15 +29,6 @@ func DataSourceExternalConnection() *schema.Resource {
 					return false
 				},
 			},
-			"external_connection_hidden": &schema.Schema{
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-			},
-			"external_connection_description": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
 			"datacenter_name": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
@@ -46,16 +37,16 @@ func DataSourceExternalConnection() *schema.Resource {
 	}
 }
 
-func dataSourceExternalConnectionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceNetworkProfileRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
 	var diags diag.Diagnostics
 
 	client := meta.(*mc.Client)
 
-	label := d.Get("external_connection_label").(string)
+	label := d.Get("network_profile_label").(string)
 	datacenter := d.Get("datacenter_name").(string)
 
-	connections, err := client.ExternalConnections(datacenter)
+	nps, err := client.NetworkProfiles(datacenter)
 
 	if err != nil {
 		return diag.FromErr(err)
@@ -63,17 +54,18 @@ func dataSourceExternalConnectionRead(ctx context.Context, d *schema.ResourceDat
 
 	connID := 0
 
-	for _, conn := range *connections {
-		if conn.ExternalConnectionLabel == label {
-			connID = conn.ExternalConnectionID
+	for _, conn := range *nps {
+		if conn.NetworkProfileLabel == label {
+			connID = conn.NetworkProfileID
 		}
 	}
 
 	if connID == 0 {
-		return diag.FromErr(fmt.Errorf("External connection with label %s was not found in datacenter %s", label, datacenter))
+		return diag.FromErr(fmt.Errorf("Network profile with label %s was not found in datacenter %s", label, datacenter))
+
 	}
 
-	d.Set("external_connection_id", connID)
+	d.Set("network_profile_id", connID)
 
 	id := fmt.Sprintf("%d", connID)
 

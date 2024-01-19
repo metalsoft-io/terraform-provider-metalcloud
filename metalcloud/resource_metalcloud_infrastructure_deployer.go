@@ -14,7 +14,7 @@ import (
 	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v2"
 )
 
-//ResourceInfrastructureDeployer This resource handles the deploy process
+// ResourceInfrastructureDeployer This resource handles the deploy process
 func ResourceInfrastructureDeployer() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceInfrastructureDeployerCreate,
@@ -97,6 +97,11 @@ func ResourceInfrastructureDeployer() *schema.Resource {
 				Computed: true,
 				Elem:     resourceServerAllocationPolicy(),
 			},
+			"workflow_task": {
+				Type:     schema.TypeList,
+				Elem:     resourceWorkflowTask(),
+				Optional: true,
+			},
 			"edited": {
 				Type:     schema.TypeBool,
 				Computed: true,
@@ -112,29 +117,29 @@ func ResourceInfrastructureDeployer() *schema.Resource {
 func resourceServerAllocationPolicy() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
-			"instance_array_id": &schema.Schema{
+			"instance_array_id": {
 				Type:        schema.TypeInt,
 				Description: "Instance_array ID",
 				Required:    true,
 			},
-			"allocation_policy": &schema.Schema{
+			"allocation_policy": {
 				Type:        schema.TypeSet,
 				Description: "Server allocation policy",
 				Optional:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"server_type_id": &schema.Schema{
+						"server_type_id": {
 							Type:        schema.TypeInt,
 							Description: "Server type to allocate to instance array.",
 							Required:    true,
 						},
-						"server_count": &schema.Schema{
+						"server_count": {
 							Type:        schema.TypeInt,
 							Description: "Count of servers of this server type.",
 							Optional:    true,
 							Computed:    true,
 						},
-						"server_ids": &schema.Schema{
+						"server_ids": {
 							Type:        schema.TypeSet,
 							Description: "List of server IDs to associate with this instance array on this server type id.",
 							Optional:    true,
@@ -149,8 +154,28 @@ func resourceServerAllocationPolicy() *schema.Resource {
 	}
 }
 
-//resourceInfrastructureDeployerCustomizeDiff This function is executed whenever a diff is needed on the infrastructure object. We use it to
-//introduce a fake edit to allow us to deploy.
+func resourceWorkflowTask() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"stage_definition_id": {
+				Type:     schema.TypeInt,
+				Required: true,
+			},
+			"run_level": {
+				Type:     schema.TypeInt,
+				Required: true,
+			},
+			"stage_run_group": {
+				Type:        schema.TypeString,
+				Description: "Must be one of post_deploy or pre_deploy",
+				Required:    true,
+			},
+		},
+	}
+}
+
+// resourceInfrastructureDeployerCustomizeDiff This function is executed whenever a diff is needed on the infrastructure object. We use it to
+// introduce a fake edit to allow us to deploy.
 func resourceInfrastructureDeployerCustomizeDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
 
 	if !d.Get("prevent_deploy").(bool) {
@@ -178,8 +203,8 @@ func resourceInfrastructureDeployerCreate(ctx context.Context, d *schema.Resourc
 	return resourceInfrastructureDeployerUpdate(ctx, d, meta)
 }
 
-//resourceInfrastructureDeployerRead reads the serverside status of elements
-//it ignores elements added outside of terraform (except of course at deploy time)
+// resourceInfrastructureDeployerRead reads the serverside status of elements
+// it ignores elements added outside of terraform (except of course at deploy time)
 func resourceInfrastructureDeployerRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*mc.Client)
 
@@ -211,11 +236,29 @@ func resourceInfrastructureDeployerRead(ctx context.Context, d *schema.ResourceD
 		}
 	}
 
+	workflowStagesPre, err := client.InfrastructureDeployCustomStages(infrastructure_id, PRE_DEPLOY)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	workflowStagesPost, err := client.InfrastructureDeployCustomStages(infrastructure_id, PRE_DEPLOY)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	workflowStages := []mc.WorkflowStageAssociation{}
+	workflowStages = append(workflowStages, *workflowStagesPre...)
+	workflowStages = append(workflowStages, *workflowStagesPost...)
+
+	workflowStageFlatten := flattenWorkflowTasks(workflowStages)
+	if len(workflowStageFlatten) > 0 {
+		d.Set("workflow_tasks", schema.NewSet(schema.HashResource(resourceWorkflowTask()), workflowStageFlatten))
+	}
+
 	return nil
 }
 
-//resourceInfrastructureDeployerUpdate applies changes on the serverside
-//attempts to merge serverside changes into the current state
+// resourceInfrastructureDeployerUpdate applies changes on the serverside
+// attempts to merge serverside changes into the current state
 func resourceInfrastructureDeployerUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*mc.Client)
 
@@ -234,7 +277,15 @@ func resourceInfrastructureDeployerUpdate(ctx context.Context, d *schema.Resourc
 	needsDeploy := d.Get("edited").(bool)
 	preventDeploy := d.Get("prevent_deploy").(bool)
 
-	updateInfrastructureCustomVariables(d, infrastructure_id, client)
+	dg := updateInfrastructureCustomVariables(d, infrastructure_id, client)
+	if dg.HasError() {
+		return dg
+	}
+
+	dg = updateWorkflowTasksForInfrastructure(d, infrastructure_id, client)
+	if dg.HasError() {
+		return dg
+	}
 
 	//This is where the magic happens.
 	if needsDeploy && !preventDeploy {
@@ -268,7 +319,7 @@ func resourceInfrastructureDeployerUpdate(ctx context.Context, d *schema.Resourc
 		}
 	}
 
-	dg := resourceInfrastructureDeployerRead(ctx, d, meta)
+	dg = resourceInfrastructureDeployerRead(ctx, d, meta)
 	if dg.HasError() {
 		return dg
 	}
@@ -344,7 +395,7 @@ func resourceInfrastructureDeployerDelete(ctx context.Context, d *schema.Resourc
 	return nil
 }
 
-//waitForInfrastructureFinished awaits for the "finished" status in the specified infrastructure
+// waitForInfrastructureFinished awaits for the "finished" status in the specified infrastructure
 func waitForInfrastructureFinished(infrastructureID int, ctx context.Context, d *schema.ResourceData, meta interface{}, timeout time.Duration, targetStatus string) diag.Diagnostics {
 
 	client := meta.(*mc.Client)
@@ -387,7 +438,64 @@ func waitForInfrastructureFinished(infrastructureID int, ctx context.Context, d 
 
 }
 
-//deployInfrastructure starts a deploy
+func clearInfrastructureCustomStages(infrastructureID int, runGroup string, client *mc.Client) diag.Diagnostics {
+	var diags diag.Diagnostics
+	stageAssoc, err := client.InfrastructureDeployCustomStages(infrastructureID, runGroup)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	for _, task := range *stageAssoc {
+
+		err := client.InfrastructureDeployCustomStageDelete(task.InfrastructureDeployCustomStageID)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+	return diags
+}
+
+func updateWorkflowTasksForInfrastructure(d *schema.ResourceData, infrastructureID int, client *mc.Client) diag.Diagnostics {
+
+	var diags diag.Diagnostics
+	//clear all other custom stages
+	dg := clearInfrastructureCustomStages(infrastructureID, PRE_DEPLOY, client)
+	diags = append(diags, dg...)
+
+	dg = clearInfrastructureCustomStages(infrastructureID, POST_DEPLOY, client)
+	diags = append(diags, dg...)
+
+	wokflowTasks := d.Get("workflow_task").([]interface{})
+
+	for _, task := range wokflowTasks {
+		t := task.(map[string]interface{})
+		err := client.InfrastructureDeployCustomStageAddIntoRunlevel(
+			infrastructureID,
+			t["stage_definition_id"].(int),
+			t["run_level"].(int),
+			t["stage_run_group"].(string))
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	return diags
+}
+
+func flattenWorkflowTasks(workflowStages []mc.WorkflowStageAssociation) []interface{} {
+	flattenStages := []interface{}{}
+	for _, stage := range workflowStages {
+		flattenStage := map[string]interface{}{
+			"stage_definition_id": stage.InfrastructureDeployCustomStageID,
+			"run_level":           stage.InfrastructureDeployCustomStageRunLevel,
+			"stage_run_group":     stage.InfrastructureDeployCustomStageType}
+
+		flattenStages = append(flattenStages, flattenStage)
+	}
+
+	return flattenStages
+}
+
+// deployInfrastructure starts a deploy
 func deployInfrastructure(infrastructureID int, d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*mc.Client)
 
@@ -457,3 +565,5 @@ const NETWORK_TYPE_WAN = "wan"
 const SERVICE_STATUS_ACTIVE = "active"
 const SERVICE_STATUS_DELETED = "deleted"
 const UNMODIFIED_INFRASTRUCTURE_WARNING = "Unable to deploy an unmodified infrastructure"
+const PRE_DEPLOY = "pre_deploy"
+const POST_DEPLOY = "post_deploy"

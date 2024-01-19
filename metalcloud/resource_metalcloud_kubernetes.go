@@ -64,7 +64,7 @@ func resourceKubernetes() *schema.Resource {
 
 			"instance_server_type_master": {
 				Type:     schema.TypeList,
-				Elem:     instanceServerTypeResource(),
+				Elem:     resourceInstanceServerType(),
 				Optional: true,
 			},
 
@@ -77,7 +77,7 @@ func resourceKubernetes() *schema.Resource {
 
 			"instance_server_type_worker": {
 				Type:     schema.TypeList,
-				Elem:     instanceServerTypeResource(),
+				Elem:     resourceInstanceServerType(),
 				Optional: true,
 			},
 		},

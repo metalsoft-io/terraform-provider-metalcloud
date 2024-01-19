@@ -3,7 +3,6 @@ package metalcloud
 import (
 	"context"
 	"fmt"
-	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -65,7 +64,9 @@ func resourceInstanceArray() *schema.Resource {
 			"instance_array_boot_method": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  "pxe_iscsi",
+				//Default:  "pxe_iscsi",
+				Default:  nil,
+				Computed: true, //default is computed serverside
 			},
 			"instance_array_ram_gbytes": &schema.Schema{
 				Type:     schema.TypeInt,
@@ -106,21 +107,25 @@ func resourceInstanceArray() *schema.Resource {
 			"instance_array_additional_wan_ipv4_json": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+				Default:  nil,  //default is computed serverside
+				Computed: true, //default is computed serverside
 			},
 			"instance_array_custom_variables": {
 				Type:     schema.TypeMap,
 				Elem:     schema.TypeString,
 				Optional: true,
+				Computed: true, //default is computed serverside
 			},
 			"instance_custom_variables": {
 				Type:     schema.TypeList,
-				Elem:     instanceCustomVariableResource(),
+				Elem:     resourceInstanceCustomVariable(),
 				Optional: true,
 			},
 			"volume_template_id": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  0,
+				//Computed: true, //default is computed serverside
 			},
 			"instance_array_firewall_managed": {
 				Type:     schema.TypeBool,
@@ -150,13 +155,15 @@ func resourceInstanceArray() *schema.Resource {
 			},
 			"instance_server_type": {
 				Type:     schema.TypeList,
-				Elem:     instanceServerTypeResource(),
+				Elem:     resourceInstanceServerType(),
 				Optional: true,
 			},
+
 			"drive_array_id_boot": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  0,
+				//Computed: true,
 			},
 		},
 	}
@@ -177,7 +184,7 @@ func resourceInstanceArrayNetworkProfile() *schema.Resource {
 	}
 }
 
-func instanceCustomVariableResource() *schema.Resource {
+func resourceInstanceCustomVariable() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
 			"instance_index": &schema.Schema{
@@ -193,7 +200,7 @@ func instanceCustomVariableResource() *schema.Resource {
 	}
 }
 
-func instanceServerTypeResource() *schema.Resource {
+func resourceInstanceServerType() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
 			"instance_index": &schema.Schema{
@@ -533,6 +540,7 @@ func resourceInstanceArrayUpdate(ctx context.Context, d *schema.ResourceData, me
 	}
 
 	dg = resourceInstanceArrayRead(ctx, d, meta)
+	diags = append(diags, dg...)
 
 	return diags
 }
@@ -647,7 +655,6 @@ func flattenInstanceArray(d *schema.ResourceData, instanceArray mc.InstanceArray
 		}
 	}
 	if len(interfaces) > 0 {
-		log.Printf("Appending interfaces to state %+v", interfaces)
 		d.Set("interface", schema.NewSet(schema.HashResource(resourceInstanceArrayInterface()), interfaces))
 	}
 
@@ -665,7 +672,11 @@ func expandInstanceArray(d *schema.ResourceData) mc.InstanceArray {
 
 	//ia.InstanceArraySubdomain = d.Get("instance_array_subdomain").(string)
 
-	ia.InstanceArrayBootMethod = d.Get("instance_array_boot_method").(string)
+	if d.Get("instance_array_boot_method") != nil {
+		ia.InstanceArrayBootMethod = d.Get("instance_array_boot_method").(string)
+	} else {
+		ia.InstanceArrayBootMethod = LOCAL_DRIVES
+	}
 	ia.InstanceArrayRAMGbytes = d.Get("instance_array_ram_gbytes").(int)
 	ia.InstanceArrayProcessorCount = d.Get("instance_array_processor_count").(int)
 	ia.InstanceArrayProcessorCoreMHZ = d.Get("instance_array_processor_core_mhz").(int)

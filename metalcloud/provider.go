@@ -23,10 +23,9 @@ func providerResources() map[string]*schema.Resource {
 		"metalcloud_shared_drive":            resourceSharedDrive(),
 		"metalcloud_network":                 resourceNetwork(),
 		"metalcloud_network_profile":         resourceNetworkProfile(),
-		// "metalcloud_external_connection":     resourceExternalConnection(),
-		"metalcloud_firmware_policy": resourceServerFirmwareUpgradePolicy(),
-		"metalcloud_vmware_vsphere":  resourceVMWareVsphere(),
-		"metalcloud_kubernetes":      resourceKubernetes(),
+		"metalcloud_firmware_policy":         resourceServerFirmwareUpgradePolicy(),
+		"metalcloud_vmware_vsphere":          resourceVMWareVsphere(),
+		"metalcloud_kubernetes":              resourceKubernetes(),
 	}
 }
 
@@ -38,48 +37,50 @@ func providerDataSources() map[string]*schema.Resource {
 		"metalcloud_server_type":           DataSourceServerType(),
 		"metalcloud_infrastructure_output": DataSourceInfrastructureOutput(),
 		"metalcloud_subnet_pool":           DataSourceSubnetPool(),
+		"metalcloud_network_profile":       DataSourceNetworkProfile(),
+		"metalcloud_workflow_task":         DataSourceWorkflowTask(),
 	}
 }
 
 func providerSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
-		"api_key": &schema.Schema{
+		"api_key": {
 			Type:        schema.TypeString,
 			Optional:    true,
 			DefaultFunc: schema.EnvDefaultFunc("METALCLOUD_API_KEY", nil),
 			Description: "API Key used to authenticate with the service provider",
 		},
-		"endpoint": &schema.Schema{
+		"endpoint": {
 			Type:        schema.TypeString,
 			Required:    true,
 			Description: "The URL to the API",
 			DefaultFunc: schema.EnvDefaultFunc("METALCLOUD_ENDPOINT", nil),
 		},
-		"user_email": &schema.Schema{
+		"user_email": {
 			Type:        schema.TypeString,
 			Optional:    true,
 			DefaultFunc: schema.EnvDefaultFunc("METALCLOUD_USER_EMAIL", nil),
 			Description: "User email",
 		},
-		"logging": &schema.Schema{
+		"logging": {
 			Type:        schema.TypeBool,
 			Optional:    true,
 			DefaultFunc: schema.EnvDefaultFunc("METALCLOUD_LOGGING_ENABLED", nil),
 			Description: "Enable logging",
 		},
-		"user_id": &schema.Schema{
+		"user_id": {
 			Type:        schema.TypeString,
 			Optional:    true,
 			DefaultFunc: schema.EnvDefaultFunc("METALCLOUD_USER_ID", ""),
 			Description: "User id",
 		},
-		"user_secret": &schema.Schema{
+		"user_secret": {
 			Type:        schema.TypeString,
 			Optional:    true,
 			DefaultFunc: schema.EnvDefaultFunc("METALCLOUD_USER_SECRET", ""),
 			Description: "User secret",
 		},
-		"oauth_token_url": &schema.Schema{
+		"oauth_token_url": {
 			Type:        schema.TypeString,
 			Optional:    true,
 			DefaultFunc: schema.EnvDefaultFunc("OAUTH_TOKEN_URL", ""),

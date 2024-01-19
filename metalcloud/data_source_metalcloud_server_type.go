@@ -54,7 +54,7 @@ func DataSourceServerType() *schema.Resource {
 				Computed: true,
 			},
 			"server_disk_type": &schema.Schema{
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 		},

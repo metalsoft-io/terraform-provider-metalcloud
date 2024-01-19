@@ -87,6 +87,15 @@ The following arguments are supported:
       }
     }
   ```
+  * `workflow_task` - Workflow tasks in the following format. Use metalcloud_workflow_task data object to retrieve an workflow id. The run_level is a positive integer specifying the order in which operations are to be executed. Lower values are executed first. If two tasks have same run_level they are executed in parallel. stage_run_group can be one of "pre_deploy" or "post_deploy".
+    ```
+    workflow_task {
+      stage_definition_id = data.metalcloud_workflow_task.PowerFlex.id
+      run_level = 0
+      stage_run_group = "post_deploy"
+    }
+
+    ```
 
 
 ## Attributes
