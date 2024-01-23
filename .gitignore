@@ -4,6 +4,9 @@
 example.tf
 terraform.tfplan
 terraform.tfstate
+examples/*/.terraform.lock.hcl
+examples/*/terraform.tfstate_backup
+examples/*/terraform.tfstate
 bin/
 modules-dev/
 /pkg/

@@ -153,11 +153,6 @@ func dataSourceInfrastructureOutputRead(ctx context.Context, d *schema.ResourceD
 			clusterAppObjects[label] = c
 
 		case mc.CLUSTER_TYPE_KUBERNETES:
-			diags = append(diags, diag.Diagnostic{
-				Severity: diag.Warning,
-				Summary:  "kubernetes",
-				Detail:   fmt.Sprintf("The deploy encountered the following error: %+v.", cluster),
-			})
 			c, err := client.ClusterAppKubernetes(cluster.ClusterID, true)
 
 			if err != nil {

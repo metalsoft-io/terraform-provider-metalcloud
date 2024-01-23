@@ -22,7 +22,7 @@ func resourceInstanceArray() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
-			"infrastructure_id": &schema.Schema{
+			"infrastructure_id": {
 				Type:     schema.TypeInt,
 				Required: true,
 				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
@@ -33,11 +33,11 @@ func resourceInstanceArray() *schema.Resource {
 					return
 				},
 			},
-			"instance_array_id": &schema.Schema{
+			"instance_array_id": {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
-			"instance_array_label": &schema.Schema{
+			"instance_array_label": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  nil,
@@ -55,56 +55,56 @@ func resourceInstanceArray() *schema.Resource {
 				},
 				ValidateDiagFunc: validateLabel,
 			},
-			"instance_array_instance_count": &schema.Schema{
+			"instance_array_instance_count": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  nil,
 				// ValidateDiagFunc: validateMaxOne,
 			},
-			"instance_array_boot_method": &schema.Schema{
+			"instance_array_boot_method": {
 				Type:     schema.TypeString,
 				Optional: true,
 				//Default:  "pxe_iscsi",
 				Default:  nil,
 				Computed: true, //default is computed serverside
 			},
-			"instance_array_ram_gbytes": &schema.Schema{
+			"instance_array_ram_gbytes": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  nil,  //default is computed serverside
 				Computed: true, //default is computed serverside
 			},
-			"instance_array_processor_count": &schema.Schema{
+			"instance_array_processor_count": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  nil,  //default is computed serverside
 				Computed: true, //default is computed serverside
 			},
-			"instance_array_processor_core_mhz": &schema.Schema{
+			"instance_array_processor_core_mhz": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  nil,  //default is computed serverside
 				Computed: true, //default is computed serverside
 			},
-			"instance_array_processor_core_count": &schema.Schema{
+			"instance_array_processor_core_count": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  nil,  //default is computed serverside
 				Computed: true, //default is computed serverside
 			},
-			"instance_array_disk_count": &schema.Schema{
+			"instance_array_disk_count": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  nil,  //default is computed serverside
 				Computed: true, //default is computed serverside
 			},
-			"instance_array_disk_size_mbytes": &schema.Schema{
+			"instance_array_disk_size_mbytes": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  nil,  //default is computed serverside
 				Computed: true, //default is computed serverside
 			},
-			"instance_array_additional_wan_ipv4_json": &schema.Schema{
+			"instance_array_additional_wan_ipv4_json": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  nil,  //default is computed serverside
@@ -121,7 +121,7 @@ func resourceInstanceArray() *schema.Resource {
 				Elem:     resourceInstanceCustomVariable(),
 				Optional: true,
 			},
-			"volume_template_id": &schema.Schema{
+			"volume_template_id": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  0,
@@ -187,11 +187,11 @@ func resourceInstanceArrayNetworkProfile() *schema.Resource {
 func resourceInstanceCustomVariable() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
-			"instance_index": &schema.Schema{
+			"instance_index": {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
-			"custom_variables": &schema.Schema{
+			"custom_variables": {
 				Type:     schema.TypeMap,
 				Elem:     schema.TypeString,
 				Required: true,
@@ -203,11 +203,11 @@ func resourceInstanceCustomVariable() *schema.Resource {
 func resourceInstanceServerType() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
-			"instance_index": &schema.Schema{
+			"instance_index": {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
-			"server_type_id": &schema.Schema{
+			"server_type_id": {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
@@ -218,51 +218,51 @@ func resourceInstanceServerType() *schema.Resource {
 func resourceFirewallRule() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
-			"firewall_rule_description": &schema.Schema{
+			"firewall_rule_description": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"firewall_rule_port_range_start": &schema.Schema{
+			"firewall_rule_port_range_start": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				//Default:  1,
 			},
-			"firewall_rule_port_range_end": &schema.Schema{
+			"firewall_rule_port_range_end": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				//Default:  65535,
 			},
-			"firewall_rule_source_ip_address_range_start": &schema.Schema{
+			"firewall_rule_source_ip_address_range_start": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  nil,
 			},
-			"firewall_rule_source_ip_address_range_end": &schema.Schema{
+			"firewall_rule_source_ip_address_range_end": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  nil,
 			},
-			"firewall_rule_destination_ip_address_range_start": &schema.Schema{
+			"firewall_rule_destination_ip_address_range_start": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  nil,
 			},
-			"firewall_rule_destination_ip_address_range_end": &schema.Schema{
+			"firewall_rule_destination_ip_address_range_end": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  nil,
 			},
-			"firewall_rule_protocol": &schema.Schema{
+			"firewall_rule_protocol": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  "tcp",
 			},
-			"firewall_rule_ip_address_type": &schema.Schema{
+			"firewall_rule_ip_address_type": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  "ipv4",
 			},
-			"firewall_rule_enabled": &schema.Schema{
+			"firewall_rule_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
@@ -385,12 +385,6 @@ func resourceInstanceArrayRead(ctx context.Context, d *schema.ResourceData, meta
 
 	flattenInstanceArray(d, *ia)
 
-	/* INSTANCES */
-	retInstances, err := client.InstanceArrayInstances(ia.InstanceArrayID)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
 	networkProfiles, err := client.NetworkProfileListByInstanceArray(ia.InstanceArrayID)
 
 	if err != nil {
@@ -401,6 +395,12 @@ func resourceInstanceArrayRead(ctx context.Context, d *schema.ResourceData, meta
 
 	if len(profiles) > 0 {
 		d.Set("network_profile", schema.NewSet(schema.HashResource(resourceInstanceArrayNetworkProfile()), profiles))
+	}
+
+	/* INSTANCES */
+	retInstances, err := client.InstanceArrayInstances(ia.InstanceArrayID)
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
 	//instances

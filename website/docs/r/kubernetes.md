@@ -57,6 +57,29 @@ resource "metalcloud_kubernetes" "k8s1" {
         server_type_id = data.metalcloud_server_type.large.server_type_id
     }
 
+
+    interface_master{
+      interface_index = 0
+      network_id = metalcloud_network.wan.id
+    }
+
+    instance_array_network_profile_worker {
+        network_id = metalcloud_network.wan.id
+        network_profile_id = data.metalcloud_network_profile.vmware.id
+    }
+
+    instance_array_custom_variables_master = {
+        aa = "00"
+        bb = "00"
+    }
+ 
+     instance_custom_variables_master {
+      instance_index = 0
+      custom_variables={
+        "test1":"test2"
+        "test3":"test4"
+      }
+    }
 }
 
 ```
@@ -67,6 +90,12 @@ resource "metalcloud_kubernetes" "k8s1" {
 * `instance_server_type_master` The id of the server type to use for master nodes for each instance (see example above)
 * `instance_array_instance_count_worker` The count of instances in the worker instance array.
 * `instance_server_type_worker` The id of the server type to use for worker nodes for each instance (see example above)
+* `interface_master` The interface mapping to a network. (see example above)
+* `interface_worker` The interface mapping to a network. (see example above)
+* `instance_array_custom_variables_master` The instance array custom variables.
+* `instance_custom_variables_master` instance level custom variables. (see example above)
+* `instance_custom_variables_worker` instance level custom variables. (see example above)
+
 
 
 ## Expanding the vmware cluster

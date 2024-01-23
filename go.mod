@@ -7,7 +7,7 @@ go 1.21
 require (
 	github.com/hashicorp/go-cty v1.4.1-0.20200414143053-d3edf31b6320
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.23.0
-	github.com/metalsoft-io/metal-cloud-sdk-go/v2 v2.11.5
+	github.com/metalsoft-io/metal-cloud-sdk-go/v2 v2.12.2
 )
 
 require (
