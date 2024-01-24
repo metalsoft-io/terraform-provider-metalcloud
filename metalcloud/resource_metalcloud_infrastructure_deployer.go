@@ -191,13 +191,13 @@ func resourceInfrastructureDeployerCreate(ctx context.Context, d *schema.Resourc
 
 	infrastructure_id := d.Get("infrastructure_id").(int)
 
+	d.SetId(fmt.Sprintf("%d", infrastructure_id))
+
 	//The infrastructure should exist serverside. We will edit the
-	iRet, err := client.InfrastructureGet(infrastructure_id)
+	_, err := client.InfrastructureGet(infrastructure_id)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
-	d.SetId(fmt.Sprintf("%d", iRet.InfrastructureID))
 
 	//we will continue to configure the properties on the infrastructure such as custom variables with an update operation
 	return resourceInfrastructureDeployerUpdate(ctx, d, meta)
@@ -207,8 +207,17 @@ func resourceInfrastructureDeployerCreate(ctx context.Context, d *schema.Resourc
 // it ignores elements added outside of terraform (except of course at deploy time)
 func resourceInfrastructureDeployerRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*mc.Client)
+	var err error
 
 	infrastructure_id := d.Get("infrastructure_id").(int)
+	if infrastructure_id == 0 {
+		infrastructure_id, err = strconv.Atoi(d.Id())
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	log.Printf("calling resourceInfrastructureDeployerRead(%d) ...", infrastructure_id)
 
 	infrastructure, err := client.InfrastructureGet(infrastructure_id)
 	if err != nil {
@@ -269,9 +278,20 @@ func resourceInfrastructureDeployerUpdate(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
-	if id != infrastructure_id {
-		d.SetId(fmt.Sprintf("%d", infrastructure_id))
+	if infrastructure_id == 0 {
+		infrastructure_id = id
+	}
 
+	if id != infrastructure_id && infrastructure_id != 0 {
+		d.SetId(fmt.Sprintf("%d", infrastructure_id))
+	}
+
+	return []diag.Diagnostic{
+		{
+			Severity: diag.Warning,
+			Summary:  "log",
+			Detail:   fmt.Sprintf(""),
+		},
 	}
 
 	needsDeploy := d.Get("edited").(bool)

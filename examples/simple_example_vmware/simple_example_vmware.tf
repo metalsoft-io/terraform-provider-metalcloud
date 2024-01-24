@@ -24,7 +24,7 @@ provider "metalcloud" {
 # if the create_if_not_exists flag is set to true
 data "metalcloud_infrastructure" "infra" {
 
-    infrastructure_label = "test-infra-vmware"
+    infrastructure_label = "test-infra-vmware-alex"
     datacenter_name = "${var.datacenter}" 
 
     create_if_not_exists = true
