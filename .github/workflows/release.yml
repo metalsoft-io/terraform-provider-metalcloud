@@ -51,6 +51,32 @@ jobs:
           folder: '.'
           recursive: falseus
       -
+          name: Build darwin
+          uses: goreleaser/goreleaser-action@v5
+          with:
+            version: latest
+            distribution: goreleaser-pro
+            args: release --clean --split
+          env:
+            GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+            # GitHub sets this automatically
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
+            GOOS: darwin
+      -
+          name: Build linux
+          uses: goreleaser/goreleaser-action@v5
+          with:
+            version: latest
+            distribution: goreleaser-pro
+            args: release --clean --split
+          env:
+            GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+            # GitHub sets this automatically
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
+            GOOS: linux
+      -
           name: Build the rest and release
           uses: goreleaser/goreleaser-action@v5
           with:
@@ -62,3 +88,10 @@ jobs:
             # GitHub sets this automatically
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
+      -
+        name: Upload Release
+        uses: ncipollo/release-action@v1
+        with:
+            artifacts: 'terraform-provider-metalcloud_${{github.ref_name}}_*'
+            token: ${{ secrets.GITHUB_TOKEN }}
+            allowUpdates: true
