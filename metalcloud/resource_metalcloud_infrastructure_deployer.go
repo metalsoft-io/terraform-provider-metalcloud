@@ -286,14 +286,6 @@ func resourceInfrastructureDeployerUpdate(ctx context.Context, d *schema.Resourc
 		d.SetId(fmt.Sprintf("%d", infrastructure_id))
 	}
 
-	return []diag.Diagnostic{
-		{
-			Severity: diag.Warning,
-			Summary:  "log",
-			Detail:   fmt.Sprintf(""),
-		},
-	}
-
 	needsDeploy := d.Get("edited").(bool)
 	preventDeploy := d.Get("prevent_deploy").(bool)
 
