@@ -70,6 +70,7 @@ jobs:
         with:
           path: dist/windows
           key: windows-${{ env.sha_short }}
+          enableCrossOsArchive: true
       -
         name: Build
         uses: goreleaser/goreleaser-action@v5
@@ -128,6 +129,7 @@ jobs:
           with:
             path: dist/windows
             key: windows-${{ env.sha_short }}
+            enableCrossOsArchive: true
         -
           name: Import GPG key
           id: import_gpg
