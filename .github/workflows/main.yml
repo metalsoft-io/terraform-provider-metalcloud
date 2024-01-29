@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 jobs:
 
-  build-linux:
+  build:
     strategy:
       matrix:
         GOOS: [linux, darwin]
@@ -33,7 +33,7 @@ jobs:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
       -
-        name: Build windows
+        name: Build
         uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
@@ -69,7 +69,7 @@ jobs:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
       -
-        name: Build windows
+        name: Build
         uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
@@ -97,9 +97,29 @@ jobs:
       runs-on: ubuntu-latest
       environment: prod
       needs: 
-        - build-linux
+        - build
         - build-windows
       steps:
+        - uses: actions/setup-go@v3
+          with:
+            go-version: 1.21
+            cache: true
+        # copy the cashes from prepare
+        - shell: bash
+          run: |
+            echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        - uses: actions/cache@v3
+          with:
+            path: dist/linux
+            key: linux-${{ env.sha_short }}
+        - uses: actions/cache@v3
+          with:
+            path: dist/darwin
+            key: darwin-${{ env.sha_short }}
+        - uses: actions/cache@v3
+          with:
+            path: dist/windows
+            key: windows-${{ env.sha_short }}
         -
           name: Build the rest and release
           uses: goreleaser/goreleaser-action@v5
