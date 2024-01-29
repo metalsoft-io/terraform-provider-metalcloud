@@ -5,6 +5,46 @@ on:
       - 'v*'
 jobs:
   build:
+    strategy:
+      matrix:
+        GOOS: [linux, darwin]
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v2.3.4
+      -
+        name: Unshallow
+        run: git fetch --prune --unshallow
+      -
+        name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.21
+      - shell: bash
+        run: |
+            echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - id: cache
+        uses: actions/cache@v3
+        with:
+          path: dist/${{ matrix.GOOS }}
+          key: ${{ matrix.GOOS }}-${{ env.sha_short }}
+      -
+        name: Build
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          version: latest
+          distribution: goreleaser-pro
+          args: release --clean --split
+        env:
+          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+          # GitHub sets this automatically
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
+          GOOS: ${{ matrix.GOOS }}
+
+  build-windows:
     runs-on: windows-latest
     environment: prod
     steps:
@@ -19,15 +59,17 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.21
+      - shell: bash
+        run: |
+            echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - id: cache
+        uses: actions/cache@v3
+        with:
+          path: dist/windows
+          key: windows-${{ env.sha_short }}
+          enableCrossOsArchive: true
       -
-        name: Import GPG key
-        id: import_gpg
-        uses: crazy-max/ghaction-import-gpg@v5.0.0
-        with: 
-          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          passphrase: ${{ secrets.PASSPHRASE }}
-      -
-        name: Build windows
+        name: Build
         uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
@@ -50,34 +92,50 @@ jobs:
           timestampUrl: 'http://timestamp.sectigo.com'
           folder: '.'
           recursive: falseus
-      -
-          name: Build darwin
-          uses: goreleaser/goreleaser-action@v5
+
+  release:
+      runs-on: ubuntu-latest
+      environment: prod
+      needs: 
+        - build
+        - build-windows
+      steps:
+        -
+          name: Checkout
+          uses: actions/checkout@v2.3.4
+        -
+          name: Unshallow
+          run: git fetch --prune --unshallow
+        - uses: actions/setup-go@v3
           with:
-            version: latest
-            distribution: goreleaser-pro
-            args: release --clean --split
-          env:
-            GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
-            # GitHub sets this automatically
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
-            GOOS: darwin
-      -
-          name: Build linux
-          uses: goreleaser/goreleaser-action@v5
+            go-version: 1.21
+            cache: true
+        # copy the cashes from prepare
+        - shell: bash
+          run: |
+            echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        - uses: actions/cache@v3
           with:
-            version: latest
-            distribution: goreleaser-pro
-            args: release --clean --split
-          env:
-            GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
-            # GitHub sets this automatically
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
-            GOOS: linux
-      -
-          name: Build the rest and release
+            path: dist/linux
+            key: linux-${{ env.sha_short }}
+        - uses: actions/cache@v3
+          with:
+            path: dist/darwin
+            key: darwin-${{ env.sha_short }}
+        - uses: actions/cache@v3
+          with:
+            path: dist/windows
+            key: windows-${{ env.sha_short }}
+            enableCrossOsArchive: true
+        -
+          name: Import GPG key
+          id: import_gpg
+          uses: crazy-max/ghaction-import-gpg@v5.0.0
+          with: 
+            gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+            passphrase: ${{ secrets.PASSPHRASE }}
+        -
+          name: Create SHA256 checksums, sign them and release
           uses: goreleaser/goreleaser-action@v5
           with:
             version: latest
