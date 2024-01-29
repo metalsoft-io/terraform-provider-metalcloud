@@ -21,7 +21,7 @@ func resourceNetwork() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
-			"infrastructure_id": &schema.Schema{
+			"infrastructure_id": {
 				Type:     schema.TypeInt,
 				Required: true,
 				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
@@ -32,12 +32,12 @@ func resourceNetwork() *schema.Resource {
 					return
 				},
 			},
-			"network_id": &schema.Schema{
+			"network_id": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Computed: true,
 			},
-			"network_label": &schema.Schema{
+			"network_label": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  nil,
@@ -54,11 +54,11 @@ func resourceNetwork() *schema.Resource {
 					return false
 				},
 			},
-			"network_type": &schema.Schema{
+			"network_type": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"network_lan_autoallocate_ips": &schema.Schema{
+			"network_lan_autoallocate_ips": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  nil,
@@ -72,9 +72,20 @@ func resourceNetworkCreate(ctx context.Context, d *schema.ResourceData, meta int
 
 	client := meta.(*mc.Client)
 
-	infrastructure_id := d.Get("infrastructure_id").(int)
+	var infrastructure_id int
+	var err error
 
-	_, err := client.InfrastructureGet(infrastructure_id)
+	switch d.Get("infrastructure_id").(type) {
+	case int:
+		infrastructure_id = d.Get("infrastructure_id").(int)
+	case string:
+		infrastructure_id, err = strconv.Atoi(d.Get("infrastructure_id").(string))
+		if err != nil {
+			return diag.Errorf("Could not convert input '%s' to int", d.Get("infrastructure_id").(string))
+		}
+	}
+
+	_, err = client.InfrastructureGet(infrastructure_id)
 
 	if err != nil {
 		return diag.Errorf("Infrastructure with id %+v not found.", infrastructure_id)

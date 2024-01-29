@@ -15,6 +15,12 @@ The Metalcloud provider allows users to provision bare metal resources such as p
 To provision a server:
 
 ```hcl
+variable "user_email" {}
+variable "api_key" {}
+variable "endpoint" {}
+variable "datacenter" {}
+
+
 terraform {
   required_providers {
     metalcloud = {
@@ -36,7 +42,7 @@ provider "metalcloud" {
 data "metalcloud_infrastructure" "infra" {
    
     infrastructure_label = "test-infra"
-    datacenter_name = "dc-1" 
+    datacenter_name = var.datacenter
 
     create_if_not_exists = true
 }
@@ -48,13 +54,17 @@ data "metalcloud_volume_template" "esxi7" {
 resource "metalcloud_network" "data" {
   network_label = "data-network"
   network_type = "wan"
-  infrastructure_id = data.metalcloud_infrastructure.infra.id
+  infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
 }
 
-resource "metalcloud_network" "storage" {
-  network_label = "storage-network"
-  network_type = "san"
-  infrastructure_id = data.metalcloud_infrastructure.infra.id
+resource "metalcloud_network" "lan" {
+  network_label = "lan-network"
+  network_type = "lan" #wan, lan or san. note that san is not available in all environments
+  infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+}
+
+data "metalcloud_server_type" "large"{
+  server_type_name = "M.16.16.1.v3" #needs to match an existing server type in your environment
 }
 
 resource "metalcloud_instance_array" "cluster" {
@@ -64,10 +74,12 @@ resource "metalcloud_instance_array" "cluster" {
     instance_array_label = "test-3"
 
     instance_array_instance_count = 1 //deprecated, keep equal to 1
-    instance_array_ram_gbytes = "16"
-    instance_array_processor_count = 1
-    instance_array_processor_core_count = 1
     instance_array_boot_method = "local_drives"
+
+    instance_server_type{
+      instance_index=0
+      server_type_id=data.metalcloud_server_type.large.server_type_id
+    }
 
     volume_template_id = tonumber(data.metalcloud_volume_template.esxi7.id)
 
@@ -75,7 +87,7 @@ resource "metalcloud_instance_array" "cluster" {
 
     interface{
       interface_index = 0
-      network_id = metalcloud_network.storage.id
+      network_id = metalcloud_network.lan.id
     }
 
     interface{
@@ -93,7 +105,7 @@ resource "metalcloud_instance_array" "cluster" {
 
     depends_on = [
       metalcloud_network.data,
-      metalcloud_network.storage,
+      metalcloud_network.lan,
     ]
 
 }
@@ -120,9 +132,8 @@ resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
   # use either count or for_each in the resources or move everything that is dynamic into a module and make this depend on the module
   depends_on = [
     metalcloud_instance_array.cluster,
-    metalcloud_shared_drive.datastore,
     metalcloud_network.data,
-    metalcloud_network.storage,
+    metalcloud_network.lan,
   ]
 
 }
