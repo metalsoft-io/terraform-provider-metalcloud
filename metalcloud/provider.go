@@ -1,6 +1,9 @@
 package metalcloud
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v2"
 )
@@ -54,7 +57,7 @@ func providerSchema() map[string]*schema.Schema {
 			Type:        schema.TypeString,
 			Required:    true,
 			Description: "The URL to the API",
-			DefaultFunc: schema.EnvDefaultFunc("METALCLOUD_ENDPOINT", nil),
+			DefaultFunc: endpointWithSuffix,
 		},
 		"user_email": {
 			Type:        schema.TypeString,
@@ -87,6 +90,11 @@ func providerSchema() map[string]*schema.Schema {
 			Description: "Oauth token URL",
 		},
 	}
+}
+
+func endpointWithSuffix() (interface{}, error) {
+	endpoint := os.Getenv("METALCLOUD_ENDPOINT")
+	return fmt.Sprintf("%s/api/developer/developer", endpoint), nil
 }
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {

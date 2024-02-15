@@ -156,7 +156,7 @@ func resourceNetworkUpdate(ctx context.Context, d *schema.ResourceData, meta int
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
-		return diag.FromErr(err)
+		return diag.FromErr(fmt.Errorf("Could not parse network id `%s`: %v", d.Id(), err))
 	}
 
 	retNetwork, err := client.NetworkGet(id)
