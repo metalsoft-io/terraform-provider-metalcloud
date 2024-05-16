@@ -195,14 +195,23 @@ func updateClusterInstanceArrays(groupRolesSuffixes map[string]string, ctx conte
 				interfaces = append(interfaces, expandInstanceArrayInterface(intfMap))
 			}
 
-			ia.InstanceArrayInterfaces = interfaces
+			//create extra interfaces if needed
+			interfacesToCreate := len(interfaces) - len(ia.InstanceArrayInterfaces)
+			if interfacesToCreate > 0 {
+				log.Printf("Creating %d interfaces for instance array %d", interfacesToCreate, ia.InstanceArrayID)
+			}
+			for i := 0; i < interfacesToCreate; i++ {
+				client.InstanceArrayInterfaceCreate(ia.InstanceArrayID)
+			}
 
-			for _, intf := range ia.InstanceArrayInterfaces {
+			for _, intf := range interfaces {
 				_, err := client.InstanceArrayInterfaceAttachNetwork(ia.InstanceArrayID, intf.InstanceArrayInterfaceIndex, intf.NetworkID)
 				if err != nil {
 					return diag.FromErr(err)
 				}
 			}
+
+			ia.InstanceArrayInterfaces = interfaces
 		}
 
 		//network profiles
