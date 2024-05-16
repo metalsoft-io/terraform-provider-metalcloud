@@ -3,17 +3,59 @@ package metalcloud
 import (
 	"context"
 	"fmt"
-	"sort"
+	"log"
 	"strconv"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v2"
+	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v3"
 )
 
-func resourceClusterAppTwoIASchema() map[string]*schema.Schema {
-	return map[string]*schema.Schema{
+func resourceClusterAppSchema(groupRolesSuffixes map[string]string) map[string]*schema.Schema {
+
+	schemaForOneInstanceArray := map[string]*schema.Schema{
+		"instance_array_instance_count": {
+			Type:     schema.TypeInt,
+			Optional: true,
+			Default:  1,
+			// ValidateDiagFunc: validateMaxOne,
+		},
+
+		"instance_server_type": {
+			Type:     schema.TypeList,
+			Elem:     resourceInstanceServerType(),
+			Optional: true,
+		},
+
+		"instance_array_network_profile": {
+			Type:     schema.TypeSet,
+			Optional: true,
+			Default:  nil,
+			Computed: true,
+			Elem:     resourceInstanceArrayNetworkProfile(),
+		},
+		"instance_array_custom_variables": {
+			Type:     schema.TypeMap,
+			Elem:     schema.TypeString,
+			Optional: true,
+			Computed: true, //default is computed serverside
+		},
+		"instance_custom_variables": {
+			Type:     schema.TypeList,
+			Elem:     resourceInstanceCustomVariable(),
+			Optional: true,
+		},
+		"interface": {
+			Type:     schema.TypeSet,
+			Optional: true,
+			Default:  nil,
+			Computed: true,
+			Elem:     resourceInstanceArrayInterface(),
+		},
+	}
+
+	schema := map[string]*schema.Schema{
 		"infrastructure_id": {
 			Type:     schema.TypeInt,
 			Required: true,
@@ -36,7 +78,7 @@ func resourceClusterAppTwoIASchema() map[string]*schema.Schema {
 			Computed: true,
 			//this is required because on the serverside the labels are converted to lowercase automatically
 			DiffSuppressFunc: func(_, old, new string, d *schema.ResourceData) bool {
-				if strings.ToLower(old) == strings.ToLower(new) {
+				if strings.EqualFold(old, new) {
 					return true
 				}
 
@@ -47,88 +89,23 @@ func resourceClusterAppTwoIASchema() map[string]*schema.Schema {
 			},
 			ValidateDiagFunc: validateLabel,
 		},
-
-		"instance_array_instance_count_master": {
-			Type:     schema.TypeInt,
-			Optional: true,
-			Default:  1,
-			// ValidateDiagFunc: validateMaxOne,
-		},
-
-		"instance_server_type_master": {
+		"instance_array": {
 			Type:     schema.TypeList,
-			Elem:     resourceInstanceServerType(),
+			Elem:     resourceInstanceArray(),
 			Optional: true,
-		},
-
-		"instance_array_network_profile_master": {
-			Type:     schema.TypeSet,
-			Optional: true,
-			Default:  nil,
-			Computed: true,
-			Elem:     resourceInstanceArrayNetworkProfile(),
-		},
-		"instance_array_custom_variables_master": {
-			Type:     schema.TypeMap,
-			Elem:     schema.TypeString,
-			Optional: true,
-			Computed: true, //default is computed serverside
-		},
-		"instance_custom_variables_master": {
-			Type:     schema.TypeList,
-			Elem:     resourceInstanceCustomVariable(),
-			Optional: true,
-		},
-
-		"instance_array_instance_count_worker": {
-			Type:     schema.TypeInt,
-			Optional: true,
-			Default:  0,
-			// ValidateDiagFunc: validateMaxOne,
-		},
-
-		"instance_server_type_worker": {
-			Type:     schema.TypeList,
-			Elem:     resourceInstanceServerType(),
-			Optional: true,
-		},
-
-		"instance_array_network_profile_worker": {
-			Type:     schema.TypeSet,
-			Optional: true,
-			Default:  nil,
-			Computed: true,
-			Elem:     resourceInstanceArrayNetworkProfile(),
-		},
-		"instance_array_custom_variables_worker": {
-			Type:     schema.TypeMap,
-			Elem:     schema.TypeString,
-			Optional: true,
-			Computed: true, //default is computed serverside
-		},
-		"instance_custom_variables_worker": {
-			Type:     schema.TypeList,
-			Elem:     resourceInstanceCustomVariable(),
-			Optional: true,
-		},
-		"interface_master": {
-			Type:     schema.TypeSet,
-			Optional: true,
-			Default:  nil,
-			Computed: true,
-			Elem:     resourceInstanceArrayInterface(),
-		},
-		"interface_worker": {
-			Type:     schema.TypeSet,
-			Optional: true,
-			Default:  nil,
-			Computed: true,
-			Elem:     resourceInstanceArrayInterface(),
 		},
 	}
+
+	for _, suffix := range groupRolesSuffixes {
+		for key, value := range schemaForOneInstanceArray {
+			schema[key+suffix] = value
+		}
+	}
+
+	return schema
 }
 
-func resourceClusterAppCreate(clusterAppType string, masterRoleGroupName string, ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceClusterAppCreate(clusterAppType string, groupRolesSuffixes map[string]string, ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*mc.Client)
 	var diags diag.Diagnostics
 
@@ -150,16 +127,16 @@ func resourceClusterAppCreate(clusterAppType string, masterRoleGroupName string,
 
 	d.SetId(fmt.Sprintf("%d", retCl.ClusterID))
 
-	dg := updateClusterInstanceArrays(masterRoleGroupName, ctx, d, meta, retCl.ClusterID)
+	dg := updateClusterInstanceArrays(groupRolesSuffixes, ctx, d, meta, retCl.ClusterID)
 	diags = append(diags, dg...)
 
-	dg = resourceClusterAppRead(masterRoleGroupName, ctx, d, meta)
+	dg = resourceClusterAppRead(groupRolesSuffixes, ctx, d, meta)
 	diags = append(diags, dg...)
 
 	return diags
 }
 
-func updateClusterInstanceArrays(masterRoleGroupName string, ctx context.Context, d *schema.ResourceData, meta interface{}, clusterID int) diag.Diagnostics {
+func updateClusterInstanceArrays(groupRolesSuffixes map[string]string, ctx context.Context, d *schema.ResourceData, meta interface{}, clusterID int) diag.Diagnostics {
 	client := meta.(*mc.Client)
 
 	var diags diag.Diagnostics
@@ -171,12 +148,7 @@ func updateClusterInstanceArrays(masterRoleGroupName string, ctx context.Context
 
 	for _, ia := range *retIa {
 
-		var suffix string
-		if ia.ClusterRoleGroup == masterRoleGroupName {
-			suffix = "_master"
-		} else {
-			suffix = "_worker"
-		}
+		suffix := groupRolesSuffixes[ia.ClusterRoleGroup]
 
 		instanceArrayInstanceCount := d.Get("instance_array_instance_count" + suffix).(int)
 		instanceArrayServerTypeList := d.Get("instance_server_type" + suffix).([]interface{})
@@ -252,7 +224,7 @@ func updateClusterInstanceArrays(masterRoleGroupName string, ctx context.Context
 	return diags
 }
 
-func resourceClusterAppRead(masterRoleGroupName string, ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceClusterAppRead(groupRolesSuffixes map[string]string, ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*mc.Client)
 
 	var diags diag.Diagnostics
@@ -268,57 +240,56 @@ func resourceClusterAppRead(masterRoleGroupName string, ctx context.Context, d *
 	}
 
 	ia, err := client.ClusterInstanceArrays(id)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
-	flattenAppCluster(masterRoleGroupName, d, *cluster, *ia, client)
+	flattenAppCluster(groupRolesSuffixes, d, *cluster, *ia, client)
 
 	return diags
 }
 
-func flattenAppCluster(masterRoleGroupName string, d *schema.ResourceData, cluster mc.Cluster, ia map[string]mc.InstanceArray, client *mc.Client) error {
+func flattenAppCluster(groupRolesSuffixes map[string]string, d *schema.ResourceData, cluster mc.Cluster, ia map[string]mc.InstanceArray, client *mc.Client) error {
 
 	d.Set("cluster_id", cluster.ClusterID)
+	d.Set("infrastructure_id", cluster.InfrastructureID)
 	d.Set("cluster_label", cluster.ClusterLabel)
 
 	for _, ia := range ia {
 
-		var suffix string
-		if ia.ClusterRoleGroup == masterRoleGroupName {
-			suffix = "_master"
-		} else {
-			suffix = "_worker"
-		}
+		suffix := groupRolesSuffixes[ia.ClusterRoleGroup]
+
+		log.Printf("importing role %s with suffix %s", ia.ClusterRoleGroup, suffix)
 
 		d.Set("instance_array_instance_count"+suffix, ia.InstanceArrayInstanceCount)
 
-		//iterate over interfaces
-		interfaces := []interface{}{}
-		if intfList, ok := d.GetOkExists("interface" + suffix); ok {
-			for _, iIntf := range intfList.(*schema.Set).List() {
-				iaInterface := iIntf.(map[string]interface{})
-				interfaceIndex := iaInterface["interface_index"].(int)
+		var intfList []interface{}
+		for _, intf := range ia.InstanceArrayInterfaces {
 
-				//locate interface with index in returned data
-				for _, intf := range ia.InstanceArrayInterfaces {
-					//if we found it, locate the network it's connected to add it to the list
-					if intf.InstanceArrayInterfaceIndex == interfaceIndex && intf.NetworkID != 0 {
-						interfaces = append(interfaces, flattenInstanceArrayInterface(intf))
-					}
-				}
+			if intf.NetworkID != 0 { //we ignore unconnected interfaces
+				intfList = append(intfList, flattenInstanceArrayInterface(intf))
 			}
 		}
-		if len(interfaces) > 0 {
-			d.Set("interface"+suffix, schema.NewSet(schema.HashResource(resourceInstanceArrayInterface()), interfaces))
+
+		if len(intfList) > 0 {
+			d.Set("interface"+suffix, schema.NewSet(schema.HashResource(resourceInstanceArrayInterface()), intfList))
 		}
 
-		networkProfiles, err := client.NetworkProfileListByInstanceArray(ia.InstanceArrayID)
+		networkToNetworkProfileMap, err := client.NetworkProfileListByInstanceArray(ia.InstanceArrayID)
 		if err != nil {
 			return err
 		}
 
-		profiles := flattenInstanceArrayNetworkProfile(*networkProfiles, d)
+		var networkProfileList []interface{}
+		for networkID, networkProfileID := range *networkToNetworkProfileMap {
+			if networkProfileID > 0 {
+				networkProfileEntry := flattenInstanceArrayNetworkProfile(networkID, networkProfileID)
+				networkProfileList = append(networkProfileList, networkProfileEntry)
+			}
+		}
 
-		if len(profiles) > 0 {
-			d.Set("instance_array_network_profile"+suffix, schema.NewSet(schema.HashResource(resourceInstanceArrayNetworkProfile()), profiles))
+		if len(networkProfileList) > 0 {
+			d.Set("instance_array_network_profile"+suffix, schema.NewSet(schema.HashResource(resourceInstanceArrayNetworkProfile()), networkProfileList))
 		}
 
 		/* INSTANCE ARRAY CUSTOM VARIABLES */
@@ -340,36 +311,22 @@ func flattenAppCluster(masterRoleGroupName string, d *schema.ResourceData, clust
 			return err
 		}
 
-		keys := []int{}
-		instances := []mc.Instance{}
-
-		for _, v := range *retInstances {
-
-			keys = append(keys, v.InstanceID)
-		}
-
-		sort.Ints(keys)
-
-		for _, id := range keys {
-			i, err := client.InstanceGet(id)
-			if err != nil {
-				return err
-			}
-			instances = append(instances, *i)
-		}
-
 		instancesCustomVariables := flattenInstancesCustomVariables(retInstances)
 
 		if len(instancesCustomVariables) > 0 {
 			d.Set("instance_custom_variables"+suffix, instancesCustomVariables)
+		}
 
+		instanceServerTypes := flattenInstanceServerTypes(retInstances)
+
+		if len(instanceServerTypes) > 0 {
+			d.Set("instance_server_type"+suffix, instanceServerTypes)
 		}
 	}
-
 	return nil
 }
 
-func resourceClusterAppUpdate(masterRoleGroupName string, ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceClusterAppUpdate(groupRolesSuffixes map[string]string, ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*mc.Client)
 	var diags diag.Diagnostics
 	id, err := strconv.Atoi(d.Id())
@@ -391,11 +348,11 @@ func resourceClusterAppUpdate(masterRoleGroupName string, ctx context.Context, d
 	d.HasChange("instance_server_type_master") ||
 	d.HasChange("instance_server_type_worker") {
 	*/
-	dg := updateClusterInstanceArrays(masterRoleGroupName, ctx, d, meta, retCl.ClusterID)
+	dg := updateClusterInstanceArrays(groupRolesSuffixes, ctx, d, meta, retCl.ClusterID)
 	diags = append(diags, dg...)
 	//}
 
-	dg = resourceClusterAppRead(masterRoleGroupName, ctx, d, meta)
+	dg = resourceClusterAppRead(groupRolesSuffixes, ctx, d, meta)
 	diags = append(diags, dg...)
 
 	return diags

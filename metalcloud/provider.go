@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v2"
+	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v3"
 )
 
 // Provider of Bigstep Metal Cloud resources
@@ -28,7 +28,10 @@ func providerResources() map[string]*schema.Resource {
 		"metalcloud_network_profile":         resourceNetworkProfile(),
 		"metalcloud_firmware_policy":         resourceServerFirmwareUpgradePolicy(),
 		"metalcloud_vmware_vsphere":          resourceVMWareVsphere(),
+		"metalcloud_vmware_vcf":              resourceVMWareVCF(),
 		"metalcloud_kubernetes":              resourceKubernetes(),
+		"metalcloud_eksa":                    resourceEKSA(),
+		"metalcloud_subnet":                  resourceSubnet(),
 	}
 }
 

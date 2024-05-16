@@ -7,7 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v2"
+	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v3"
 )
 
 // DataSourceInfrastructureOutput provides a way to export infrastructure information through terraform output blocks

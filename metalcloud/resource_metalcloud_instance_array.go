@@ -9,7 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v2"
+	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v3"
 )
 
 func resourceInstanceArray() *schema.Resource {
@@ -44,7 +44,7 @@ func resourceInstanceArray() *schema.Resource {
 				Computed: true,
 				//this is required because on the serverside the labels are converted to lowercase automatically
 				DiffSuppressFunc: func(_, old, new string, d *schema.ResourceData) bool {
-					if strings.ToLower(old) == strings.ToLower(new) {
+					if strings.EqualFold(old, new) {
 						return true
 					}
 
@@ -163,6 +163,12 @@ func resourceInstanceArray() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  0,
+				//Computed: true,
+			},
+			"cluster_group_role": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "",
 				//Computed: true,
 			},
 		},
@@ -385,16 +391,22 @@ func resourceInstanceArrayRead(ctx context.Context, d *schema.ResourceData, meta
 
 	flattenInstanceArray(d, *ia)
 
-	networkProfiles, err := client.NetworkProfileListByInstanceArray(ia.InstanceArrayID)
+	networkToNetworkProfileMap, err := client.NetworkProfileListByInstanceArray(ia.InstanceArrayID)
 
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	profiles := flattenInstanceArrayNetworkProfile(*networkProfiles, d)
+	var networkProfileList []interface{}
+	for networkID, networkProfileID := range *networkToNetworkProfileMap {
+		if networkProfileID > 0 {
+			networkProfileEntry := flattenInstanceArrayNetworkProfile(networkID, networkProfileID)
+			networkProfileList = append(networkProfileList, networkProfileEntry)
+		}
+	}
 
-	if len(profiles) > 0 {
-		d.Set("network_profile", schema.NewSet(schema.HashResource(resourceInstanceArrayNetworkProfile()), profiles))
+	if len(networkProfileList) > 0 {
+		d.Set("network_profile", schema.NewSet(schema.HashResource(resourceInstanceArrayNetworkProfile()), networkProfileList))
 	}
 
 	/* INSTANCES */
@@ -779,6 +791,8 @@ func expandInstanceArrayInterface(d map[string]interface{}) mc.InstanceArrayInte
 	return i
 }
 
+/*
+//I am unsure why this was implemented this way
 func flattenInstanceArrayNetworkProfile(networkProfiles map[int]int, d *schema.ResourceData) []interface{} {
 	profiles := []interface{}{}
 
@@ -794,6 +808,16 @@ func flattenInstanceArrayNetworkProfile(networkProfiles map[int]int, d *schema.R
 	}
 
 	return profiles
+}
+*/
+
+func flattenInstanceArrayNetworkProfile(networkID int, networkProfileID int) map[string]interface{} {
+	var d = make(map[string]interface{})
+
+	d["network_profile_id"] = networkProfileID
+	d["network_id"] = networkID
+
+	return d
 }
 
 func flattenInstancesCustomVariables(retInstances *map[string]mc.Instance) []interface{} {
@@ -837,18 +861,24 @@ func flattenInstancesCustomVariables(retInstances *map[string]mc.Instance) []int
 	return customVars
 }
 
-// * sets the custom variables on the instances object. Used by the Upgrade function
-// TODO: convert tot an actual expand function that doesn't use the client to set them to make it easier to test
-func updateInstancesCustomVariables(cvList []interface{}, instanceArrayID int, client *mc.Client) diag.Diagnostics {
+func flattenInstanceServerTypes(retInstances *map[string]mc.Instance) []interface{} {
+	instanceServerTypes := []interface{}{}
+	instances := getSortedListOfInstances(retInstances)
 
-	var diags diag.Diagnostics
-	instanceList, err := client.InstanceArrayInstances(instanceArrayID)
-	if err != nil {
-		return diag.FromErr(err)
+	for instanceIndex, inst := range instances {
+		entry := make(map[string]interface{})
+		entry["instance_index"] = instanceIndex
+		entry["server_type_id"] = inst.ServerTypeID
+		instanceServerTypes = append(instanceServerTypes, entry)
 	}
-	//TODO: flatten instances
+	return instanceServerTypes
+}
+
+// this is used to get a sorted list of instances ordered by their id
+// so that instance_index is consistent
+func getSortedListOfInstances(instanceList *map[string]mc.Instance) []mc.Instance {
 	instanceMap := make(map[int]mc.Instance, len(*instanceList))
-	nInstances := len(*instanceList)
+
 	keys := []int{}
 	instances := []mc.Instance{}
 
@@ -862,6 +892,22 @@ func updateInstancesCustomVariables(cvList []interface{}, instanceArrayID int, c
 	for _, id := range keys {
 		instances = append(instances, instanceMap[id])
 	}
+	return instances
+}
+
+// * sets the custom variables on the instances object. Used by the Upgrade function
+// TODO: convert tot an actual expand function that doesn't use the client to set them to make it easier to test
+func updateInstancesCustomVariables(cvList []interface{}, instanceArrayID int, client *mc.Client) diag.Diagnostics {
+
+	var diags diag.Diagnostics
+	instanceList, err := client.InstanceArrayInstances(instanceArrayID)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	instances := getSortedListOfInstances(instanceList)
+
+	nInstances := len(*instanceList)
 
 	currentCVLabelList := make(map[string]int, len(*instanceList))
 
@@ -878,7 +924,7 @@ func updateInstancesCustomVariables(cvList []interface{}, instanceArrayID int, c
 		if instance_index < 0 || instance_index >= nInstances {
 			return append(diags, diag.Diagnostic{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf("instance_index in custom_variables block out of bounds"),
+				Summary:  "instance_index in custom_variables block out of bounds",
 				Detail:   fmt.Sprintf("Use a number between 0 and %v (instance_array_instance_count-1). ", nInstances-1),
 			})
 		}

@@ -5,7 +5,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v2"
+	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v3"
 )
 
 func resourceVMWareVsphere() *schema.Resource {
@@ -17,20 +17,20 @@ func resourceVMWareVsphere() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-		Schema: resourceClusterAppTwoIASchema(),
+		Schema: resourceClusterAppSchema(VSPHERE_ROLE_SUFFIX_MAPPING),
 	}
 }
 
 func resourceVMWareVsphereCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	return resourceClusterAppCreate(mc.CLUSTER_TYPE_VMWARE_VSPHERE, VSPHERE_MASTER_GROUP_NAME, ctx, d, meta)
+	return resourceClusterAppCreate(mc.CLUSTER_TYPE_VMWARE_VSPHERE, VSPHERE_ROLE_SUFFIX_MAPPING, ctx, d, meta)
 }
 
 func resourceVMWareVsphereRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	return resourceClusterAppRead(VSPHERE_MASTER_GROUP_NAME, ctx, d, meta)
+	return resourceClusterAppRead(VSPHERE_ROLE_SUFFIX_MAPPING, ctx, d, meta)
 }
 
 func resourceVMWareVsphereUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	return resourceClusterAppUpdate(VSPHERE_MASTER_GROUP_NAME, ctx, d, meta)
+	return resourceClusterAppUpdate(VSPHERE_ROLE_SUFFIX_MAPPING, ctx, d, meta)
 
 }
 
@@ -42,4 +42,7 @@ func copyClusterToOperation(c mc.Cluster, co *mc.ClusterOperation) {
 	co.ClusterLabel = c.ClusterLabel
 }
 
-const VSPHERE_MASTER_GROUP_NAME = "vsphere_master"
+var VSPHERE_ROLE_SUFFIX_MAPPING = map[string]string{
+	"vsphere_master": "_master",
+	"vsphere_worker": "_worker",
+}

@@ -6,9 +6,9 @@ description: |-
 ---
 
 
-# Kubernetes
+# EKS-A
 
-This structure represents a MetalCloud Kubernetes deployment.  Use the [infrastructure_reference](../d/infrastructure_reference.md) Data Source to determine the `infrastructure_id`.
+This structure represents a MetalCloud AWS EKS-A deployment.  Use the [infrastructure_reference](../d/infrastructure_reference.md) Data Source to determine the `infrastructure_id`.
 
 Don't forget to always add a depends on reference in the infrastructure deployer object.
 
@@ -26,7 +26,7 @@ data "metalcloud_server_type" "large"{
 }
 
 
-resource "metalcloud_kubernetes" "k8s1" {
+resource "metalcloud_eksa" "k8s1" {
     infrastructure_id =  data.metalcloud_infrastructure.infra.infrastructure_id
 
     cluster_label = "testvmware"

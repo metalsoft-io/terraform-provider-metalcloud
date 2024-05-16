@@ -5,10 +5,10 @@ import (
 	"log"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v2"
+	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v3"
 )
 
-//DataSourceVolumeTemplate provides means to search for volume templates
+// DataSourceVolumeTemplate provides means to search for volume templates
 func DataSourceVolumeTemplate() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceVolumeTemplateRead,
