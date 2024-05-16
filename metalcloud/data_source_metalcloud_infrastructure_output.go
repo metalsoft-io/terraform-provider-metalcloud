@@ -152,8 +152,24 @@ func dataSourceInfrastructureOutputRead(ctx context.Context, d *schema.ResourceD
 			}
 			clusterAppObjects[label] = c
 
+		case mc.CLUSTER_TYPE_VMWARE_VCF:
+			c, err := client.ClusterAppVMWareVCF(cluster.ClusterID, true)
+
+			if err != nil {
+				return diag.FromErr(err)
+			}
+			clusterAppObjects[label] = c
+
 		case mc.CLUSTER_TYPE_KUBERNETES:
 			c, err := client.ClusterAppKubernetes(cluster.ClusterID, true)
+
+			if err != nil {
+				return diag.FromErr(err)
+			}
+			clusterAppObjects[label] = c
+
+		case mc.CLUSTER_TYPE_KUBERNETES_EKSA:
+			c, err := client.ClusterAppKubernetesEKSA(cluster.ClusterID, true)
 
 			if err != nil {
 				return diag.FromErr(err)

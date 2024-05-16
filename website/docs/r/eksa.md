@@ -26,79 +26,134 @@ data "metalcloud_server_type" "large"{
 }
 
 
-resource "metalcloud_eksa" "k8s1" {
-    infrastructure_id =  data.metalcloud_infrastructure.infra.infrastructure_id
+data "metalcloud_subnet_pool" "wan" {
+	subnet_pool_label = "wan"
+}
 
-    cluster_label = "testvmware"
-    instance_array_instance_count_master = 2
-    instance_server_type_master {
-        instance_index = 0
-        server_type_id = data.metalcloud_server_type.large.server_type_id
-    }
+resource "metalcloud_subnet" "kube_boot_network" {
+		subnet_type = "ipv4"
+		infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+		subnet_label="kube_boot_network"
+		cluster_id = metalcloud_eksa.cluster01.cluster_id
+		network_id = metalcloud_network.wan.network_id
+		subnet_pool_id = data.metalcloud_subnet_pool.wan
+		subnet_automatic_allocation = false
+		subnet_is_ip_range = true
+		subnet_ip_range_ip_count = 5
+		subnet_override_vlan_id=1003
+		
+		
+}
 
-    instance_server_type_master {
-        instance_index = 1
-        server_type_id = data.metalcloud_server_type.large.server_type_id
-    }
-    
-    instance_array_instance_count_worker = 3
-    instance_server_type_worker {
-        instance_index = 0
-        server_type_id = data.metalcloud_server_type.large.server_type_id
-    }
+resource "metalcloud_subnet" "kube_vip_network" {
+		subnet_type = "ipv4"
+		subnet_label="kube_vip_network"
+		infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+		cluster_id = metalcloud_eksa.cluster01.cluster_id
+		network_id = metalcloud_network.wan.network_id
+		subnet_pool_id = data.metalcloud_subnet_pool.wan
+		subnet_automatic_allocation = false
+		subnet_is_ip_range = true
+		subnet_ip_range_ip_count = 5
+		subnet_override_vlan_id=1003
+		
+}
 
-    instance_server_type_worker {
-        instance_index = 1
-        server_type_id = data.metalcloud_server_type.large.server_type_id
-    }
+resource "metalcloud_eksa" "cluster01" {
+	infrastructure_id =  data.metalcloud_infrastructure.infra.infrastructure_id
+	
+	cluster_label = "test-eksa"
 
-     instance_server_type_worker {
-        instance_index = 2
-        server_type_id = data.metalcloud_server_type.large.server_type_id
-    }
+	
+	instance_array_instance_count_eksa_mgmt = 1
+	instance_array_instance_count_mgmt = 1
+	instance_array_instance_count_worker = 1
+	
+	instance_server_type_eksa_mgmt {
+		instance_index = 0
+		server_type_id = data.metalcloud_server_type.large.server_type_id
+	}
+	
+	instance_server_type_mgmt {
+		instance_index = 0
+		server_type_id = data.metalcloud_server_type.large.server_type_id
+	}
+	
+	instance_server_type_worker {
+		instance_index = 0
+		server_type_id = data.metalcloud_server_type.large.server_type_id
+	}
+	
+	
+	interface_eksa_mgmt{
+		interface_index = 0
+		network_id = metalcloud_network.wan.id
+	}
+	
+	interface_eksa_mgmt{
+		interface_index = 1
+		network_id = metalcloud_network.san.id
+	}
+	
+	
+	interface_mgmt{
+		interface_index = 0
+		network_id = metalcloud_network.wan.id
+	}
+	
+	interface_mgmt {
+		interface_index = 1
+		network_id = metalcloud_network.san.id
+	}
+	
+	interface_worker {
+		interface_index = 0
+		network_id = metalcloud_network.wan.id
+	}
+	
+	interface_worker {
+		interface_index = 1
+		network_id = metalcloud_network.san.id
+	}
+	
+	instance_array_network_profile_eksa_mgmt {
+		network_id = metalcloud_network.wan.id
+		network_profile_id = data.metalcloud_network_profile.eksa-mgmt.id
+	}
 
+	instance_array_network_profile_mgmt {
+		network_id = metalcloud_network.wan.id
+		network_profile_id = data.metalcloud_network_profile.eksa-control-plane.id
+	}
 
-    interface_master{
-      interface_index = 0
-      network_id = metalcloud_network.wan.id
-    }
-
-    instance_array_network_profile_worker {
-        network_id = metalcloud_network.wan.id
-        network_profile_id = data.metalcloud_network_profile.vmware.id
-    }
-
-    instance_array_custom_variables_master = {
-        aa = "00"
-        bb = "00"
-    }
- 
-     instance_custom_variables_master {
-      instance_index = 0
-      custom_variables={
-        "test1":"test2"
-        "test3":"test4"
-      }
-    }
+	instance_array_network_profile_worker {
+		network_id = metalcloud_network.wan.id
+		network_profile_id = data.metalcloud_network_profile.eksa-workload.id
+	}
 }
 
 ```
 ## Argument Reference
 
 * `cluster_label` (Required) *  **Cluster** name. Use only alphanumeric and dashes '-'. Cannot start with a number, cannot include underscore (_). Try to keep this under 30 chars.
-* `instance_array_instance_count_master` The number of instances in the master instance array.
-* `instance_server_type_master` The id of the server type to use for master nodes for each instance (see example above)
-* `instance_array_instance_count_worker` The count of instances in the worker instance array.
+* `instance_array_instance_count_eksa_mgmt` The number of instances in the eks_mgmt instance array.
+* `instance_array_instance_count_mgmt` The number of instances in the mgmt instance array.
+* `instance_array_instance_count_worker` The number of instances in the worker instance array.
+* `instance_server_type_eksa_mgmt` The id of the server type to use for eks mgmt nodes for each instance (see example above)
+* `instance_server_type_mgmt` The id of the server type to use for mgmt nodes for each instance (see example above)
 * `instance_server_type_worker` The id of the server type to use for worker nodes for each instance (see example above)
-* `interface_master` The interface mapping to a network. (see example above)
+* `interface_eksa_mgmt` The interface mapping to a network. (see example above)
+* `interface_mgmt` The interface mapping to a network. (see example above)
 * `interface_worker` The interface mapping to a network. (see example above)
-* `instance_array_custom_variables_master` The instance array custom variables.
-* `instance_custom_variables_master` instance level custom variables. (see example above)
+* `instance_array_custom_variables_eks_mgmt` The instance array custom variables.
+* `instance_array_custom_variables_mgmt` The instance array custom variables.
+* `instance_array_custom_variables_worker` The instance array custom variables.
+* `instance_custom_variables_eks_mgmt` instance level custom variables. (see example above)
+* `instance_custom_variables_mgmt` instance level custom variables. (see example above)
 * `instance_custom_variables_worker` instance level custom variables. (see example above)
 
 
-
-## Expanding the vmware cluster
+## Expanding the EKS-A cluster
 
 Note that it is possible to expand the cluster by editing the instance_array_instance_count_worker count but shrinking the cluster is not supported.
 
@@ -118,9 +173,4 @@ data "metalcloud_infrastructure_output" "output"{
 output "cluster_credentials" {
     value = data.metalcloud_infrastructure_output.output.clusters
 }
-```
-
-Will output
-```
-cluster_credentials = "{\"testvmware\":{\"vsphere_worker\":{\"instance-1884\":{\"instance_id\":1884,\"instance_label\":\"instance-1884\",\"instance_hostname\":\"instance-1884.us01.metalsoft.io\",\"instance_cluster_url\":\"unavailable\",\"instance_health\":\"unavailable\",\"type\":\"AppVMwarevSphereInstance\",\"esxi_username\":\"root\",\"esxi_password\":\"RndHHb8sagwLjw_8P\"},\"instance-1885\":{\"instance_id\":1885,\"instance_label\":\"instance-1885\",\"instance_hostname\":\"instance-1885.us01.metalsoft.io\",\"instance_cluster_url\":\"unavailable\",\"instance_health\":\"unavailable\",\"type\":\"AppVMwarevSphereInstance\",\"esxi_username\":\"root\",\"esxi_password\":\"ThjrsLhdNg7Jfn_6K\"},\"instance-1886\":{\"instance_id\":1886,\"instance_label\":\"instance-1886\",\"instance_hostname\":\"instance-1886.us01.metalsoft.io\",\"instance_cluster_url\":\"unavailable\",\"instance_health\":\"unavailable\",\"type\":\"AppVMwarevSphereInstance\",\"esxi_username\":\"root\",\"esxi_password\":\"FCGwswEmGXr9PM_8F\"}},\"vsphere_master\":{\"instance-1881\":{\"instance_id\":1881,\"instance_label\":\"instance-1881\",\"instance_hostname\":\"instance-1881.us01.metalsoft.io\",\"instance_cluster_url\":\"unavailable\",\"instance_health\":\"unavailable\",\"type\":\"AppVMwarevSphereInstance\",\"esxi_username\":\"root\",\"esxi_password\":\"ypdFxkL9CDjrXg_8W\"},\"instance-1883\":{\"instance_id\":1883,\"instance_label\":\"instance-1883\",\"instance_hostname\":\"instance-1883.us01.metalsoft.io\",\"instance_cluster_url\":\"unavailable\",\"instance_health\":\"unavailable\",\"type\":\"AppVMwarevSphereInstance\",\"esxi_username\":\"root\",\"esxi_password\":\"wgPpKdegmKfj9S_5J\"}},\"admin_username\":\"administrator@vsphere.local\",\"cluster_software_available_versions\":[\"7.0.0\"],\"type\":\"AppVMwarevSphere\",\"vcsa_username\":\"root\",\"vcsa_initial_password\":\"LGassNtm9BLFYP\"}}"
 ```

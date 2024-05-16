@@ -57,7 +57,7 @@ func resourceSubnet() *schema.Resource {
 				ForceNew: true,
 				//this is required because on the serverside the labels are converted to lowercase automatically
 				DiffSuppressFunc: func(_, old, new string, d *schema.ResourceData) bool {
-					if strings.ToLower(old) == strings.ToLower(new) {
+					if strings.EqualFold(old, new) {
 						return true
 					}
 
@@ -128,6 +128,18 @@ func resourceSubnet() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			"subnet_override_vlan_id": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+				Required: false,
+			},
+			"subnet_override_vlan_auto_allocation_index": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+				Required: false,
 			},
 		},
 	}
@@ -237,6 +249,8 @@ func flattenSubnet(d *schema.ResourceData, Subnet mc.Subnet) map[string]interfac
 	d.Set("subnet_is_ip_range", Subnet.SubnetIsIPRange)
 	d.Set("subnet_ip_range_ip_count", Subnet.SubnetIPRangeCount)
 	d.Set("subnet_prefix_size", Subnet.SubnetPrefixSize)
+	d.Set("subnet_override_vlan_id", Subnet.SubnetOverrideVLANID)
+	d.Set("subnet_override_vlan_auto_allocation_index", Subnet.SubnetOverrideVLANAutoAllocationIndex)
 
 	return nil
 }
@@ -256,6 +270,11 @@ func expandSubnet(d *schema.ResourceData) mc.Subnet {
 	n.SubnetPoolID = d.Get("subnet_pool_id").(int)
 	n.SubnetIsIPRange = d.Get("subnet_is_ip_range").(bool)
 	n.SubnetIPRangeCount = d.Get("subnet_ip_range_ip_count").(int)
+	if v, ok := d.GetOk("subnet_override_vlan_auto_allocation_index"); ok {
+		SubnetOverrideVLANAutoAllocationIndex := v.(int)
+		n.SubnetOverrideVLANAutoAllocationIndex = &SubnetOverrideVLANAutoAllocationIndex
+	}
+	n.SubnetOverrideVLANID = d.Get("subnet_override_vlan_id").(int)
 
 	return n
 }

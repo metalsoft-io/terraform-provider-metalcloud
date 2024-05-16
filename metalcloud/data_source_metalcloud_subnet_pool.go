@@ -59,8 +59,8 @@ func dataSourceSubnetPoolRead(ctx context.Context, d *schema.ResourceData, meta 
 		return diag.FromErr(fmt.Errorf("Subnet pool with label %s was not found", label))
 	}
 
+	d.Set("subnet_pool_id", subnetPoolId)
 	id := fmt.Sprintf("%d", subnetPoolId)
-	d.Set("subnet_pool_id", id)
 	d.SetId(id)
 
 	return diags
