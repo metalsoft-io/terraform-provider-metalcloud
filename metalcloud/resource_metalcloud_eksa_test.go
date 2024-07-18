@@ -19,6 +19,7 @@ func TestAccEKS_basic(t *testing.T) {
 				Config: testAccEKSConfig(t),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("metalcloud_eksa.cluster01", "cluster_label", "test-eksa"),
+					resource.TestCheckResourceAttr("metalcloud_eksa.cluster01", "cluster_software_version", "1.29"),
 				),
 			},
 			{
@@ -79,6 +80,7 @@ func testAccEKSConfig(t *testing.T) string {
 		infrastructure_id =  data.metalcloud_infrastructure.infra.infrastructure_id
 	 
 		cluster_label = "test-eksa"
+		cluster_software_version = "1.29"
 
 		
 		instance_array_instance_count_eksa_mgmt = 1
