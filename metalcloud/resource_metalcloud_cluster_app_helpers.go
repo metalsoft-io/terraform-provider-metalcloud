@@ -373,6 +373,7 @@ func expandClusterApp(d *schema.ResourceData) mc.Cluster {
 
 	c.ClusterID = d.Get("cluster_id").(int)
 	c.ClusterLabel = d.Get("cluster_label").(string)
+	c.ClusterSoftwareVersion = d.Get("cluster_software_version").(string)
 
 	return c
 }
