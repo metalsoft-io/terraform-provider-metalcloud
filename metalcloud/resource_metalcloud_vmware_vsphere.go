@@ -40,6 +40,7 @@ func resourceVMWareVsphereDelete(ctx context.Context, d *schema.ResourceData, me
 
 func copyClusterToOperation(c mc.Cluster, co *mc.ClusterOperation) {
 	co.ClusterLabel = c.ClusterLabel
+	co.ClusterSoftwareVersion = c.ClusterSoftwareVersion
 }
 
 var VSPHERE_ROLE_SUFFIX_MAPPING = map[string]string{
