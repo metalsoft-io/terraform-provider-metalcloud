@@ -15,6 +15,7 @@ func resourceSubnet() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceSubnetCreate,
 		ReadContext:   resourceSubnetRead,
+		UpdateContext: resourceSubnetUpdate,
 		DeleteContext: resourceSubnetDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -202,6 +203,64 @@ func resourceSubnetRead(ctx context.Context, d *schema.ResourceData, meta interf
 
 	return diags
 
+}
+
+func resourceSubnetUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	client := meta.(*mc.Client)
+
+	id, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	oldSubnet, err := client.SubnetGet(id)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	newSubnet := expandSubnet(d)
+
+	if newSubnet.InfrastructureID != oldSubnet.InfrastructureID {
+		return diag.Errorf("Cannot change the infrastructure of a subnet.")
+	}
+
+	if newSubnet.SubnetLabel != oldSubnet.SubnetLabel {
+		return diag.Errorf("Cannot change the label of a subnet.")
+	}
+
+	if newSubnet.SubnetType != oldSubnet.SubnetType {
+		return diag.Errorf("Cannot change the type of a subnet.")
+	}
+
+	if newSubnet.ClusterID != oldSubnet.ClusterID {
+		return diag.Errorf("Cannot change the cluster of a subnet.")
+	}
+
+	if newSubnet.SubnetPoolID != oldSubnet.SubnetPoolID {
+		return diag.Errorf("Cannot change the pool of a subnet.")
+	}
+
+	if newSubnet.SubnetIsIPRange != oldSubnet.SubnetIsIPRange {
+		return diag.Errorf("Cannot change the is_ip_range of a subnet.")
+	}
+
+	if newSubnet.SubnetIPRangeCount != oldSubnet.SubnetIPRangeCount {
+		return diag.Errorf("Cannot change the ip_range_ip_count of a subnet.")
+	}
+
+	if newSubnet.SubnetPrefixSize != oldSubnet.SubnetPrefixSize {
+		return diag.Errorf("Cannot change the prefix_size of a subnet.")
+	}
+
+	if newSubnet.SubnetOverrideVLANID != oldSubnet.SubnetOverrideVLANID {
+		return diag.Errorf("Cannot change the override_vlan_id of a subnet.")
+	}
+
+	if newSubnet.SubnetOverrideVLANAutoAllocationIndex != oldSubnet.SubnetOverrideVLANAutoAllocationIndex {
+		return diag.Errorf("Cannot change the override_vlan_auto_allocation_index of a subnet.")
+	}
+
+	return resourceSubnetRead(ctx, d, meta)
 }
 
 func resourceSubnetDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
