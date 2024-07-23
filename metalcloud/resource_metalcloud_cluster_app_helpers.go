@@ -358,6 +358,7 @@ func resourceClusterAppUpdate(groupRolesSuffixes map[string]string, ctx context.
 	cluster := expandClusterApp(d)
 
 	copyClusterToOperation(cluster, &cluster.ClusterOperation)
+	cluster.ClusterOperation.ClusterChangeId = retCl.ClusterChangeId
 
 	if d.HasChange("cluster_software_version") {
 		_, err := client.ClusterEdit(id, cluster.ClusterOperation)
