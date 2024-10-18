@@ -6,7 +6,7 @@ description: |-
 ---
 
 
-# vmware_vsphere
+# vmware_vcf
 
 This structure represents a MetalCloud VMWare VCF deployment.  Use the [infrastructure_reference](../d/infrastructure_reference.md) Data Source to determine the `infrastructure_id`.
 
