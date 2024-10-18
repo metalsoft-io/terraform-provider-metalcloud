@@ -39,6 +39,6 @@ func resourceEKSADelete(ctx context.Context, d *schema.ResourceData, meta interf
 
 var EKSA_ROLE_SUFFIX_MAPPING = map[string]string{
 	"eksa_mgmt":                "_eksa_mgmt",
-	"kubernetes_control_plane": "_mgmt",
+	"kubernetes_control_plane": "_control_plane",
 	"kubernetes_worker":        "_worker",
 }

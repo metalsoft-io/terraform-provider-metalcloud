@@ -89,6 +89,12 @@ func resourceClusterAppSchema(groupRolesSuffixes map[string]string) map[string]*
 			},
 			ValidateDiagFunc: validateLabel,
 		},
+		"cluster_software_version": {
+			Type:     schema.TypeString,
+			Optional: true,
+			Default:  nil,
+			Computed: true,
+		},
 		"instance_array": {
 			Type:     schema.TypeList,
 			Elem:     resourceInstanceArray(),
@@ -263,6 +269,7 @@ func flattenAppCluster(groupRolesSuffixes map[string]string, d *schema.ResourceD
 	d.Set("cluster_id", cluster.ClusterID)
 	d.Set("infrastructure_id", cluster.InfrastructureID)
 	d.Set("cluster_label", cluster.ClusterLabel)
+	d.Set("cluster_software_version", cluster.ClusterSoftwareVersion)
 
 	for _, ia := range ia {
 
@@ -351,6 +358,14 @@ func resourceClusterAppUpdate(groupRolesSuffixes map[string]string, ctx context.
 	cluster := expandClusterApp(d)
 
 	copyClusterToOperation(cluster, &cluster.ClusterOperation)
+	cluster.ClusterOperation.ClusterChangeId = retCl.ClusterChangeId
+
+	if d.HasChange("cluster_software_version") {
+		_, err := client.ClusterEdit(id, cluster.ClusterOperation)
+		if err != nil {
+			diags = append(diags, diag.FromErr(err)...)
+		}
+	}
 
 	/*if d.HasChange("instance_array_instance_count_master") ||
 	d.HasChange("instance_array_instance_count_woker") ||
@@ -373,6 +388,7 @@ func expandClusterApp(d *schema.ResourceData) mc.Cluster {
 
 	c.ClusterID = d.Get("cluster_id").(int)
 	c.ClusterLabel = d.Get("cluster_label").(string)
+	c.ClusterSoftwareVersion = d.Get("cluster_software_version").(string)
 
 	return c
 }
