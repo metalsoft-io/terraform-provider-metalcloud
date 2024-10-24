@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v3"
+	mc2 "github.com/metalsoft-io/metal-cloud-sdk2-go"
 )
 
 // Provider of Bigstep Metal Cloud resources
@@ -32,6 +33,7 @@ func providerResources() map[string]*schema.Resource {
 		"metalcloud_kubernetes":              resourceKubernetes(),
 		"metalcloud_eksa":                    resourceEKSA(),
 		"metalcloud_subnet":                  resourceSubnet(),
+		"metalcloud_vm_instance_group":       resourceVmInstanceGroup(),
 	}
 }
 
@@ -101,7 +103,6 @@ func endpointWithSuffix() (interface{}, error) {
 }
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
-
 	client, err := mc.GetMetalcloudClient(
 		d.Get("user_email").(string),
 		d.Get("api_key").(string),
@@ -116,4 +117,26 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	}
 
 	return client, nil
+}
+
+func getClient2() (*mc2.APIClient, error) {
+	basePath := os.Getenv("METALCLOUD_ENDPOINT")
+	if basePath == "" {
+		return nil, fmt.Errorf("METALCLOUD_ENDPOINT must be set")
+	}
+
+	apiKey := os.Getenv("METALCLOUD_API_KEY")
+	if apiKey == "" {
+		return nil, fmt.Errorf("METALCLOUD_API_KEY must be set")
+	}
+
+	config := mc2.NewConfiguration()
+
+	config.BasePath = basePath
+	config.UserAgent = "MetalCloud CLI"
+	config.AddDefaultHeader("Content-Type", "application/json")
+	config.AddDefaultHeader("Accept", "application/json")
+	config.AddDefaultHeader("Authorization", "Bearer "+apiKey)
+
+	return mc2.NewAPIClient(config), nil
 }
