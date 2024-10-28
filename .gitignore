@@ -41,3 +41,5 @@ examples/complex_example/.terraform*
 examples/simple_example/.terraform*
 examples/simple_example/.terraform.lock.hcl
 dist/
+
+.env
