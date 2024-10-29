@@ -33,6 +33,7 @@ func providerResources() map[string]*schema.Resource {
 		"metalcloud_kubernetes":              resourceKubernetes(),
 		"metalcloud_eksa":                    resourceEKSA(),
 		"metalcloud_subnet":                  resourceSubnet(),
+		"metalcloud_server":                  resourceServer(),
 	}
 }
 
