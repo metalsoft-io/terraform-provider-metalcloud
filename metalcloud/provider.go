@@ -1,21 +1,28 @@
 package metalcloud
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v3"
-	mc2 "github.com/metalsoft-io/metal-cloud-sdk2-go"
+	sdk2 "github.com/metalsoft-io/metal-cloud-sdk2-go"
 )
 
-// Provider of Bigstep Metal Cloud resources
+// Provider of Metal Cloud resources
 func Provider() *schema.Provider {
 	return &schema.Provider{
-		Schema:         providerSchema(),
-		ResourcesMap:   providerResources(),
-		DataSourcesMap: providerDataSources(),
-		ConfigureFunc:  providerConfigure,
+		Schema:               providerSchema(),
+		ResourcesMap:         providerResources(),
+		DataSourcesMap:       providerDataSources(),
+		ConfigureContextFunc: providerConfigure,
 	}
 }
 
@@ -47,6 +54,7 @@ func providerDataSources() map[string]*schema.Resource {
 		"metalcloud_subnet_pool":           DataSourceSubnetPool(),
 		"metalcloud_network_profile":       DataSourceNetworkProfile(),
 		"metalcloud_workflow_task":         DataSourceWorkflowTask(),
+		"metalcloud_vm_type":               DataSourceVmType(),
 	}
 }
 
@@ -98,11 +106,45 @@ func providerSchema() map[string]*schema.Schema {
 }
 
 func endpointWithSuffix() (interface{}, error) {
-	endpoint := os.Getenv("METALCLOUD_ENDPOINT")
-	return fmt.Sprintf("%s/api/developer/developer", endpoint), nil
+	return url.JoinPath(os.Getenv("METALCLOUD_ENDPOINT"), "/api/developer/developer")
 }
 
-func providerConfigure(d *schema.ResourceData) (interface{}, error) {
+// SDK2 API Client
+var sdk2client *sdk2.APIClient
+
+type transport struct {
+}
+
+func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
+	reqBodyString := ""
+	if req.Body != nil {
+		reqBody, err := req.GetBody()
+		if err == nil && reqBody != nil {
+			reqBodyBuf, err := io.ReadAll(reqBody)
+			if err == nil {
+				reqBodyString = string(reqBodyBuf)
+			}
+			reqBody.Close()
+		}
+	}
+	tflog.Debug(req.Context(), "Request", map[string]any{"method": req.Method, "url": req.URL.String(), "body": reqBodyString})
+
+	resp, err := http.DefaultTransport.RoundTrip(req)
+
+	if err != nil {
+		tflog.Debug(req.Context(), "Error", map[string]any{"error": err, "method": req.Method, "url": req.URL.String()})
+	} else {
+		respBodyBuf, err := io.ReadAll(resp.Body)
+		if err == nil {
+			resp.Body = io.NopCloser(bytes.NewReader(respBodyBuf))
+			tflog.Debug(req.Context(), "Response", map[string]any{"status": resp.Status, "body": string(respBodyBuf), "method": req.Method, "url": req.URL.String()})
+		}
+	}
+
+	return resp, err
+}
+
+func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	client, err := mc.GetMetalcloudClient(
 		d.Get("user_email").(string),
 		d.Get("api_key").(string),
@@ -113,30 +155,35 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		d.Get("oauth_token_url").(string),
 	)
 	if err != nil {
-		return nil, err
+		return nil, diag.FromErr(err)
 	}
+
+	endpointUrl, err := url.ParseRequestURI(d.Get("endpoint").(string))
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
+	config := sdk2.NewConfiguration()
+	config.BasePath = fmt.Sprintf("%s://%s", endpointUrl.Scheme, endpointUrl.Host)
+	config.UserAgent = "MetalCloud Terraform Provider"
+	config.AddDefaultHeader("Content-Type", "application/json")
+	config.AddDefaultHeader("Accept", "application/json")
+	config.AddDefaultHeader("Authorization", "Bearer "+d.Get("api_key").(string))
+
+	if d.Get("logging").(bool) {
+		config.HTTPClient = http.DefaultClient
+		config.HTTPClient.Transport = &transport{}
+	}
+
+	sdk2client = sdk2.NewAPIClient(config)
 
 	return client, nil
 }
 
-func getClient2() (*mc2.APIClient, error) {
-	basePath := os.Getenv("METALCLOUD_ENDPOINT")
-	if basePath == "" {
-		return nil, fmt.Errorf("METALCLOUD_ENDPOINT must be set")
+func getAPIClient() (*sdk2.APIClient, error) {
+	if sdk2client == nil {
+		return nil, fmt.Errorf("MetalCloud API client is not configured")
 	}
 
-	apiKey := os.Getenv("METALCLOUD_API_KEY")
-	if apiKey == "" {
-		return nil, fmt.Errorf("METALCLOUD_API_KEY must be set")
-	}
-
-	config := mc2.NewConfiguration()
-
-	config.BasePath = basePath
-	config.UserAgent = "MetalCloud CLI"
-	config.AddDefaultHeader("Content-Type", "application/json")
-	config.AddDefaultHeader("Accept", "application/json")
-	config.AddDefaultHeader("Authorization", "Bearer "+apiKey)
-
-	return mc2.NewAPIClient(config), nil
+	return sdk2client, nil
 }
