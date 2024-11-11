@@ -33,6 +33,7 @@ func providerResources() map[string]*schema.Resource {
 		"metalcloud_kubernetes":              resourceKubernetes(),
 		"metalcloud_eksa":                    resourceEKSA(),
 		"metalcloud_subnet":                  resourceSubnet(),
+		"metalcloud_extension_instance":      resourceExtensionInstance(),
 	}
 }
 
@@ -46,6 +47,7 @@ func providerDataSources() map[string]*schema.Resource {
 		"metalcloud_subnet_pool":           DataSourceSubnetPool(),
 		"metalcloud_network_profile":       DataSourceNetworkProfile(),
 		"metalcloud_workflow_task":         DataSourceWorkflowTask(),
+		"metalcloud_extension":             DataSourceExtension(),
 	}
 }
 

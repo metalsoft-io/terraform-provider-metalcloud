@@ -118,8 +118,8 @@ github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWE
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
 github.com/metalsoft-io/metal-cloud-sdk-go/v3 v3.2.3 h1:LU+Dh8J66vhj9YQGM3XdYPPIPLY7yKydF3HlMar/tXw=
 github.com/metalsoft-io/metal-cloud-sdk-go/v3 v3.2.3/go.mod h1:sLyL3uDov3PbtVW9GN5racIfQiCY1KqzbpQbiA2wmeY=
-github.com/metalsoft-io/metal-cloud-sdk2-go v1.3.0 h1:2lqtz82d8XWwFdwfHFJSneHNPfxTqTJnbuSgIKkKei0=
-github.com/metalsoft-io/metal-cloud-sdk2-go v1.3.0/go.mod h1:9PBK5NAGa55GeCik36NnYFPBawSD9H6cuJpyoD86VK8=
+github.com/metalsoft-io/metal-cloud-sdk2-go v1.9.0 h1:g0Uae8bElwAActTn/GHjGPPcDEuV0/J1U18a+hWSBaw=
+github.com/metalsoft-io/metal-cloud-sdk2-go v1.9.0/go.mod h1:9PBK5NAGa55GeCik36NnYFPBawSD9H6cuJpyoD86VK8=
 github.com/mitchellh/copystructure v1.2.0 h1:vpKXTN4ewci03Vljg/q9QvCGUDttBOGBIa15WveJJGw=
 github.com/mitchellh/copystructure v1.2.0/go.mod h1:qLl+cE2AmVv+CoeAwDPye/v+N2HKCj9FbZEVFJRxO9s=
 github.com/mitchellh/go-testing-interface v1.14.1 h1:jrgshOhYAUVNMAJiKbEu7EqAwgJJ2JqpQmpLJOu07cU=
