@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	mc "github.com/metalsoft-io/metal-cloud-sdk-go/v3"
-	sdk2 "github.com/metalsoft-io/metal-cloud-sdk2-go"
+	mc2 "github.com/metalsoft-io/metal-cloud-sdk2-go"
 )
 
 // Provider of Metal Cloud resources
@@ -110,7 +110,7 @@ func endpointWithSuffix() (interface{}, error) {
 }
 
 // SDK2 API Client
-var sdk2client *sdk2.APIClient
+var sdk2client *mc2.APIClient
 
 type transport struct {
 }
@@ -163,7 +163,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 		return nil, diag.FromErr(err)
 	}
 
-	config := sdk2.NewConfiguration()
+	config := mc2.NewConfiguration()
 	config.BasePath = fmt.Sprintf("%s://%s", endpointUrl.Scheme, endpointUrl.Host)
 	config.UserAgent = "MetalCloud Terraform Provider"
 	config.AddDefaultHeader("Content-Type", "application/json")
@@ -175,12 +175,12 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 		config.HTTPClient.Transport = &transport{}
 	}
 
-	sdk2client = sdk2.NewAPIClient(config)
+	sdk2client = mc2.NewAPIClient(config)
 
 	return client, nil
 }
 
-func getAPIClient() (*sdk2.APIClient, error) {
+func getAPIClient() (*mc2.APIClient, error) {
 	if sdk2client == nil {
 		return nil, fmt.Errorf("MetalCloud API client is not configured")
 	}

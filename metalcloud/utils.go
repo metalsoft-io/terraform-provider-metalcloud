@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	sdk2 "github.com/metalsoft-io/metal-cloud-sdk2-go"
+	mc2 "github.com/metalsoft-io/metal-cloud-sdk2-go"
 )
 
 func validateLabel(v interface{}, path cty.Path) diag.Diagnostics {
@@ -66,7 +66,7 @@ func caseInsensitiveDiff(k, oldValue, newValue string, d *schema.ResourceData) b
 }
 
 func extractApiError(err error) diag.Diagnostics {
-	swaggerErr, ok := err.(sdk2.GenericSwaggerError)
+	swaggerErr, ok := err.(mc2.GenericSwaggerError)
 	if ok {
 		return diag.Errorf("%s [ %s ]", swaggerErr.Error(), string(swaggerErr.Body()))
 	} else {
