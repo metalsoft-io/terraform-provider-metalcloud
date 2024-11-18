@@ -1,6 +1,7 @@
 package metalcloud
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -10,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	mc2 "github.com/metalsoft-io/metal-cloud-sdk2-go"
 )
+
+var errNotFound = errors.New("not found")
 
 func validateLabel(v interface{}, path cty.Path) diag.Diagnostics {
 
