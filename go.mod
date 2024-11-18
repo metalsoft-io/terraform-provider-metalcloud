@@ -5,6 +5,7 @@ go 1.22.0
 toolchain go1.22.6
 
 require (
+	github.com/antihax/optional v1.0.0
 	github.com/hashicorp/go-cty v1.4.1-0.20200414143053-d3edf31b6320
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.34.0
@@ -16,7 +17,6 @@ require (
 require (
 	github.com/ProtonMail/go-crypto v1.1.0-beta.0-proton // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
-	github.com/antihax/optional v1.0.0 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/cloudflare/circl v1.5.0 // indirect
 	github.com/fatih/color v1.18.0 // indirect

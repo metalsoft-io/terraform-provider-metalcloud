@@ -42,7 +42,7 @@ func dataSourceVmTypeRead(ctx context.Context, d *schema.ResourceData, meta inte
 
 	label := d.Get("vm_type_label").(string)
 
-	client, err := getAPIClient()
+	client, err := getClient2()
 	if err != nil {
 		return diag.FromErr(err)
 	}

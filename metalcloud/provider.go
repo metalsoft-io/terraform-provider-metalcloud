@@ -41,6 +41,7 @@ func providerResources() map[string]*schema.Resource {
 		"metalcloud_eksa":                    resourceEKSA(),
 		"metalcloud_subnet":                  resourceSubnet(),
 		"metalcloud_vm_instance_group":       resourceVmInstanceGroup(),
+		"metalcloud_extension_instance":      resourceExtensionInstance(),
 	}
 }
 
@@ -55,6 +56,7 @@ func providerDataSources() map[string]*schema.Resource {
 		"metalcloud_network_profile":       DataSourceNetworkProfile(),
 		"metalcloud_workflow_task":         DataSourceWorkflowTask(),
 		"metalcloud_vm_type":               DataSourceVmType(),
+		"metalcloud_extension":             DataSourceExtension(),
 	}
 }
 
@@ -180,7 +182,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 	return client, nil
 }
 
-func getAPIClient() (*mc2.APIClient, error) {
+func getClient2() (*mc2.APIClient, error) {
 	if sdk2client == nil {
 		return nil, fmt.Errorf("MetalCloud API client is not configured")
 	}

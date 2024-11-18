@@ -131,7 +131,7 @@ func resourceVmInstanceGroupCreate(ctx context.Context, d *schema.ResourceData, 
 
 	infrastructureId := getInfrastructureId(d)
 
-	client, err := getAPIClient()
+	client, err := getClient2()
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -222,7 +222,7 @@ func resourceVmInstanceGroupRead(ctx context.Context, d *schema.ResourceData, me
 		return diag.FromErr(err)
 	}
 
-	client, err := getAPIClient()
+	client, err := getClient2()
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -245,7 +245,7 @@ func resourceVmInstanceGroupUpdate(ctx context.Context, d *schema.ResourceData, 
 		return diag.FromErr(err)
 	}
 
-	client, err := getAPIClient()
+	client, err := getClient2()
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -314,7 +314,7 @@ func resourceVmInstanceGroupDelete(ctx context.Context, d *schema.ResourceData, 
 		return diag.FromErr(err)
 	}
 
-	client, err := getAPIClient()
+	client, err := getClient2()
 	if err != nil {
 		return diag.FromErr(err)
 	}
