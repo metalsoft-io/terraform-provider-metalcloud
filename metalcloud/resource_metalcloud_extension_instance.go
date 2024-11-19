@@ -32,11 +32,11 @@ func resourceExtensionInstance() *schema.Resource {
 
 func resourceExtensionInstanceSchema() map[string]*schema.Schema {
 	schema := map[string]*schema.Schema{
-		ExtensionInstanceId: {
+		fieldExtensionInstanceId: {
 			Type:     schema.TypeInt,
 			Computed: true,
 		},
-		InfrastructureId: {
+		fieldInfrastructureId: {
 			Type:     schema.TypeInt,
 			Required: true,
 			ForceNew: true,
@@ -48,7 +48,7 @@ func resourceExtensionInstanceSchema() map[string]*schema.Schema {
 				return
 			},
 		},
-		ExtensionId: {
+		fieldExtensionId: {
 			Type:     schema.TypeInt,
 			Required: true,
 			ForceNew: true,
@@ -60,7 +60,7 @@ func resourceExtensionInstanceSchema() map[string]*schema.Schema {
 				return
 			},
 		},
-		ExtensionInstanceLabel: {
+		fieldExtensionInstanceLabel: {
 			Type:     schema.TypeString,
 			Optional: true,
 			Default:  nil,
@@ -77,12 +77,12 @@ func resourceExtensionInstanceSchema() map[string]*schema.Schema {
 				return validateLabel(v, path)
 			},
 		},
-		ExtensionInstanceInput: {
+		fieldExtensionInstanceInput: {
 			Type:     schema.TypeMap,
 			Elem:     schema.TypeString,
 			Required: true,
 		},
-		ExtensionInstanceOutput: {
+		fieldExtensionInstanceOutput: {
 			Type:     schema.TypeMap,
 			Elem:     schema.TypeString,
 			Computed: true,
@@ -93,8 +93,8 @@ func resourceExtensionInstanceSchema() map[string]*schema.Schema {
 }
 
 func resourceExtensionInstanceCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	infrastructure_id := d.Get(InfrastructureId).(int)
-	extension_id := d.Get(ExtensionId).(int)
+	infrastructure_id := d.Get(fieldInfrastructureId).(int)
+	extension_id := d.Get(fieldExtensionId).(int)
 
 	_, err := getInfrastructure(ctx, infrastructure_id)
 	if err != nil {
@@ -116,7 +116,7 @@ func resourceExtensionInstanceCreate(ctx context.Context, d *schema.ResourceData
 
 	var diags diag.Diagnostics
 
-	extension_instance_label := d.Get(ExtensionInstanceLabel).(string)
+	extension_instance_label := d.Get(fieldExtensionInstanceLabel).(string)
 
 	instance, _ :=
 		findExtensionInstance(ctx, infrastructure_id, extension_instance_label)
@@ -151,7 +151,7 @@ func resourceExtensionInstanceCreate(ctx context.Context, d *schema.ResourceData
 			return diags
 		}
 	} else {
-		if x.Status != ExtensionStatus_Active {
+		if x.Status != extensionStatus_Active {
 			valDiags := diag.Errorf("Extension cannot be instantiated")
 			diags = append(diags, valDiags...)
 
@@ -219,7 +219,7 @@ func resourceExtensionInstanceUpdate(ctx context.Context, d *schema.ResourceData
 
 	var diags diag.Diagnostics
 
-	extension_id := d.Get(ExtensionId).(int)
+	extension_id := d.Get(fieldExtensionId).(int)
 	x, err := getExtension(ctx, extension_id)
 	if err != nil {
 		if errors.Is(err, errNotFound) {
@@ -305,8 +305,8 @@ func validateInputVariables(ctx context.Context, inputVariables []sdk2.Extension
 }
 
 func expandCreateExtensionInstance(d *schema.ResourceData) *sdk2.CreateExtensionInstanceDto {
-	extension_id := d.Get(ExtensionId).(int)
-	extension_instance_label := d.Get(ExtensionInstanceLabel).(string)
+	extension_id := d.Get(fieldExtensionId).(int)
+	extension_instance_label := d.Get(fieldExtensionInstanceLabel).(string)
 
 	dto := new(sdk2.CreateExtensionInstanceDto)
 	dto.ExtensionId = float64(extension_id)
@@ -324,7 +324,7 @@ func expandUpdateExtensionInstance(d *schema.ResourceData) *sdk2.UpdateExtension
 }
 
 func inputVariables(d *schema.ResourceData) []sdk2.ExtensionVariable {
-	input := d.Get(ExtensionInstanceInput).(map[string]interface{})
+	input := d.Get(fieldExtensionInstanceInput).(map[string]interface{})
 
 	extensionVariables := make([]sdk2.ExtensionVariable, 0, len(input))
 	for k, v := range input {
@@ -337,32 +337,32 @@ func inputVariables(d *schema.ResourceData) []sdk2.ExtensionVariable {
 func flattenExtensionInstance(ctx context.Context, d *schema.ResourceData, instance *sdk2.ExtensionInstanceDto) {
 	log.Debug(ctx, fmt.Sprintf("Flatten: %v\r\n", instance))
 
-	err := d.Set(ExtensionInstanceId, int(instance.Id))
+	err := d.Set(fieldExtensionInstanceId, int(instance.Id))
 	if err != nil {
 		log.Debug(ctx, fmt.Sprintf("%v\r\n", err))
 	}
 
-	err = d.Set(ExtensionInstanceLabel, instance.Label)
+	err = d.Set(fieldExtensionInstanceLabel, instance.Label)
 	if err != nil {
 		log.Debug(ctx, fmt.Sprintf("%v\r\n", err))
 	}
 
-	err = d.Set(InfrastructureId, int(instance.InfrastructureId))
+	err = d.Set(fieldInfrastructureId, int(instance.InfrastructureId))
 	if err != nil {
 		log.Debug(ctx, fmt.Sprintf("%v\r\n", err))
 	}
 
-	err = d.Set(ExtensionId, int(instance.ExtensionId))
+	err = d.Set(fieldExtensionId, int(instance.ExtensionId))
 	if err != nil {
 		log.Debug(ctx, fmt.Sprintf("%v\r\n", err))
 	}
 
-	err = d.Set(ExtensionInstanceInput, toMap(instance.InputVariables))
+	err = d.Set(fieldExtensionInstanceInput, toMap(instance.InputVariables))
 	if err != nil {
 		log.Debug(ctx, fmt.Sprintf("%v\r\n", err))
 	}
 
-	err = d.Set(ExtensionInstanceOutput, toMap(instance.OutputVariables))
+	err = d.Set(fieldExtensionInstanceOutput, toMap(instance.OutputVariables))
 	if err != nil {
 		log.Debug(ctx, fmt.Sprintf("%v\r\n", err))
 	}
@@ -547,11 +547,11 @@ func validateExtensionVariable(input *sdk2.ExtensionInput, variable *sdk2.Extens
 
 	if input == nil {
 		diags = diag.Errorf("No such variable: %v", variable.Label)
-	} else if input.InputType == ExtensionInputType_Integer {
+	} else if input.InputType == extensionInputType_Integer {
 		diags = validateExtensionInputInteger(input, variable)
-	} else if input.InputType == ExtensionInputType_Boolean {
+	} else if input.InputType == extensionInputType_Boolean {
 		diags = validateExtensionInputBoolean(variable)
-	} else if input.InputType == ExtensionInputType_String {
+	} else if input.InputType == extensionInputType_String {
 		diags = validateExtensionInputString(input, variable)
 	}
 

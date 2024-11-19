@@ -11,7 +11,7 @@ require (
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.34.0
 	github.com/hashicorp/terraform-plugin-testing v1.10.0
 	github.com/metalsoft-io/metal-cloud-sdk-go/v3 v3.2.3
-	github.com/metalsoft-io/metal-cloud-sdk2-go v1.9.0
+	github.com/metalsoft-io/metal-cloud-sdk2-go v1.9.1
 )
 
 require (

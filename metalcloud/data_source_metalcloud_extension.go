@@ -22,12 +22,12 @@ func DataSourceExtension() *schema.Resource {
 
 func dataSourceExtensionSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
-		ExtensionId: {
+		fieldExtensionId: {
 			Type:     schema.TypeInt,
 			Optional: true,
 			Computed: true,
 		},
-		ExtensionLabel: {
+		fieldExtensionLabel: {
 			Type:     schema.TypeString,
 			Required: true,
 			DiffSuppressFunc: func(_, old, new string, d *schema.ResourceData) bool {
@@ -40,8 +40,8 @@ func dataSourceExtensionSchema() map[string]*schema.Schema {
 func dataSourceExtensionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	extension_id := d.Get(ExtensionId).(int)
-	if extension_id != 0 && !d.HasChange(ExtensionLabel) {
+	extension_id := d.Get(fieldExtensionId).(int)
+	if extension_id != 0 && !d.HasChange(fieldExtensionLabel) {
 		x, err := getExtension(ctx, extension_id)
 		if err != nil {
 			if errors.Is(err, errNotFound) {
@@ -56,7 +56,7 @@ func dataSourceExtensionRead(ctx context.Context, d *schema.ResourceData, meta i
 			diags = append(diags, *d)
 		}
 	} else {
-		label := d.Get(ExtensionLabel).(string)
+		label := d.Get(fieldExtensionLabel).(string)
 
 		x, err := findExtension(ctx, label)
 		if err != nil {
@@ -120,12 +120,12 @@ func findExtension(ctx context.Context, label string) (*sdk2.ExtensionInfoDto, e
 }
 
 func setFromExtensionData(d *schema.ResourceData, id int, label string, status string) *diag.Diagnostic {
-	d.Set(ExtensionId, id)
-	d.Set(ExtensionLabel, label)
+	d.Set(fieldExtensionId, id)
+	d.Set(fieldExtensionLabel, label)
 
 	d.SetId(fmt.Sprintf("%d", id))
 
-	if status != ExtensionStatus_Active {
+	if status != extensionStatus_Active {
 		return &diag.Diagnostic{
 			Severity: diag.Warning,
 			Summary:  "Not active",

@@ -8,7 +8,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	sdk2 "github.com/metalsoft-io/metal-cloud-sdk2-go"
+	mc2 "github.com/metalsoft-io/metal-cloud-sdk2-go"
 )
 
 func resourceVmInstanceGroup() *schema.Resource {
@@ -21,16 +21,16 @@ func resourceVmInstanceGroup() *schema.Resource {
 			StateContext: schema.ImportStatePassthroughContext,
 		},
 		Schema: map[string]*schema.Schema{
-			"infrastructure_id": {
+			fieldInfrastructureId: {
 				Type:             schema.TypeInt,
 				Required:         true,
 				ValidateDiagFunc: validateRequired,
 			},
-			"vm_instance_group_id": {
+			fieldVmInstanceGroupId: {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
-			"vm_instance_group_label": {
+			fieldVmInstanceGroupLabel: {
 				Type:             schema.TypeString,
 				Optional:         true,
 				Default:          nil,
@@ -38,39 +38,39 @@ func resourceVmInstanceGroup() *schema.Resource {
 				DiffSuppressFunc: caseInsensitiveDiff,
 				ValidateDiagFunc: validateLabel,
 			},
-			"vm_instance_group_instance_count": {
+			fieldVmInstanceGroupInstanceCount: {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  nil,
 			},
-			"vm_type_id": {
+			fieldVmTypeId: {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
-			"vm_instance_group_disk_size_gbytes": {
+			fieldVmInstanceGroupDiskSizeGbytes: {
 				Type:     schema.TypeFloat,
 				Optional: true,
 				Computed: true,
 			},
-			"vm_instance_group_template_id": {
+			fieldVmInstanceGroupTemplateId: {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Computed: true,
 			},
-			"vm_instance_custom_variables": {
+			fieldVmInstanceCustomVariables: {
 				Type:     schema.TypeList,
 				Elem:     resourceVmInstanceCustomVariable(),
 				Optional: true,
 			},
-			"vm_instance_group_interfaces": {
-				Type:     schema.TypeSet,
+			fieldVmInstanceGroupInterfaces: {
+				Type:     schema.TypeList,
 				Optional: true,
 				Default:  nil,
 				Computed: true,
 				Elem:     resourceVmInstanceGroupInterface(),
 			},
-			"vm_instance_group_network_profiles": {
-				Type:     schema.TypeSet,
+			fieldVmInstanceGroupNetworkProfiles: {
+				Type:     schema.TypeList,
 				Optional: true,
 				Default:  nil,
 				Computed: true,
@@ -83,11 +83,11 @@ func resourceVmInstanceGroup() *schema.Resource {
 func resourceVmInstanceCustomVariable() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
-			"vm_instance_index": {
+			fieldVmInstanceIndex: {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
-			"custom_variables": {
+			fieldCustomVariables: {
 				Type:     schema.TypeMap,
 				Elem:     schema.TypeString,
 				Required: true,
@@ -99,11 +99,11 @@ func resourceVmInstanceCustomVariable() *schema.Resource {
 func resourceVmInstanceGroupInterface() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
-			"interface_index": {
+			fieldVmInterfaceIndex: {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
-			"network_id": {
+			fieldNetworkId: {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
@@ -114,11 +114,11 @@ func resourceVmInstanceGroupInterface() *schema.Resource {
 func resourceVmInstanceGroupNetworkProfile() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
-			"network_id": {
+			fieldNetworkId: {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
-			"network_profile_id": {
+			fieldNetworkProfileId: {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
@@ -127,20 +127,20 @@ func resourceVmInstanceGroupNetworkProfile() *schema.Resource {
 }
 
 func resourceVmInstanceGroupCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	infrastructureId := getInfrastructureId(d)
-
 	client, err := getClient2()
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
+	// Verify infrastructure exists
+	infrastructureId := getInfrastructureId(d)
 
 	_, _, err = client.InfrastructureApi.GetInfrastructure(ctx, float64(infrastructureId))
 	if err != nil {
 		return diag.Errorf("Infrastructure with Id %+v not found.", infrastructureId)
 	}
 
+	// Create VM instance group
 	vmGroupCreate, _ := expandCreateVmInstanceGroup(d)
 
 	vmInstanceGroupCreated, _, err := client.VMInstanceGroupApi.CreateVMInstanceGroup(ctx, vmGroupCreate, float64(infrastructureId))
@@ -149,80 +149,39 @@ func resourceVmInstanceGroupCreate(ctx context.Context, d *schema.ResourceData, 
 	}
 
 	vmInstanceGroupId := int(vmInstanceGroupCreated.Id)
-
 	d.SetId(fmt.Sprintf("%d", vmInstanceGroupId))
 
-	// VM instances custom variables
-	dg := updateVmInstancesCustomVariables(ctx, client, infrastructureId, vmInstanceGroupId, d.Get("vm_instance_custom_variables").([]interface{}))
-	if dg.HasError() {
+	// Create VM instances custom variables
+	diags := updateVmInstanceCustomVariables(ctx, client, d, infrastructureId, vmInstanceGroupId)
+	if diags.HasError() {
 		resourceVmInstanceGroupRead(ctx, d, meta)
-		return dg
-	}
-	diags = append(diags, dg...)
-
-	// VM instance group interfaces
-	if d.Get("vm_instance_group_interfaces") != nil {
-		interfacesSet := d.Get("vm_instance_group_interfaces").(*schema.Set)
-
-		for _, interfaceEntry := range interfacesSet.List() {
-			interfaceEntryMap := interfaceEntry.(map[string]interface{})
-			vmInterfaceCreate := sdk2.CreateVmInstanceGroupInterface{
-				NetworkId: float64(interfaceEntryMap["network_id"].(int)),
-			}
-
-			_, _, err := client.VMInstanceGroupApi.CreateVMInterfaceOnVMInstanceGroup(
-				ctx,
-				vmInterfaceCreate,
-				float64(infrastructureId),
-				float64(vmInstanceGroupId),
-			)
-			if err != nil {
-				resourceVmInstanceGroupRead(ctx, d, meta)
-				return diag.FromErr(err)
-			}
-		}
+		return diags
 	}
 
-	// VM instance group network profiles
-	if d.Get("vm_instance_group_network_profiles") != nil {
-		networkProfilesSet := d.Get("vm_instance_group_network_profiles").(*schema.Set)
-
-		for _, networkProfileEntry := range networkProfilesSet.List() {
-			networkProfileEntryMap := networkProfileEntry.(map[string]interface{})
-			networkId := networkProfileEntryMap["network_id"].(int)
-			networkProfileUpdate := sdk2.UpdateVmInstanceGroupNetwork{
-				NetworkProfileId: float64(networkProfileEntryMap["network_profile_id"].(int)),
-			}
-
-			_, _, err := client.VMInstanceGroupApi.UpdateNetworkProfileOnVMInstanceGroupNetwork(
-				ctx,
-				networkProfileUpdate,
-				float64(infrastructureId),
-				float64(vmInstanceGroupId),
-				float64(networkId),
-			)
-			if err != nil {
-				resourceVmInstanceGroupRead(ctx, d, meta)
-				return diag.FromErr(err)
-			}
-		}
+	// Create VM instance group interfaces
+	err = createMissingInterfaces(ctx, client, d, nil, infrastructureId, vmInstanceGroupId)
+	if err != nil {
+		resourceVmInstanceGroupRead(ctx, d, meta)
+		return extractApiError(err)
 	}
 
-	dg = resourceVmInstanceGroupRead(ctx, d, meta)
-	diags = append(diags, dg...)
+	// Set VM instance group network profiles
+	err = updateNetworkProfiles(ctx, client, d, infrastructureId, vmInstanceGroupId)
+	if err != nil {
+		resourceVmInstanceGroupRead(ctx, d, meta)
+		return extractApiError(err)
+	}
 
-	return diags
+	return resourceVmInstanceGroupRead(ctx, d, meta)
 }
 
 func resourceVmInstanceGroupRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	vmInstanceGroupId, infrastructureId, err := getVmInstanceGroupId(d)
+	client, err := getClient2()
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	client, err := getClient2()
+	vmInstanceGroupId, infrastructureId, err := getVmInstanceGroupId(d)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -232,89 +191,69 @@ func resourceVmInstanceGroupRead(ctx context.Context, d *schema.ResourceData, me
 		return extractApiError(err)
 	}
 
-	flattenVmInstanceGroup(d, vmInstanceGroup)
+	err = flattenVmInstanceGroup(ctx, d, vmInstanceGroup)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
-	return diags
+	return diag.Diagnostics{}
 }
 
 func resourceVmInstanceGroupUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
+	client, err := getClient2()
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	vmInstanceGroupId, infrastructureId, err := getVmInstanceGroupId(d)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	client, err := getClient2()
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	_, _, err = client.VMInstanceGroupApi.GetVMInstanceGroup(ctx, float64(infrastructureId), float64(vmInstanceGroupId))
+	vmInstanceGroup, _, err := client.VMInstanceGroupApi.GetVMInstanceGroup(ctx, float64(infrastructureId), float64(vmInstanceGroupId))
 	if err != nil {
 		return extractApiError(err)
 	}
 
-	updateVmInstanceGroup, _ := expandUpdateVmInstanceGroup(d)
+	// Update VM instance group, including custom variables and interfaces
+	vmInstanceGroupUpdates := expandUpdateVmInstanceGroup(d, &vmInstanceGroup)
 
-	_, _, err = client.VMInstanceGroupApi.UpdateVMInstanceGroup(ctx, updateVmInstanceGroup, float64(infrastructureId), float64(vmInstanceGroupId))
+	_, _, err = client.VMInstanceGroupApi.UpdateVMInstanceGroup(ctx, vmInstanceGroupUpdates, float64(infrastructureId), float64(vmInstanceGroupId))
 	if err != nil {
 		return extractApiError(err)
 	}
 
-	var dg diag.Diagnostics
-
-	// VM instance group network profiles
-	if d.Get("vm_instance_group_network_profiles") != nil {
-		networkProfilesSet := d.Get("vm_instance_group_network_profiles").(*schema.Set)
-
-		for _, networkProfileEntry := range networkProfilesSet.List() {
-			networkProfileEntryMap := networkProfileEntry.(map[string]interface{})
-			networkId := networkProfileEntryMap["network_id"].(int)
-			networkProfileUpdate := sdk2.UpdateVmInstanceGroupNetwork{
-				NetworkProfileId: float64(networkProfileEntryMap["network_profile_id"].(int)),
-			}
-
-			_, _, err := client.VMInstanceGroupApi.UpdateNetworkProfileOnVMInstanceGroupNetwork(
-				ctx,
-				networkProfileUpdate,
-				float64(infrastructureId),
-				float64(vmInstanceGroupId),
-				float64(networkId),
-			)
-			if err != nil {
-				resourceVmInstanceGroupRead(ctx, d, meta)
-				return diag.FromErr(err)
-			}
-		}
+	// Update VM instance custom variables
+	diags := updateVmInstanceCustomVariables(ctx, client, d, infrastructureId, vmInstanceGroupId)
+	if diags.HasError() {
+		resourceVmInstanceGroupRead(ctx, d, meta)
+		return diags
 	}
 
-	// /* update VM types */
-	// iList := d.Get("vm_instance_type").([]interface{})
-	// dg = updateVmInstancesTypes(iList, vmInstanceGroupId, client2)
+	// Create missing interfaces
+	err = createMissingInterfaces(ctx, client, d, &vmInstanceGroup, infrastructureId, vmInstanceGroupId)
+	if err != nil {
+		resourceVmInstanceGroupRead(ctx, d, meta)
+		return extractApiError(err)
+	}
 
-	// if dg.HasError() {
-	// 	resourceVmInstanceGroupRead(ctx, d, meta)
-	// 	return dg
-	// }
+	// Update VM instance group network profiles
+	err = updateNetworkProfiles(ctx, client, d, infrastructureId, vmInstanceGroupId)
+	if err != nil {
+		resourceVmInstanceGroupRead(ctx, d, meta)
+		return extractApiError(err)
+	}
 
-	// diags = append(diags, dg...)
-
-	dg = resourceVmInstanceGroupRead(ctx, d, meta)
-	diags = append(diags, dg...)
-
-	return diags
+	return resourceVmInstanceGroupRead(ctx, d, meta)
 }
 
 func resourceVmInstanceGroupDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	vmInstanceGroupId, infrastructureId, err := getVmInstanceGroupId(d)
+	client, err := getClient2()
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	client, err := getClient2()
+	vmInstanceGroupId, infrastructureId, err := getVmInstanceGroupId(d)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -333,75 +272,145 @@ func resourceVmInstanceGroupDelete(ctx context.Context, d *schema.ResourceData, 
 
 	d.SetId("")
 
-	return diags
+	return diag.Diagnostics{}
 }
 
-// sets the custom variables on the VM instances
-func updateVmInstancesCustomVariables(ctx context.Context, client2 *sdk2.APIClient, infrastructureId int, vmInstanceGroupId int, cvList []interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
+func flattenVmInstanceGroup(ctx context.Context, d *schema.ResourceData, vmInstanceGroup mc2.VmInstanceGroup) error {
+	d.Set(fieldInfrastructureId, vmInstanceGroup.InfrastructureId)
+	d.Set(fieldVmInstanceGroupId, vmInstanceGroup.Id)
+	d.Set(fieldVmInstanceGroupLabel, vmInstanceGroup.Label)
+	d.Set(fieldVmInstanceGroupInstanceCount, vmInstanceGroup.InstanceCount)
+	d.Set(fieldVmInstanceGroupDiskSizeGbytes, vmInstanceGroup.DiskSizeGB)
+	d.Set(fieldVmInstanceGroupTemplateId, vmInstanceGroup.VolumeTemplateId)
 
-	vmInstanceList, _, err := client2.VMInstanceGroupApi.GetVMInstanceGroupVMInstances(ctx, float64(infrastructureId), float64(vmInstanceGroupId))
-	if err != nil {
-		return diag.FromErr(err)
+	/* NETWORK PROFILES */
+	if vmInstanceGroup.NetworkIdToNetworkProfileId != nil {
+		networkProfiles := flattenVmInstanceGroupNetworkProfiles(vmInstanceGroup)
+
+		if len(networkProfiles) > 0 {
+			d.Set(fieldVmInstanceGroupNetworkProfiles, schema.NewSet(schema.HashResource(resourceVmInstanceGroupNetworkProfile()), networkProfiles))
+		}
 	}
 
-	vmInstances := getSortedListOfVmInstances(vmInstanceList)
+	/* INTERFACES */
+	vmInterfacesData, ok := d.GetOk(fieldVmInstanceGroupInterfaces)
+	if ok && vmInterfacesData != nil {
+		vmInterfaces := []interface{}{}
 
-	nVmInstances := len(vmInstanceList)
+		for _, vmInterface := range vmInterfacesData.([]interface{}) {
+			vmInterfaceMap := vmInterface.(map[string]interface{})
+			interfaceIndex := vmInterfaceMap[fieldVmInterfaceIndex].(int)
 
-	currentCVLabelList := make(map[string]int, len(vmInstanceList))
-
-	for _, cvEntry := range cvList {
-		cvEntryMap := cvEntry.(map[string]interface{})
-		cvEntryVariables := cvEntryMap["custom_variables"].(map[string]interface{})
-
-		customVariables := map[string]string{}
-		for k, v := range cvEntryVariables {
-			customVariables[k] = v.(string)
+			// locate interface with index in returned data
+			for _, vmInterface := range vmInstanceGroup.VmInstanceGroupInterfaces {
+				// if we found it, locate the network it's connected to add it to the list
+				if int(vmInterface.InterfaceIndex) == interfaceIndex && vmInterface.NetworkId != 0 {
+					vmInterfaces = append(vmInterfaces, flattenVmInstanceGroupInterface(vmInterface))
+				}
+			}
 		}
 
-		instanceIndex := cvEntryMap["vm_instance_index"].(int)
-		if instanceIndex < 0 || instanceIndex >= nVmInstances {
-			return append(diags, diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  "vm_instance_index in custom_variables block out of bounds",
-				Detail:   fmt.Sprintf("Use a number between 0 and %v (vm_instance_group_instance_count-1). ", nVmInstances-1),
-			})
+		if len(vmInterfaces) > 0 {
+			d.Set(fieldVmInstanceGroupInterfaces, schema.NewSet(schema.HashResource(resourceVmInstanceGroupInterface()), vmInterfaces))
+		}
+	}
+
+	/* CUSTOM VARIABLES */
+	customVariablesMap := []interface{}{}
+	for index, vmInstance := range vmInstanceGroup.VmInstances {
+		vmInstanceEntry := make(map[string]interface{})
+		vmInstanceEntryCustomVariables := make(map[string]interface{})
+
+		vmInstanceEntry[fieldVmInstanceIndex] = index
+
+		vmInstanceCustomVariables := *(vmInstance.CustomVariables)
+		switch vmInstanceCustomVariables.(type) {
+		case []interface{}:
+			vmInstanceEntryCustomVariables = make(map[string]interface{})
+
+		default:
+			for k, v := range vmInstanceCustomVariables.(map[string]interface{}) {
+				vmInstanceEntryCustomVariables[k] = v.(string)
+			}
 		}
 
-		instance := vmInstances[instanceIndex]
-		currentCVLabelList[instance.Label] = int(instance.Id)
+		vmInstanceEntry[fieldCustomVariables] = vmInstanceEntryCustomVariables
 
-		var customVariablesValue interface{} = customVariables
-		vmInstanceUpdate := sdk2.UpdateVmInstance{
-			CustomVariables: &customVariablesValue,
+		if len(vmInstanceEntryCustomVariables) > 0 {
+			customVariablesMap = append(customVariablesMap, vmInstanceEntry)
 		}
+	}
 
-		_, _, err := client2.VMInstanceApi.UpdateVMInstance(ctx, vmInstanceUpdate, float64(infrastructureId), instance.Id)
+	d.Set(fieldVmInstanceCustomVariables, customVariablesMap)
+
+	return nil
+}
+
+func flattenVmInstanceGroupNetworkProfiles(vmInstanceGroup mc2.VmInstanceGroup) []interface{} {
+	networkIdToNetworkProfileId := *vmInstanceGroup.NetworkIdToNetworkProfileId
+	networkIdToNetworkProfileIdMap := networkIdToNetworkProfileId.(map[string]interface{})
+
+	networkProfiles := []interface{}{}
+	for networkId, networkProfileId := range networkIdToNetworkProfileIdMap {
+		networkIdInt, err := strconv.Atoi(networkId)
 		if err != nil {
-			return diag.FromErr(err)
+			continue
+		}
+
+		networkProfiles = append(networkProfiles, map[string]interface{}{
+			fieldNetworkId:        networkIdInt,
+			fieldNetworkProfileId: int(networkProfileId.(float64)),
+		})
+	}
+
+	return networkProfiles
+}
+
+func flattenVmInstanceGroupInterface(vmInstanceGroupInterface mc2.VmInstanceGroupInterface) map[string]interface{} {
+	var interfaceMap = make(map[string]interface{})
+
+	interfaceMap[fieldVmInterfaceIndex] = int(vmInstanceGroupInterface.InterfaceIndex)
+	interfaceMap[fieldNetworkId] = int(vmInstanceGroupInterface.NetworkId)
+
+	return interfaceMap
+}
+
+func expandCreateVmInstanceGroup(d *schema.ResourceData) (ig mc2.CreateVmInstanceGroup, interfaces []mc2.VmInstanceGroupInterface) {
+	ig.InstanceCount = float64(d.Get(fieldVmInstanceGroupInstanceCount).(int))
+	ig.TypeId = float64(d.Get(fieldVmTypeId).(int))
+	ig.DiskSizeGB = d.Get(fieldVmInstanceGroupDiskSizeGbytes).(float64)
+	ig.VolumeTemplateId = float64(d.Get(fieldVmInstanceGroupTemplateId).(int))
+
+	return
+}
+
+func expandUpdateVmInstanceGroup(d *schema.ResourceData, vmInstanceGroup *mc2.VmInstanceGroup) (vmInstanceGroupUpdates mc2.UpdateVmInstanceGroup) {
+	vmInstanceGroupUpdates.Label = d.Get(fieldVmInstanceGroupLabel).(string)
+
+	vmInstanceGroupUpdates.VmInstanceGroupInterfaces = []mc2.UpdateVmInstanceGroupInterface{}
+
+	interfacesData := d.Get(fieldVmInstanceGroupInterfaces)
+	if interfacesData != nil {
+		vmInterfaces := getInterfacesMap(vmInstanceGroup)
+
+		for _, interfaceEntry := range interfacesData.([]interface{}) {
+			interfaceEntryMap := interfaceEntry.(map[string]interface{})
+			if vmInterface, ok := vmInterfaces[interfaceEntryMap[fieldVmInterfaceIndex].(int)]; ok {
+				vmInterfaceUpdate := mc2.UpdateVmInstanceGroupInterface{
+					Id:        float64(vmInterface.Id),
+					NetworkId: float64(interfaceEntryMap[fieldNetworkId].(int)),
+				}
+
+				vmInstanceGroupUpdates.VmInstanceGroupInterfaces = append(vmInstanceGroupUpdates.VmInstanceGroupInterfaces, vmInterfaceUpdate)
+			}
 		}
 	}
 
-	for _, vmInstance := range vmInstanceList {
-		// Remove the custom variables from the instance if they are not in the list
-		if _, ok := currentCVLabelList[vmInstance.Label]; !ok {
-			vmInstanceUpdate := sdk2.UpdateVmInstance{
-				CustomVariables: nil,
-			}
-
-			_, _, err := client2.VMInstanceApi.UpdateVMInstance(ctx, vmInstanceUpdate, float64(infrastructureId), vmInstance.Id)
-			if err != nil {
-				return diag.FromErr(err)
-			}
-		}
-	}
-
-	return diags
+	return
 }
 
 func getInfrastructureId(d *schema.ResourceData) int {
-	return d.Get("infrastructure_id").(int)
+	return d.Get(fieldInfrastructureId).(int)
 }
 
 func getVmInstanceGroupId(d *schema.ResourceData) (vmInstanceGroupId int, infrastructureId int, err error) {
@@ -416,11 +425,16 @@ func getVmInstanceGroupId(d *schema.ResourceData) (vmInstanceGroupId int, infras
 }
 
 // Returns sorted list of VM instances ordered by their id, so that vm_instance_index is consistent
-func getSortedListOfVmInstances(vmInstanceList []sdk2.VmInstance) []sdk2.VmInstance {
-	instanceMap := make(map[int]sdk2.VmInstance, len(vmInstanceList))
+func getSortedListOfVmInstances(ctx context.Context, client *mc2.APIClient, infrastructureId int, vmInstanceGroupId int) ([]mc2.VmInstance, error) {
+	vmInstanceList, _, err := client.VMInstanceGroupApi.GetVMInstanceGroupVMInstances(ctx, float64(infrastructureId), float64(vmInstanceGroupId))
+	if err != nil {
+		return nil, err
+	}
+
+	instanceMap := make(map[int]mc2.VmInstance, len(vmInstanceList))
 
 	keys := []int{}
-	instances := []sdk2.VmInstance{}
+	instances := []mc2.VmInstance{}
 
 	for _, v := range vmInstanceList {
 		instanceMap[int(v.Id)] = v
@@ -433,120 +447,122 @@ func getSortedListOfVmInstances(vmInstanceList []sdk2.VmInstance) []sdk2.VmInsta
 		instances = append(instances, instanceMap[id])
 	}
 
-	return instances
+	return instances, nil
 }
 
-func flattenVmInstanceGroup(d *schema.ResourceData, vmInstanceGroup sdk2.VmInstanceGroup) error {
-	d.Set("infrastructure_id", vmInstanceGroup.InfrastructureId)
-	d.Set("vm_instance_group_id", vmInstanceGroup.Id)
-	d.Set("vm_instance_group_label", vmInstanceGroup.Label)
-	d.Set("vm_instance_group_instance_count", vmInstanceGroup.InstanceCount)
-	d.Set("vm_instance_group_disk_size_gbytes", vmInstanceGroup.DiskSizeGB)
-	d.Set("vm_instance_group_template_id", vmInstanceGroup.VolumeTemplateId)
+func getInterfacesMap(vmInstanceGroup *mc2.VmInstanceGroup) map[int]mc2.VmInstanceGroupInterface {
+	vmInterfaces := make(map[int]mc2.VmInstanceGroupInterface)
 
-	/* NETWORK PROFILES */
-	if vmInstanceGroup.NetworkIdToNetworkProfileId != nil {
-		networkIdToNetworkProfileId := *vmInstanceGroup.NetworkIdToNetworkProfileId
-		networkIdToNetworkProfileIdMap := networkIdToNetworkProfileId.(map[string]string)
-		networkProfiles := []interface{}{}
-		for networkId, networkProfileId := range networkIdToNetworkProfileIdMap {
-			networkProfiles = append(networkProfiles, map[string]interface{}{
-				"network_id":         networkId,
-				"network_profile_id": networkProfileId,
-			})
+	if vmInstanceGroup != nil && vmInstanceGroup.VmInstanceGroupInterfaces != nil {
+		for _, vmInterface := range vmInstanceGroup.VmInstanceGroupInterfaces {
+			vmInterfaces[int(vmInterface.InterfaceIndex)] = vmInterface
 		}
-		d.Set("vm_instance_group_network_profiles", networkProfiles)
 	}
 
-	/* INTERFACES */
-	vmInterfaces := []interface{}{}
-	vmInterfacesSet, ok := d.GetOk("vm_instance_group_interfaces")
-	if ok {
-		for _, vmInterface := range vmInterfacesSet.(*schema.Set).List() {
-			vmInterfaceMap := vmInterface.(map[string]interface{})
-			interfaceIndex := vmInterfaceMap["interface_index"].(int)
+	return vmInterfaces
+}
 
-			// locate interface with index in returned data
-			for _, vmInterface := range vmInstanceGroup.VmInstanceGroupInterfaces {
-				// if we found it, locate the network it's connected to add it to the list
-				if int(vmInterface.InterfaceIndex) == interfaceIndex && vmInterface.NetworkId != 0 {
-					vmInterfaces = append(vmInterfaces, flattenVmInstanceGroupInterface(vmInterface))
+func updateVmInstanceCustomVariables(ctx context.Context, client *mc2.APIClient, d *schema.ResourceData, infrastructureId int, vmInstanceGroupId int) diag.Diagnostics {
+	vmInstancesList, err := getSortedListOfVmInstances(ctx, client, infrastructureId, vmInstanceGroupId)
+	if err != nil {
+		return extractApiError(err)
+	}
+
+	customVariablesData := d.Get(fieldVmInstanceCustomVariables)
+	if customVariablesData != nil {
+		for _, vmInstanceCustomVariablesData := range customVariablesData.([]interface{}) {
+			vmInstanceCustomVariables := vmInstanceCustomVariablesData.(map[string]interface{})
+			vmInstanceIndex := vmInstanceCustomVariables[fieldVmInstanceIndex].(int)
+
+			if vmInstanceIndex < 0 || vmInstanceIndex >= len(vmInstancesList) {
+				return diag.Diagnostics{diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  fmt.Sprintf("%s in %s block out of bounds", fieldVmInstanceIndex, fieldVmInstanceCustomVariables),
+					Detail:   fmt.Sprintf("Use a number between 0 and %v (%s-1). ", len(vmInstancesList)-1, fieldVmInstanceGroupInstanceCount),
+				}}
+			}
+
+			var customVariablesValue interface{} = vmInstanceCustomVariables[fieldCustomVariables].(map[string]interface{})
+			vmInstanceUpdates := mc2.UpdateVmInstance{
+				CustomVariables: &customVariablesValue,
+			}
+
+			_, _, err := client.VMInstanceApi.UpdateVMInstance(ctx, vmInstanceUpdates, float64(infrastructureId), vmInstancesList[vmInstanceIndex].Id)
+			if err != nil {
+				return extractApiError(err)
+			}
+
+			vmInstancesList[vmInstanceIndex].Id = 0
+		}
+	}
+
+	// Remove custom variables from instances that were not updated
+	for _, vmInstance := range vmInstancesList {
+		if vmInstance.Id != 0 {
+			vmInstanceUpdates := mc2.UpdateVmInstance{
+				CustomVariables: nil,
+			}
+
+			_, _, err := client.VMInstanceApi.UpdateVMInstance(ctx, vmInstanceUpdates, float64(infrastructureId), vmInstance.Id)
+			if err != nil {
+				return extractApiError(err)
+			}
+		}
+	}
+
+	return diag.Diagnostics{}
+}
+
+func createMissingInterfaces(ctx context.Context, client *mc2.APIClient, d *schema.ResourceData, vmInstanceGroup *mc2.VmInstanceGroup, infrastructureId int, vmInstanceGroupId int) error {
+	interfacesData := d.Get(fieldVmInstanceGroupInterfaces)
+	if interfacesData != nil {
+		vmInterfaces := getInterfacesMap(vmInstanceGroup)
+
+		for _, interfaceEntry := range interfacesData.([]interface{}) {
+			interfaceEntryMap := interfaceEntry.(map[string]interface{})
+			if _, ok := vmInterfaces[interfaceEntryMap[fieldVmInterfaceIndex].(int)]; !ok {
+				vmInterfaceCreate := mc2.CreateVmInstanceGroupInterface{
+					NetworkId: float64(interfaceEntryMap[fieldNetworkId].(int)),
+				}
+
+				_, _, err := client.VMInstanceGroupApi.CreateVMInterfaceOnVMInstanceGroup(
+					ctx,
+					vmInterfaceCreate,
+					float64(infrastructureId),
+					float64(vmInstanceGroupId),
+				)
+				if err != nil {
+					return err
 				}
 			}
 		}
 	}
 
-	if len(vmInterfaces) > 0 {
-		d.Set("vm_instance_group_interfaces", schema.NewSet(schema.HashResource(resourceVmInstanceGroupInterface()), vmInterfaces))
-	}
-
-	/* CUSTOM VARIABLES */
-	customVariables := *(vmInstanceGroup.CustomVariables)
-	switch customVariables.(type) {
-	case []interface{}:
-		d.Set("vm_instance_custom_variables", make(map[string]string))
-
-	default:
-		cv := make(map[string]string)
-
-		for k, v := range customVariables.(map[string]interface{}) {
-			cv[k] = v.(string)
-		}
-
-		d.Set("vm_instance_custom_variables", cv)
-	}
-
-	// /* INSTANCES */
-	// for _, vmInstance := range vmInstanceGroup.VmInstance {
-	// }
-
 	return nil
 }
 
-func flattenVmInstanceGroupInterface(i sdk2.VmInstanceGroupInterface) map[string]interface{} {
-	var d = make(map[string]interface{})
-
-	d["interface_index"] = int(i.InterfaceIndex)
-	d["network_id"] = int(i.NetworkId)
-
-	return d
-}
-
-func expandCreateVmInstanceGroup(d *schema.ResourceData) (ig sdk2.CreateVmInstanceGroup, interfaces []sdk2.VmInstanceGroupInterface) {
-	ig.InstanceCount = float64(d.Get("vm_instance_group_instance_count").(int))
-	ig.TypeId = float64(d.Get("vm_type_id").(int))
-	ig.DiskSizeGB = d.Get("vm_instance_group_disk_size_gbytes").(float64)
-	ig.VolumeTemplateId = float64(d.Get("vm_instance_group_template_id").(int))
-
-	return
-}
-
-func expandUpdateVmInstanceGroup(d *schema.ResourceData) (ig sdk2.UpdateVmInstanceGroup, interfaces []sdk2.UpdateVmInstanceGroupInterface) {
-	ig.Label = d.Get("vm_instance_group_label").(string)
-
-	ig.VmInstanceGroupInterfaces = []sdk2.UpdateVmInstanceGroupInterface{}
-	if d.Get("vm_instance_group_interfaces") != nil {
-		interfacesSet := d.Get("vm_instance_group_interfaces").(*schema.Set)
-
-		for _, interfaceEntry := range interfacesSet.List() {
-			interfaceEntryMap := interfaceEntry.(map[string]interface{})
-			vmInterfaceUpdate := sdk2.UpdateVmInstanceGroupInterface{
-				Id:        float64(interfaceEntryMap["id"].(int)),
-				NetworkId: float64(interfaceEntryMap["network_id"].(int)),
+func updateNetworkProfiles(ctx context.Context, client *mc2.APIClient, d *schema.ResourceData, infrastructureId int, vmInstanceGroupId int) error {
+	networkProfilesData := d.Get(fieldVmInstanceGroupNetworkProfiles)
+	if networkProfilesData != nil {
+		for _, networkProfileEntry := range networkProfilesData.([]interface{}) {
+			networkProfileEntryMap := networkProfileEntry.(map[string]interface{})
+			networkId := networkProfileEntryMap[fieldNetworkId].(int)
+			networkProfileUpdates := mc2.UpdateVmInstanceGroupNetwork{
+				NetworkProfileId: float64(networkProfileEntryMap[fieldNetworkProfileId].(int)),
 			}
 
-			ig.VmInstanceGroupInterfaces = append(ig.VmInstanceGroupInterfaces, vmInterfaceUpdate)
+			_, _, err := client.VMInstanceGroupApi.UpdateNetworkProfileOnVMInstanceGroupNetwork(
+				ctx,
+				networkProfileUpdates,
+				float64(infrastructureId),
+				float64(vmInstanceGroupId),
+				float64(networkId),
+			)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
-	customVariables := make(map[string]interface{})
-	if d.Get("vm_instance_custom_variables") != nil {
-		for k, v := range d.Get("vm_instance_custom_variables").(map[string]interface{}) {
-			customVariables[k] = v.(string)
-		}
-	}
-	var customVariablesValue interface{} = customVariables
-	ig.CustomVariables = &customVariablesValue
-
-	return
+	return nil
 }
