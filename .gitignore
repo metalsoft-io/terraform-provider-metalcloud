@@ -36,6 +36,7 @@ set_envs.sh
 scripts/getgocookie.sh
 getgocookie.sh
 terraform-provider-metalcloud
+.terraform.lock.hcl
 
 examples/complex_example/.terraform*
 examples/simple_example/.terraform*
@@ -43,3 +44,5 @@ examples/simple_example/.terraform.lock.hcl
 dist/
 
 .env
+go.work
+go.work.sum

@@ -1,5 +1,6 @@
 MetalSoft Terraform Provider
 ==================
+
 This is a terraform plugin for controlling Metalcloud resources.
 
 Maintainers
@@ -9,6 +10,7 @@ This provider plugin is maintained by the MetalSoft Team.
 
 Using the Provider
 ------------------
+
 A terraform `main.tf` template file, for an infrastructure with a single server would look something like this:
 
 ```terraform
@@ -29,7 +31,7 @@ provider "metalcloud" {
 }
 
 //this is an infrastructure reference. It is needed to avoid a cyclic dependency where the 
-//infrastructure depends on the resoruces and vice-versa. This will create the infrastructure if it does not exist
+//infrastructure depends on the resources and vice-versa. This will create the infrastructure if it does not exist
 //if the create_if_not_exists flag is set to true
 data "metalcloud_infrastructure" "infra" {
    
@@ -99,7 +101,7 @@ resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
 
   allow_data_loss = true
 
-  //This is important to ensure that deploys happen after everything else. If you need to add or remove resources dinamically
+  //This is important to ensure that deploys happen after everything else. If you need to add or remove resources dynamically
   //use either count or for_each in the resources or move everything that is dynamic into a module and make this depend on the module
   depends_on = [
     metalcloud_instance_array.cluster,
@@ -112,23 +114,26 @@ resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
 To deploy this infrastructure export the following variables (or use -var):
 
 ```bash
-export TF_VAR_api_key="<yourkey>"
+export TF_VAR_api_key="<your api key>"
 export TF_VAR_user_email="<your user email>"
 export TF_VAR_endpoint="<your endpoint>"
 export TF_VAR_datacenter="<your datacenter>"
 ```
 
 The plan phase:
+
 ```bash
 terraform plan
 ```
 
 The apply phase:
+
 ```bash
 terraform apply
 ```
 
-To delete the infrastrucure:
+To delete the infrastructure:
+
 ```bash
 terraform destroy
 ```
@@ -143,6 +148,7 @@ make
 ```
 
 To install the provider so that `terraform init` works:
+
 ```sh
 make install
 ```
@@ -155,7 +161,7 @@ Testing the Provider
 In order to test the provider, you can simply run `make test`.
 
 ```sh
-$ make test
+make test
 ```
 
 In order to run the full suite of Acceptance tests, run `make testacc`.
@@ -172,7 +178,7 @@ make testacc
 ```
 
 Troubleshooting
-```
+
+```sh
 export METALCLOUD_LOGGING_ENABLED=true 
 ```
-
