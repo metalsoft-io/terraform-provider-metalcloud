@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -199,6 +200,13 @@ func (r *ServerInstanceGroupResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
+	_, response, err := r.client.ServerInstanceGroupAPI.
+		GetServerInstanceGroupConfig(ctx, serverInstanceGroupId).
+		Execute()
+	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "update Server Instance Group") {
+		return
+	}
+
 	osTemplateId, ok := convertTfStringToPtrInt32(&resp.Diagnostics, "OS Template Id", data.OsTemplateId)
 	if !ok {
 		return
@@ -213,9 +221,10 @@ func (r *ServerInstanceGroupResource) Update(ctx context.Context, req resource.U
 		updates.VolumeTemplateId = osTemplateId
 	}
 
-	_, response, err := r.client.ServerInstanceGroupAPI.
+	_, response, err = r.client.ServerInstanceGroupAPI.
 		UpdateServerInstanceGroupConfig(ctx, serverInstanceGroupId).
 		ServerInstanceGroupUpdate(updates).
+		IfMatch(response.Header[http.CanonicalHeaderKey("ETag")][0]).
 		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "update Server Instance Group") {
 		return
@@ -240,7 +249,21 @@ func (r *ServerInstanceGroupResource) Delete(ctx context.Context, req resource.D
 		return
 	}
 
-	response, err := r.client.ServerInstanceGroupAPI.DeleteServerInstanceGroup(ctx, serverInstanceGroupId).Execute()
+	_, response, err := r.client.ServerInstanceGroupAPI.
+		GetServerInstanceGroup(ctx, serverInstanceGroupId).
+		Execute()
+	if !ensureNoError(&resp.Diagnostics, err, response, []int{200, 404}, "delete Server Instance Group") {
+		return
+	}
+	if response.StatusCode == 404 {
+		// Resource not found - return
+		return
+	}
+
+	response, err = r.client.ServerInstanceGroupAPI.
+		DeleteServerInstanceGroup(ctx, serverInstanceGroupId).
+		IfMatch(response.Header[http.CanonicalHeaderKey("ETag")][0]).
+		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{204, 404}, "delete Server Instance Group") {
 		return
 	}
