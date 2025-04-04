@@ -79,7 +79,7 @@ func (d *ServerTypeDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 
-	serverType, response, err := d.client.ServerTypeAPI.GetServerTypes(ctx).FilterLabel([]string{data.Label.ValueString()}).Execute()
+	serverType, response, err := d.client.ServerTypeAPI.GetServerTypes(ctx).FilterName([]string{data.Label.ValueString()}).Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "get server type") {
 		return
 	}
