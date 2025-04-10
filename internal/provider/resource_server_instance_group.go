@@ -127,9 +127,9 @@ func (r *ServerInstanceGroupResource) Create(ctx context.Context, req resource.C
 	serverInstanceGroup, response, err := r.client.ServerInstanceGroupAPI.
 		CreateServerInstanceGroup(ctx, infrastructureId).
 		ServerInstanceGroupCreate(sdk.ServerInstanceGroupCreate{
-			ServerTypeId:     sdk.PtrInt32(serverTypeId),
-			InstanceCount:    sdk.PtrInt32(data.InstanceCount.ValueInt32()),
-			VolumeTemplateId: sdk.PtrInt32(osTemplateId),
+			ServerTypeId:  sdk.PtrInt32(serverTypeId),
+			InstanceCount: sdk.PtrInt32(data.InstanceCount.ValueInt32()),
+			OsTemplateId:  sdk.PtrInt32(osTemplateId),
 		}).Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{201}, "create Server Instance Group") {
 		return
@@ -175,7 +175,7 @@ func (r *ServerInstanceGroupResource) Read(ctx context.Context, req resource.Rea
 
 	data.InstanceCount = types.Int32Value(serverInstanceGroup.InstanceCount)
 	// TODO: data.ServerTypeId = convertPtrInt32IdToStringValue(serverInstanceGroup.ServerTypeId)
-	data.OsTemplateId = convertPtrInt32IdToTfString(serverInstanceGroup.VolumeTemplateId)
+	data.OsTemplateId = convertPtrInt32IdToTfString(serverInstanceGroup.OsTemplateId)
 	data.InfrastructureId = convertInt32IdToTfString(serverInstanceGroup.InfrastructureId)
 	data.Label = types.StringValue(serverInstanceGroup.Label)
 
@@ -218,7 +218,7 @@ func (r *ServerInstanceGroupResource) Update(ctx context.Context, req resource.U
 	}
 
 	if osTemplateId != nil {
-		updates.VolumeTemplateId = osTemplateId
+		updates.OsTemplateId = osTemplateId
 	}
 
 	_, response, err = r.client.ServerInstanceGroupAPI.
