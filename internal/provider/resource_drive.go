@@ -105,7 +105,7 @@ func (r *DriveResource) Create(ctx context.Context, req resource.CreateRequest, 
 
 	drive, response, err := r.client.DriveAPI.
 		CreateDrive(ctx, infrastructureId).
-		CreateDrive(sdk.CreateDrive{
+		CreateSharedDrive(sdk.CreateSharedDrive{
 			Label:  sdk.PtrString(data.Label.ValueString()),
 			SizeMb: float32(data.SizeMb.ValueInt32()),
 		}).Execute()
@@ -187,7 +187,7 @@ func (r *DriveResource) Update(ctx context.Context, req resource.UpdateRequest, 
 
 	_, response, err := r.client.DriveAPI.
 		PatchDriveConfig(ctx, infrastructureId, driveId).
-		UpdateDrive(sdk.UpdateDrive{
+		UpdateSharedDrive(sdk.UpdateSharedDrive{
 			Label:  sdk.PtrString(data.Label.ValueString()),
 			SizeMb: sdk.PtrFloat32(float32(data.SizeMb.ValueInt32())),
 		}).

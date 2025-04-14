@@ -7,7 +7,7 @@ toolchain go1.23.4
 require (
 	github.com/hashicorp/terraform-plugin-framework v1.14.1
 	github.com/hashicorp/terraform-plugin-log v0.9.0
-	github.com/metalsoft-io/metalcloud-sdk-go v0.0.0-20250411052653-3c4dd8bcec6c
+	github.com/metalsoft-io/metalcloud-sdk-go v0.0.0-20250414092620-bd20ac0ca100
 )
 
 require (
@@ -20,7 +20,6 @@ require (
 	github.com/hashicorp/terraform-registry-address v0.2.5 // indirect
 	github.com/hashicorp/terraform-svchost v0.1.1 // indirect
 	github.com/hashicorp/yamux v0.1.2 // indirect
-	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
@@ -33,5 +32,4 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250409194420-de1ac958c67a // indirect
 	google.golang.org/grpc v1.71.1 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
-	gopkg.in/validator.v2 v2.0.1 // indirect
 )
