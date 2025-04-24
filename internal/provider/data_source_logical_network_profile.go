@@ -84,8 +84,8 @@ func (d *LogicalNetworkProfileDataSource) Read(ctx context.Context, req datasour
 		return
 	}
 
-	logicalNetworkProfiles, response, err := d.client.LogicalNetworkProfilesAPI.
-		GetAllLogicalNetworkProfiles(ctx).
+	logicalNetworkProfiles, response, err := d.client.LogicalNetworkProfileAPI.
+		GetLogicalNetworkProfiles(ctx).
 		FilterLabel([]string{data.Label.ValueString()}).
 		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "get logical network profile") {
@@ -99,10 +99,19 @@ func (d *LogicalNetworkProfileDataSource) Read(ctx context.Context, req datasour
 
 	var logicalNetworkProfileId float32
 	for _, logicalNetworkProfile := range logicalNetworkProfiles.Data {
-		//if fmt.Sprintf("%d", int32(logicalNetworkProfile.FabricId)) == data.FabricId.ValueString() {
-		logicalNetworkProfileId = logicalNetworkProfile.Id
-		break
-		//}
+		if logicalNetworkProfile.VlanLogicalNetworkProfile != nil {
+			if fmt.Sprintf("%d", logicalNetworkProfile.VlanLogicalNetworkProfile.FabricId) == data.FabricId.ValueString() {
+				logicalNetworkProfileId = float32(logicalNetworkProfile.VlanLogicalNetworkProfile.Id)
+				break
+			}
+		}
+
+		if logicalNetworkProfile.VxlanLogicalNetworkProfile != nil {
+			if fmt.Sprintf("%d", logicalNetworkProfile.VxlanLogicalNetworkProfile.FabricId) == data.FabricId.ValueString() {
+				logicalNetworkProfileId = float32(logicalNetworkProfile.VxlanLogicalNetworkProfile.Id)
+				break
+			}
+		}
 	}
 
 	if logicalNetworkProfileId == 0 {

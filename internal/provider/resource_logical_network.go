@@ -29,11 +29,11 @@ type LogicalNetworkResource struct {
 
 // LogicalNetworkResourceModel describes the resource data model.
 type LogicalNetworkResourceModel struct {
-	LogicalNetworkId   types.String `tfsdk:"logical_network_id"`
-	Label              types.String `tfsdk:"label"`
-	LogicalNetworkType types.String `tfsdk:"logical_network_type"`
-	InfrastructureId   types.String `tfsdk:"infrastructure_id"`
-	FabricId           types.String `tfsdk:"fabric_id"`
+	LogicalNetworkId types.String `tfsdk:"logical_network_id"`
+	Label            types.String `tfsdk:"label"`
+	Kind             types.String `tfsdk:"kind"`
+	InfrastructureId types.String `tfsdk:"infrastructure_id"`
+	FabricId         types.String `tfsdk:"fabric_id"`
 }
 
 func (r *LogicalNetworkResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -57,7 +57,7 @@ func (r *LogicalNetworkResource) Schema(ctx context.Context, req resource.Schema
 				MarkdownDescription: "Network label",
 				Required:            true,
 			},
-			"logical_network_type": schema.StringAttribute{
+			"kind": schema.StringAttribute{
 				MarkdownDescription: "Logical Network type",
 				Required:            true,
 			},
@@ -113,19 +113,35 @@ func (r *LogicalNetworkResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	network, response, err := r.client.LogicalNetworksAPI.
+	kind, err := sdk.NewLogicalNetworkKindFromValue(data.Kind.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Invalid Logical Network Kind",
+			fmt.Sprintf("Logical Network Kind %s is not valid: %s", data.Kind.ValueString(), err),
+		)
+		return
+	}
+
+	network, response, err := r.client.LogicalNetworkAPI.
 		CreateLogicalNetwork(ctx).
-		CreateLogicalNetwork(sdk.CreateLogicalNetwork{
-			Label:              sdk.PtrString(data.Label.ValueString()),
-			LogicalNetworkType: data.LogicalNetworkType.ValueString(),
-			InfrastructureId:   sdk.PtrFloat32(float32(infrastructureId)),
-			FabricId:           float32(fabricId),
+		CreateLogicalNetworkRequest(sdk.CreateLogicalNetworkRequest{
+			CreateVlanLogicalNetwork: &sdk.CreateVlanLogicalNetwork{
+				Label:            sdk.PtrString(data.Label.ValueString()),
+				Kind:             *kind,
+				InfrastructureId: *sdk.NewNullableInt32(&infrastructureId),
+				FabricId:         fabricId,
+			},
 		}).Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{201}, "create logical network") {
 		return
 	}
 
-	data.LogicalNetworkId = convertFloat32IdToTfString(network.Id)
+	if network.VlanLogicalNetwork != nil {
+		data.LogicalNetworkId = convertInt32IdToTfString(network.VlanLogicalNetwork.Id)
+	}
+	if network.VxlanLogicalNetwork != nil {
+		data.LogicalNetworkId = convertInt32IdToTfString(network.VxlanLogicalNetwork.Id)
+	}
 
 	tflog.Trace(ctx, fmt.Sprintf("created logical network resource Id %s", data.LogicalNetworkId.ValueString()))
 
@@ -148,8 +164,8 @@ func (r *LogicalNetworkResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
-	logicalNetwork, response, err := r.client.LogicalNetworksAPI.
-		GetLogicalNetworkById(ctx, logicalNetworkId).
+	logicalNetwork, response, err := r.client.LogicalNetworkAPI.
+		GetLogicalNetwork(ctx, logicalNetworkId).
 		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{200, 404}, "read logical network") {
 		return
@@ -163,14 +179,26 @@ func (r *LogicalNetworkResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
-	if logicalNetwork.Label == nil {
-		data.Label = types.StringNull()
-	} else {
-		data.Label = types.StringValue(*logicalNetwork.Label)
+	if logicalNetwork.VlanLogicalNetwork != nil {
+		data.Label = types.StringValue(logicalNetwork.VlanLogicalNetwork.Label)
+		data.Kind = types.StringValue(string(logicalNetwork.VlanLogicalNetwork.Kind))
+		data.FabricId = convertInt32IdToTfString(logicalNetwork.VlanLogicalNetwork.FabricId)
+		if logicalNetwork.VlanLogicalNetwork.InfrastructureId.IsSet() {
+			data.InfrastructureId = convertInt32IdToTfString(*logicalNetwork.VlanLogicalNetwork.InfrastructureId.Get())
+		} else {
+			data.InfrastructureId = types.StringNull()
+		}
 	}
-	data.LogicalNetworkType = types.StringValue(logicalNetwork.LogicalNetworkType)
-	data.InfrastructureId = convertPtrFloat32IdToTfString(logicalNetwork.InfrastructureId)
-	data.FabricId = convertFloat32IdToTfString(logicalNetwork.FabricId)
+	if logicalNetwork.VxlanLogicalNetwork != nil {
+		data.Label = types.StringValue(logicalNetwork.VxlanLogicalNetwork.Label)
+		data.Kind = types.StringValue(string(logicalNetwork.VxlanLogicalNetwork.Kind))
+		data.FabricId = convertInt32IdToTfString(logicalNetwork.VxlanLogicalNetwork.FabricId)
+		if logicalNetwork.VxlanLogicalNetwork.InfrastructureId.IsSet() {
+			data.InfrastructureId = convertInt32IdToTfString(*logicalNetwork.VxlanLogicalNetwork.InfrastructureId.Get())
+		} else {
+			data.InfrastructureId = types.StringNull()
+		}
+	}
 
 	tflog.Trace(ctx, fmt.Sprintf("read logical network resource Id %s", data.LogicalNetworkId.ValueString()))
 
@@ -193,7 +221,7 @@ func (r *LogicalNetworkResource) Update(ctx context.Context, req resource.Update
 		return
 	}
 
-	_, response, err := r.client.LogicalNetworksAPI.
+	_, response, err := r.client.LogicalNetworkAPI.
 		UpdateLogicalNetwork(ctx, float32(logicalNetworkId)).
 		UpdateLogicalNetwork(sdk.UpdateLogicalNetwork{
 			Label: sdk.PtrString(data.Label.ValueString()),
@@ -224,7 +252,7 @@ func (r *LogicalNetworkResource) Delete(ctx context.Context, req resource.Delete
 		return
 	}
 
-	response, err := r.client.LogicalNetworksAPI.DeleteLogicalNetwork(ctx, float32(logicalNetworkId)).Execute()
+	response, err := r.client.LogicalNetworkAPI.DeleteLogicalNetwork(ctx, float32(logicalNetworkId)).Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{204, 404}, "delete logical network") {
 		return
 	}
