@@ -127,9 +127,9 @@ func (r *ServerInstanceGroupResource) Create(ctx context.Context, req resource.C
 	serverInstanceGroup, response, err := r.client.ServerInstanceGroupAPI.
 		CreateServerInstanceGroup(ctx, infrastructureId).
 		ServerInstanceGroupCreate(sdk.ServerInstanceGroupCreate{
-			ServerTypeId:  sdk.PtrInt32(serverTypeId),
-			InstanceCount: sdk.PtrInt32(data.InstanceCount.ValueInt32()),
-			OsTemplateId:  sdk.PtrInt32(osTemplateId),
+			DefaultServerTypeId: serverTypeId,
+			InstanceCount:       sdk.PtrInt32(data.InstanceCount.ValueInt32()),
+			OsTemplateId:        sdk.PtrInt32(osTemplateId),
 		}).Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{201}, "create Server Instance Group") {
 		return

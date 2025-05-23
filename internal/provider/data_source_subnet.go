@@ -90,7 +90,7 @@ func (d *SubnetDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	data.SubnetId = convertFloat32IdToTfString(subnet.Data[0].Id)
+	data.SubnetId = convertInt32IdToTfString(subnet.Data[0].Id)
 
 	tflog.Trace(ctx, fmt.Sprintf("read subnet data source with label '%s' and id '%s'", data.Label.ValueString(), data.SubnetId.ValueString()))
 
