@@ -79,8 +79,7 @@ func (d *SubnetDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	// TODO: subnet, response, err := d.client.SubnetAPI.GetSubnets(ctx).FilterLabel([]string{data.Label.ValueString()}).Execute()
-	subnet, response, err := d.client.SubnetAPI.GetSubnets(ctx).Execute()
+	subnet, response, err := d.client.SubnetAPI.GetSubnets(ctx).FilterLabel([]string{data.Label.ValueString()}).Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "get subnet") {
 		return
 	}

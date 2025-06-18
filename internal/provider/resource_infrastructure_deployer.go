@@ -184,7 +184,7 @@ func (r *InfrastructureDeployerResource) Delete(ctx context.Context, req resourc
 }
 
 func (r *InfrastructureDeployerResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	resource.ImportStatePassthroughID(ctx, path.Root("infrastructure_id"), req, resp)
 }
 
 func (r *InfrastructureDeployerResource) deployInfrastructure(ctx context.Context, data *InfrastructureDeployerResourceModel, diagnostics *diag.Diagnostics) bool {

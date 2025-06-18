@@ -89,7 +89,7 @@ func (p *MetalCloudProvider) Configure(ctx context.Context, req provider.Configu
 		return
 	}
 
-	// Example client configuration for data sources and resources
+	// Client configuration for data sources and resources
 	cfg := sdk.NewConfiguration()
 	cfg.UserAgent = "terraform-provider-metalcloud"
 	cfg.Servers = []sdk.ServerConfiguration{
@@ -99,10 +99,10 @@ func (p *MetalCloudProvider) Configure(ctx context.Context, req provider.Configu
 		},
 	}
 
-	// Set debug mode
+	// Set debug mode if logging is enabled
 	cfg.Debug = strings.ToLower(data.Logging.ValueString()) == "true"
 
-	// Create API client
+	// Create API client and set authorization header
 	client := sdk.NewAPIClient(cfg)
 	client.GetConfig().DefaultHeader["Authorization"] = "Bearer " + data.ApiKey.ValueString()
 

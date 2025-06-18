@@ -35,15 +35,15 @@ func (d *LogicalNetworkProfileDataSource) Metadata(ctx context.Context, req data
 func (d *LogicalNetworkProfileDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
-		MarkdownDescription: "Logical Network profile data source",
+		MarkdownDescription: "Logical Network Profile data source",
 
 		Attributes: map[string]schema.Attribute{
 			"logical_network_profile_id": schema.StringAttribute{
-				MarkdownDescription: "Network profile Id",
+				MarkdownDescription: "Logical Network Profile Id",
 				Computed:            true,
 			},
 			"label": schema.StringAttribute{
-				MarkdownDescription: "Logical Network profile label",
+				MarkdownDescription: "Logical Network Profile label",
 				Required:            true,
 			},
 			"fabric_id": schema.StringAttribute{
@@ -87,6 +87,7 @@ func (d *LogicalNetworkProfileDataSource) Read(ctx context.Context, req datasour
 	logicalNetworkProfiles, response, err := d.client.LogicalNetworkProfileAPI.
 		GetLogicalNetworkProfiles(ctx).
 		FilterLabel([]string{data.Label.ValueString()}).
+		FilterFabricId([]string{data.FabricId.ValueString()}).
 		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "get logical network profile") {
 		return
@@ -99,18 +100,9 @@ func (d *LogicalNetworkProfileDataSource) Read(ctx context.Context, req datasour
 
 	var logicalNetworkProfileId float32
 	for _, logicalNetworkProfile := range logicalNetworkProfiles.Data {
-		if logicalNetworkProfile.VlanLogicalNetworkProfile != nil {
-			if fmt.Sprintf("%d", logicalNetworkProfile.VlanLogicalNetworkProfile.FabricId) == data.FabricId.ValueString() {
-				logicalNetworkProfileId = float32(logicalNetworkProfile.VlanLogicalNetworkProfile.Id)
-				break
-			}
-		}
-
-		if logicalNetworkProfile.VxlanLogicalNetworkProfile != nil {
-			if fmt.Sprintf("%d", logicalNetworkProfile.VxlanLogicalNetworkProfile.FabricId) == data.FabricId.ValueString() {
-				logicalNetworkProfileId = float32(logicalNetworkProfile.VxlanLogicalNetworkProfile.Id)
-				break
-			}
+		if fmt.Sprintf("%d", logicalNetworkProfile.FabricId) == data.FabricId.ValueString() {
+			logicalNetworkProfileId = float32(logicalNetworkProfile.Id)
+			break
 		}
 	}
 

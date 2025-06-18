@@ -46,8 +46,8 @@ func (r *ExtensionInstanceResource) Schema(ctx context.Context, req resource.Sch
 
 		Attributes: map[string]schema.Attribute{
 			"extension_instance_id": schema.StringAttribute{
-				Computed:            true,
 				MarkdownDescription: "Extension Instance Id",
+				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -219,5 +219,5 @@ func (r *ExtensionInstanceResource) Delete(ctx context.Context, req resource.Del
 }
 
 func (r *ExtensionInstanceResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	resource.ImportStatePassthroughID(ctx, path.Root("extension_instance_id"), req, resp)
 }

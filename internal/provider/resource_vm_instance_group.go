@@ -49,8 +49,8 @@ func (r *VmInstanceGroupResource) Schema(ctx context.Context, req resource.Schem
 
 		Attributes: map[string]schema.Attribute{
 			"vm_instance_group_id": schema.StringAttribute{
-				Computed:            true,
 				MarkdownDescription: "VM Instance Group Id",
+				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

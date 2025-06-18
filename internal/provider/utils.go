@@ -90,6 +90,26 @@ func convertFloat32ToTfInt32(value float32) types.Int32 {
 	return types.Int32Value(int32(value))
 }
 
+func stringEqualsTfString(a string, b types.String) bool {
+	if b.IsNull() || b.IsUnknown() {
+		return false
+	}
+
+	return a == b.ValueString()
+}
+
+func ptrFloat32EqualsTfString(a *float32, b types.String) bool {
+	if a == nil && (b.IsNull() || b.IsUnknown()) {
+		return true
+	}
+
+	if a == nil || b.IsNull() || b.IsUnknown() {
+		return false
+	}
+
+	return strconv.FormatInt(int64(*a), 10) == b.ValueString()
+}
+
 func ensureNoError(diagnostics *diag.Diagnostics, err error, result *http.Response, expectedStatusCodes []int, operation string) bool {
 	if err != nil {
 		if result != nil && result.StatusCode >= 400 {
