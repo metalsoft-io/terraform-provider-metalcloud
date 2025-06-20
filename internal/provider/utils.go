@@ -110,6 +110,15 @@ func ptrFloat32EqualsTfString(a *float32, b types.String) bool {
 	return strconv.FormatInt(int64(*a), 10) == b.ValueString()
 }
 
+func containsStringValue(slice []types.String, value string) bool {
+	for _, item := range slice {
+		if item.ValueString() == value {
+			return true
+		}
+	}
+	return false
+}
+
 func ensureNoError(diagnostics *diag.Diagnostics, err error, result *http.Response, expectedStatusCodes []int, operation string) bool {
 	if err != nil {
 		if result != nil && result.StatusCode >= 400 {

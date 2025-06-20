@@ -29,11 +29,12 @@ type DriveResource struct {
 
 // DriveResourceModel describes the resource data model.
 type DriveResourceModel struct {
-	DriveId          types.String `tfsdk:"drive_id"`
-	InfrastructureId types.String `tfsdk:"infrastructure_id"`
-	SizeMb           types.Int32  `tfsdk:"size_mbytes"`
-	Label            types.String `tfsdk:"label"`
-	LogicalNetworkId types.String `tfsdk:"logical_network_id"`
+	DriveId          types.String   `tfsdk:"drive_id"`
+	InfrastructureId types.String   `tfsdk:"infrastructure_id"`
+	SizeMb           types.Int32    `tfsdk:"size_mbytes"`
+	Label            types.String   `tfsdk:"label"`
+	LogicalNetworkId types.String   `tfsdk:"logical_network_id"`
+	Hosts            []types.String `tfsdk:"hosts"`
 }
 
 func (r *DriveResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -68,6 +69,11 @@ func (r *DriveResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 			"logical_network_id": schema.StringAttribute{
 				MarkdownDescription: "Logical Network Id",
 				Optional:            true,
+			},
+			"hosts": schema.ListAttribute{
+				MarkdownDescription: "List of host Ids that are using this drive",
+				Optional:            true,
+				ElementType:         types.StringType,
 			},
 		},
 	}
@@ -137,6 +143,34 @@ func (r *DriveResource) Create(ctx context.Context, req resource.CreateRequest, 
 
 	tflog.Trace(ctx, fmt.Sprintf("created drive resource Id %s", data.DriveId.ValueString()))
 
+	// If the drive has hosts, we need to set them in the model
+	if len(data.Hosts) > 0 {
+		request := sdk.SharedDriveHostsModifyBulk{}
+
+		for _, host := range data.Hosts {
+			hostId, ok := convertTfStringToFloat32(&resp.Diagnostics, "host Id", host)
+			if !ok {
+				return
+			}
+
+			request.SharedDriveHostBulkOperations = append(request.SharedDriveHostBulkOperations, sdk.SharedDriveHostBulkOperation{
+				ServerInstanceGroupId: hostId,
+				OperationType:         "add",
+			})
+		}
+
+		// Assign the hosts to the drive
+		_, response, err = r.client.DriveAPI.
+			UpdateDriveServerInstanceGroupHostsBulk(ctx, infrastructureId, drive.Id).
+			SharedDriveHostsModifyBulk(request).
+			Execute()
+		if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "assign hosts to Drive") {
+			return
+		}
+
+		tflog.Trace(ctx, fmt.Sprintf("assigned hosts to drive resource Id %s", data.DriveId.ValueString()))
+	}
+
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -186,6 +220,25 @@ func (r *DriveResource) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	tflog.Trace(ctx, fmt.Sprintf("read drive resource Id %s", data.DriveId.ValueString()))
 
+	hosts, response, err := r.client.DriveAPI.GetDriveHosts(ctx, infrastructureId, driveId).Execute()
+	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "read Drive Hosts") {
+		return
+	}
+
+	if len(hosts.InstanceGroup.Connected)+len(hosts.InstanceGroup.WillBeConnected) > 0 {
+		data.Hosts = make([]types.String, 0, len(hosts.InstanceGroup.Connected)+len(hosts.InstanceGroup.WillBeConnected))
+		for _, host := range hosts.InstanceGroup.Connected {
+			data.Hosts = append(data.Hosts, convertFloat32IdToTfString(host))
+		}
+		for _, host := range hosts.InstanceGroup.WillBeConnected {
+			data.Hosts = append(data.Hosts, convertFloat32IdToTfString(host))
+		}
+
+		tflog.Trace(ctx, fmt.Sprintf("read drive %s hosts", data.DriveId.ValueString()))
+	} else {
+		data.Hosts = nil // No hosts connected
+	}
+
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -218,13 +271,16 @@ func (r *DriveResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	request := sdk.UpdateSharedDrive{}
+	mustUpdate := false
 
 	if int32(drive.SizeMb) != data.SizeMb.ValueInt32() {
 		request.SizeMb = sdk.PtrFloat32(float32(data.SizeMb.ValueInt32()))
+		mustUpdate = true
 	}
 
 	if !stringEqualsTfString(drive.Label, data.Label) {
 		request.Label = sdk.PtrString(data.Label.ValueString())
+		mustUpdate = true
 	}
 
 	if !ptrFloat32EqualsTfString(drive.LogicalNetworkId, data.LogicalNetworkId) {
@@ -234,15 +290,82 @@ func (r *DriveResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		}
 
 		request.LogicalNetworkId = sdk.PtrFloat32(logicalNetworkId)
+		mustUpdate = true
 	}
 
-	_, response, err = r.client.DriveAPI.
-		PatchDriveConfig(ctx, infrastructureId, driveId).
-		UpdateSharedDrive(request).
-		IfMatch(fmt.Sprintf("%d", int32(drive.Revision))).
-		Execute()
-	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "update Drive") {
+	if mustUpdate {
+		_, response, err = r.client.DriveAPI.
+			PatchDriveConfig(ctx, infrastructureId, driveId).
+			UpdateSharedDrive(request).
+			IfMatch(fmt.Sprintf("%d", int32(drive.Revision))).
+			Execute()
+		if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "update Drive") {
+			return
+		}
+
+		tflog.Trace(ctx, fmt.Sprintf("updated drive resource Id %s", data.DriveId.ValueString()))
+	}
+
+	// If the drive hosts changed, we need to update them
+	hosts, response, err := r.client.DriveAPI.GetDriveHosts(ctx, infrastructureId, driveId).Execute()
+	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "read Drive Hosts") {
 		return
+	}
+
+	existingHosts := make([]types.String, 0, len(hosts.InstanceGroup.Connected)+len(hosts.InstanceGroup.WillBeConnected))
+	for _, host := range hosts.InstanceGroup.Connected {
+		existingHosts = append(existingHosts, convertFloat32IdToTfString(host))
+	}
+	for _, host := range hosts.InstanceGroup.WillBeConnected {
+		existingHosts = append(existingHosts, convertFloat32IdToTfString(host))
+	}
+
+	plannedHosts := make([]types.String, 0, len(data.Hosts))
+	plannedHosts = append(plannedHosts, data.Hosts...)
+
+	hostsRequest := sdk.SharedDriveHostsModifyBulk{}
+
+	// Find hosts to add
+	for _, host := range plannedHosts {
+		if !containsStringValue(existingHosts, host.ValueString()) {
+			hostId, ok := convertTfStringToFloat32(&resp.Diagnostics, "host Id", host)
+			if !ok {
+				return
+			}
+
+			hostsRequest.SharedDriveHostBulkOperations = append(hostsRequest.SharedDriveHostBulkOperations, sdk.SharedDriveHostBulkOperation{
+				ServerInstanceGroupId: hostId,
+				OperationType:         "add",
+			})
+		}
+	}
+
+	// Find hosts to remove
+	for _, host := range existingHosts {
+		if !containsStringValue(plannedHosts, host.ValueString()) {
+			hostId, ok := convertTfStringToFloat32(&resp.Diagnostics, "host Id", host)
+			if !ok {
+				return
+			}
+
+			hostsRequest.SharedDriveHostBulkOperations = append(hostsRequest.SharedDriveHostBulkOperations, sdk.SharedDriveHostBulkOperation{
+				ServerInstanceGroupId: hostId,
+				OperationType:         "remove",
+			})
+		}
+	}
+
+	if len(hostsRequest.SharedDriveHostBulkOperations) > 0 {
+		// Assign the hosts to the drive
+		_, response, err = r.client.DriveAPI.
+			UpdateDriveServerInstanceGroupHostsBulk(ctx, infrastructureId, driveId).
+			SharedDriveHostsModifyBulk(hostsRequest).
+			Execute()
+		if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "assign hosts to Drive") {
+			return
+		}
+
+		tflog.Trace(ctx, fmt.Sprintf("updated drive %s hosts", data.DriveId.ValueString()))
 	}
 
 	// Save updated data into Terraform state

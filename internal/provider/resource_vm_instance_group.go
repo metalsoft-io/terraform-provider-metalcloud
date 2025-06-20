@@ -134,7 +134,7 @@ func (r *VmInstanceGroupResource) Create(ctx context.Context, req resource.Creat
 			TypeId:        vmTypeId,
 			InstanceCount: sdk.PtrFloat32(float32(data.InstanceCount.ValueInt64())),
 			DiskSizeGB:    float32(data.DiskSizeGb.ValueInt64()),
-			OsTemplateId:  sdk.PtrFloat32(osTemplateId),
+			OsTemplateId:  osTemplateId,
 		}).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create VM Instance Group, got error: %s", err))

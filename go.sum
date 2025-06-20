@@ -52,6 +52,8 @@ github.com/metalsoft-io/metalcloud-sdk-go v0.0.0-20250613070502-62e708e0653c h1:
 github.com/metalsoft-io/metalcloud-sdk-go v0.0.0-20250613070502-62e708e0653c/go.mod h1:hiAan5sFB5IhIhhM1jczQ3hCM8K0mbZ9tnHFIYgdr9I=
 github.com/metalsoft-io/metalcloud-sdk-go v0.0.0-20250615100302-947e8240c51a h1:8ItOLtUKNT+sZpOA1OUTJiZxdADBE77n/D+vg4dSICg=
 github.com/metalsoft-io/metalcloud-sdk-go v0.0.0-20250615100302-947e8240c51a/go.mod h1:hiAan5sFB5IhIhhM1jczQ3hCM8K0mbZ9tnHFIYgdr9I=
+github.com/metalsoft-io/metalcloud-sdk-go v0.0.0-20250620133702-0094556e313b h1:ytksl189GewDOTd4yYwGFAJDgTvu6f1C1qTf+dV50x8=
+github.com/metalsoft-io/metalcloud-sdk-go v0.0.0-20250620133702-0094556e313b/go.mod h1:hiAan5sFB5IhIhhM1jczQ3hCM8K0mbZ9tnHFIYgdr9I=
 github.com/mitchellh/go-testing-interface v1.14.1 h1:jrgshOhYAUVNMAJiKbEu7EqAwgJJ2JqpQmpLJOu07cU=
 github.com/mitchellh/go-testing-interface v1.14.1/go.mod h1:gfgS7OtZj6MA4U1UrDRp04twqAjfvlZyCfX3sDjEym8=
 github.com/oklog/run v1.1.0 h1:GEenZ1cK0+q0+wsJew9qUg/DyD8k3JzYsZAi5gYi2mA=

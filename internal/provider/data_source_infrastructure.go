@@ -110,7 +110,7 @@ func (d *InfrastructureDataSource) Read(ctx context.Context, req datasource.Read
 
 		infrastructure, response, err := d.client.InfrastructureAPI.CreateInfrastructure(ctx).
 			InfrastructureCreate(sdk.InfrastructureCreate{
-				Label:  data.Label.ValueString(),
+				Label:  sdk.PtrString(data.Label.ValueString()),
 				SiteId: float32(siteId),
 				Meta:   &sdk.InfrastructureMeta{},
 			}).
