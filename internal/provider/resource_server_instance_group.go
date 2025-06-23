@@ -39,6 +39,7 @@ type ServerInstanceGroupResourceModel struct {
 	ServerTypeId          types.String                     `tfsdk:"server_type_id"`
 	OsTemplateId          types.String                     `tfsdk:"os_template_id"`
 	NetworkConnections    []NetworkConnectionResourceModel `tfsdk:"network_connections"`
+	CustomVariables       []CustomVariableResourceModel    `tfsdk:"custom_variables"`
 }
 
 type NetworkConnectionResourceModel struct {
@@ -46,6 +47,11 @@ type NetworkConnectionResourceModel struct {
 	Tagged           types.Bool   `tfsdk:"tagged"`
 	AccessMode       types.String `tfsdk:"access_mode"`
 	Mtu              types.Int64  `tfsdk:"mtu"`
+}
+
+type CustomVariableResourceModel struct {
+	Name  types.String `tfsdk:"name"`
+	Value types.String `tfsdk:"value"`
 }
 
 func (r *ServerInstanceGroupResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -114,6 +120,22 @@ func (r *ServerInstanceGroupResource) Schema(ctx context.Context, req resource.S
 				},
 				Optional: true,
 			},
+			"custom_variables": schema.SetNestedAttribute{
+				MarkdownDescription: "Custom variables for the server instance group",
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"name": schema.StringAttribute{
+							MarkdownDescription: "Name of the custom variable",
+							Required:            true,
+						},
+						"value": schema.StringAttribute{
+							MarkdownDescription: "Value of the custom variable",
+							Required:            true,
+						},
+					},
+				},
+				Optional: true,
+			},
 		},
 	}
 }
@@ -163,15 +185,35 @@ func (r *ServerInstanceGroupResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
+	request := sdk.ServerInstanceGroupCreate{
+		Label:               sdk.PtrString(data.Label.ValueString()),
+		ServerGroupName:     sdk.PtrString(data.Name.ValueString()),
+		DefaultServerTypeId: serverTypeId,
+		InstanceCount:       sdk.PtrInt32(data.InstanceCount.ValueInt32()),
+		OsTemplateId:        sdk.PtrInt32(osTemplateId),
+	}
+
+	if data.CustomVariables != nil {
+		request.CustomVariables = make(map[string]interface{}, len(data.CustomVariables))
+		for _, variable := range data.CustomVariables {
+			if !variable.Name.IsNull() && !variable.Value.IsNull() {
+				request.CustomVariables[variable.Name.ValueString()] = variable.Value.ValueString()
+			} else {
+				resp.Diagnostics.AddError(
+					"Invalid Custom Variable",
+					"Custom variable name and value must not be null.",
+				)
+				return
+			}
+		}
+	}
+
+	tflog.Trace(ctx, fmt.Sprintf("creating server instance group resource with infrastructure Id %s", data.InfrastructureId.ValueString()))
+
 	serverInstanceGroup, response, err := r.client.ServerInstanceGroupAPI.
 		CreateServerInstanceGroup(ctx, infrastructureId).
-		ServerInstanceGroupCreate(sdk.ServerInstanceGroupCreate{
-			Label:               sdk.PtrString(data.Label.ValueString()),
-			ServerGroupName:     sdk.PtrString(data.Name.ValueString()),
-			DefaultServerTypeId: serverTypeId,
-			InstanceCount:       sdk.PtrInt32(data.InstanceCount.ValueInt32()),
-			OsTemplateId:        sdk.PtrInt32(osTemplateId),
-		}).Execute()
+		ServerInstanceGroupCreate(request).
+		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{201}, "create Server Instance Group") {
 		return
 	}
@@ -248,6 +290,17 @@ func (r *ServerInstanceGroupResource) Read(ctx context.Context, req resource.Rea
 
 	tflog.Trace(ctx, fmt.Sprintf("read %d network connections for server instance group resource Id %s", len(data.NetworkConnections), data.ServerInstanceGroupId.ValueString()))
 
+	// Read custom variables
+	if serverInstanceGroup.CustomVariables != nil {
+		data.CustomVariables = make([]CustomVariableResourceModel, 0, len(serverInstanceGroup.CustomVariables))
+		for name, value := range serverInstanceGroup.CustomVariables {
+			data.CustomVariables = append(data.CustomVariables, CustomVariableResourceModel{
+				Name:  types.StringValue(name),
+				Value: types.StringValue(fmt.Sprintf("%v", value)),
+			})
+		}
+	}
+
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -287,6 +340,25 @@ func (r *ServerInstanceGroupResource) Update(ctx context.Context, req resource.U
 
 	if osTemplateId != nil {
 		updates.OsTemplateId = osTemplateId
+	}
+
+	if data.CustomVariables != nil {
+		customVariables := make(map[string]interface{}, len(data.CustomVariables))
+		for _, variable := range data.CustomVariables {
+			if !variable.Name.IsNull() && !variable.Value.IsNull() {
+				customVariables[variable.Name.ValueString()] = variable.Value.ValueString()
+			} else {
+				resp.Diagnostics.AddError(
+					"Invalid Custom Variable",
+					"Custom variable name and value must not be null.",
+				)
+				return
+			}
+		}
+
+		updates.CustomVariables = customVariables
+	} else {
+		updates.CustomVariables = map[string]interface{}{}
 	}
 
 	_, response, err = r.client.ServerInstanceGroupAPI.
