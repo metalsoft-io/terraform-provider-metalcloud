@@ -31,27 +31,15 @@ type ServerInstanceGroupResource struct {
 
 // ServerInstanceGroupResourceModel describes the resource data model.
 type ServerInstanceGroupResourceModel struct {
-	ServerInstanceGroupId types.String                     `tfsdk:"server_instance_group_id"`
-	InfrastructureId      types.String                     `tfsdk:"infrastructure_id"`
-	Label                 types.String                     `tfsdk:"label"`
-	Name                  types.String                     `tfsdk:"name"`
-	InstanceCount         types.Int32                      `tfsdk:"instance_count"`
-	ServerTypeId          types.String                     `tfsdk:"server_type_id"`
-	OsTemplateId          types.String                     `tfsdk:"os_template_id"`
-	NetworkConnections    []NetworkConnectionResourceModel `tfsdk:"network_connections"`
-	CustomVariables       []CustomVariableResourceModel    `tfsdk:"custom_variables"`
-}
-
-type NetworkConnectionResourceModel struct {
-	LogicalNetworkId types.String `tfsdk:"logical_network_id"`
-	Tagged           types.Bool   `tfsdk:"tagged"`
-	AccessMode       types.String `tfsdk:"access_mode"`
-	Mtu              types.Int64  `tfsdk:"mtu"`
-}
-
-type CustomVariableResourceModel struct {
-	Name  types.String `tfsdk:"name"`
-	Value types.String `tfsdk:"value"`
+	ServerInstanceGroupId types.String             `tfsdk:"server_instance_group_id"`
+	InfrastructureId      types.String             `tfsdk:"infrastructure_id"`
+	Label                 types.String             `tfsdk:"label"`
+	Name                  types.String             `tfsdk:"name"`
+	InstanceCount         types.Int32              `tfsdk:"instance_count"`
+	ServerTypeId          types.String             `tfsdk:"server_type_id"`
+	OsTemplateId          types.String             `tfsdk:"os_template_id"`
+	NetworkConnections    []NetworkConnectionModel `tfsdk:"network_connections"`
+	CustomVariables       []CustomVariableModel    `tfsdk:"custom_variables"`
 }
 
 func (r *ServerInstanceGroupResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -97,44 +85,13 @@ func (r *ServerInstanceGroupResource) Schema(ctx context.Context, req resource.S
 			},
 			"network_connections": schema.SetNestedAttribute{
 				MarkdownDescription: "Network connections for the server instance group",
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"logical_network_id": schema.StringAttribute{
-							MarkdownDescription: "Logical Network Id",
-							Required:            true,
-						},
-						"tagged": schema.BoolAttribute{
-							MarkdownDescription: "Whether the network connection is tagged",
-							Required:            true,
-						},
-						"access_mode": schema.StringAttribute{
-							MarkdownDescription: "Access mode for the network connection",
-							Required:            true,
-						},
-						"mtu": schema.Int64Attribute{
-							MarkdownDescription: "MTU for the network connection",
-							Optional:            true,
-							Computed:            true,
-						},
-					},
-				},
-				Optional: true,
+				NestedObject:        NetworkConnectionAttribute,
+				Optional:            true,
 			},
 			"custom_variables": schema.SetNestedAttribute{
 				MarkdownDescription: "Custom variables for the server instance group",
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
-							MarkdownDescription: "Name of the custom variable",
-							Required:            true,
-						},
-						"value": schema.StringAttribute{
-							MarkdownDescription: "Value of the custom variable",
-							Required:            true,
-						},
-					},
-				},
-				Optional: true,
+				NestedObject:        CustomVariableAttribute,
+				Optional:            true,
 			},
 		},
 	}
@@ -292,9 +249,9 @@ func (r *ServerInstanceGroupResource) Read(ctx context.Context, req resource.Rea
 
 	// Read custom variables
 	if serverInstanceGroup.CustomVariables != nil {
-		data.CustomVariables = make([]CustomVariableResourceModel, 0, len(serverInstanceGroup.CustomVariables))
+		data.CustomVariables = make([]CustomVariableModel, 0, len(serverInstanceGroup.CustomVariables))
 		for name, value := range serverInstanceGroup.CustomVariables {
-			data.CustomVariables = append(data.CustomVariables, CustomVariableResourceModel{
+			data.CustomVariables = append(data.CustomVariables, CustomVariableModel{
 				Name:  types.StringValue(name),
 				Value: types.StringValue(fmt.Sprintf("%v", value)),
 			})
@@ -379,7 +336,7 @@ func (r *ServerInstanceGroupResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
-	existingConnectionMap := make(map[string]NetworkConnectionResourceModel)
+	existingConnectionMap := make(map[string]NetworkConnectionModel)
 	for _, conn := range existingNetworkConnections {
 		existingConnectionMap[conn.LogicalNetworkId.ValueString()] = conn
 	}
@@ -388,7 +345,7 @@ func (r *ServerInstanceGroupResource) Update(ctx context.Context, req resource.U
 		// Process each connection in the plan
 		processedConnectionMap := make(map[string]bool)
 		for _, connection := range data.NetworkConnections {
-			if existingConnectionMap[connection.LogicalNetworkId.ValueString()] == (NetworkConnectionResourceModel{}) {
+			if existingConnectionMap[connection.LogicalNetworkId.ValueString()] == (NetworkConnectionModel{}) {
 				// This connection is not in the existing connections, so we will create it
 				err := r.createNetworkConnection(ctx, &resp.Diagnostics, serverInstanceGroupId, connection)
 				if err != nil {
@@ -489,7 +446,7 @@ func (r *ServerInstanceGroupResource) ImportState(ctx context.Context, req resou
 	resource.ImportStatePassthroughID(ctx, path.Root("server_instance_group_id"), req, resp)
 }
 
-func (r *ServerInstanceGroupResource) createNetworkConnection(ctx context.Context, diagnostics *diag.Diagnostics, serverInstanceGroupId int32, connection NetworkConnectionResourceModel) error {
+func (r *ServerInstanceGroupResource) createNetworkConnection(ctx context.Context, diagnostics *diag.Diagnostics, serverInstanceGroupId int32, connection NetworkConnectionModel) error {
 	logicalNetworkId, ok := convertTfStringToInt32(diagnostics, "Logical Network Id", connection.LogicalNetworkId)
 	if !ok {
 		return fmt.Errorf("invalid Logical Network Id: %s", connection.LogicalNetworkId.ValueString())
@@ -522,7 +479,7 @@ func (r *ServerInstanceGroupResource) createNetworkConnection(ctx context.Contex
 	return nil
 }
 
-func (r *ServerInstanceGroupResource) readNetworkConnections(ctx context.Context, diagnostics *diag.Diagnostics, serverInstanceGroupId int32) ([]NetworkConnectionResourceModel, error) {
+func (r *ServerInstanceGroupResource) readNetworkConnections(ctx context.Context, diagnostics *diag.Diagnostics, serverInstanceGroupId int32) ([]NetworkConnectionModel, error) {
 	networkConnections, response, err := r.client.ServerInstanceGroupAPI.
 		GetServerInstanceGroupNetworkConfigurationConnections(ctx, serverInstanceGroupId).
 		Execute()
@@ -530,9 +487,9 @@ func (r *ServerInstanceGroupResource) readNetworkConnections(ctx context.Context
 		return nil, fmt.Errorf("failed to read network connections for Server Instance Group %d: %w", serverInstanceGroupId, err)
 	}
 
-	result := make([]NetworkConnectionResourceModel, len(networkConnections.Data))
+	result := make([]NetworkConnectionModel, len(networkConnections.Data))
 	for i, conn := range networkConnections.Data {
-		result[i] = NetworkConnectionResourceModel{
+		result[i] = NetworkConnectionModel{
 			LogicalNetworkId: types.StringValue(conn.Id),
 			Tagged:           types.BoolValue(conn.Tagged),
 			AccessMode:       types.StringValue(string(conn.AccessMode)),
@@ -547,7 +504,7 @@ func (r *ServerInstanceGroupResource) readNetworkConnections(ctx context.Context
 	return result, nil
 }
 
-func (r *ServerInstanceGroupResource) updateNetworkConnection(ctx context.Context, diagnostics *diag.Diagnostics, serverInstanceGroupId int32, connection NetworkConnectionResourceModel, existingConnection NetworkConnectionResourceModel) error {
+func (r *ServerInstanceGroupResource) updateNetworkConnection(ctx context.Context, diagnostics *diag.Diagnostics, serverInstanceGroupId int32, connection NetworkConnectionModel, existingConnection NetworkConnectionModel) error {
 	logicalNetworkId, ok := convertTfStringToFloat32(diagnostics, "Logical Network Id", connection.LogicalNetworkId)
 	if !ok {
 		return fmt.Errorf("invalid Logical Network Id: %s", connection.LogicalNetworkId.ValueString())
