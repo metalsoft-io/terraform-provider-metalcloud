@@ -37,16 +37,8 @@ data "metalcloud_server_type" "srv1" {
     label = "M.16.64.2"
 }
 
-data "metalcloud_vm_type" "vm1" {
-    label = "vm-medium"
-}
-
 data "metalcloud_os_template" "os1" {
     label = "ubuntu-22-04"
-}
-
-data "metalcloud_os_template" "vmos1" {
-    label = "vm-ubuntu-22-04-cloud"
 }
 
 data "metalcloud_infrastructure" "infra" {
@@ -62,14 +54,6 @@ resource "metalcloud_logical_network" "net1" {
 
     name = "net01"
     label = "net01"
-}
-
-resource "metalcloud_logical_network" "san1" {
-    infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
-    logical_network_profile_id = data.metalcloud_logical_network_profile.np01.logical_network_profile_id
-
-    name = "san01"
-    label = "san01"
 }
 
 resource "metalcloud_server_instance_group" "inst01" {
@@ -88,12 +72,6 @@ resource "metalcloud_server_instance_group" "inst01" {
             tagged = true
             access_mode = "l2"
             mtu = 1500
-        },
-        {
-            logical_network_id = metalcloud_logical_network.san1.logical_network_id
-            tagged = false
-            access_mode = "l2"
-            mtu = 9200
         }
     ]
 
@@ -110,59 +88,6 @@ resource "metalcloud_server_instance_group" "inst01" {
 
     depends_on = [
         metalcloud_logical_network.net1,
-        metalcloud_logical_network.san1,
-    ]
-}
-
-resource "metalcloud_vm_instance_group" "vminst01" {
-    infrastructure_id =	 data.metalcloud_infrastructure.infra.infrastructure_id
-
-    label = "vminst01"
-
-    instance_count = 1
-    vm_type_id = data.metalcloud_vm_type.vm1.vm_type_id
-    disk_size_gbytes = 10
-    os_template_id = data.metalcloud_os_template.vmos1.os_template_id
-
-    network_connections = [
-        {
-            logical_network_id = metalcloud_logical_network.net1.logical_network_id
-            tagged = true
-            access_mode = "l2"
-            mtu = 1500
-        }
-    ]
-
-    custom_variables = [
-        {
-            name = "vkey1"
-            value = "vtest1"
-        },
-        {
-            name = "vkey2"
-            value = "vtest2"
-        }
-    ]
-
-    depends_on = [
-        metalcloud_logical_network.net1,
-    ]
-}
-
-resource "metalcloud_drive" "drive1" {
-    infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
-
-    size_mbytes = 4096
-    label = "drive01"
-    logical_network_id = metalcloud_logical_network.san1.logical_network_id
-
-    hosts = [
-        metalcloud_server_instance_group.inst01.server_instance_group_id
-    ]
-
-    depends_on = [
-        metalcloud_logical_network.san1,
-        metalcloud_server_instance_group.inst01,
     ]
 }
 
@@ -185,8 +110,6 @@ resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
     # use either count or for_each in the resources or move everything that is dynamic into a module and make this depend on the module
     depends_on = [
         metalcloud_server_instance_group.inst01,
-        metalcloud_vm_instance_group.vminst01,
-        metalcloud_drive.drive1,
     ]
 }
 

@@ -33,16 +33,8 @@ data "metalcloud_logical_network_profile" "np01" {
     fabric_id = data.metalcloud_fabric.wan.fabric_id
 }
 
-data "metalcloud_server_type" "srv1" {
-    label = "M.16.64.2"
-}
-
 data "metalcloud_vm_type" "vm1" {
     label = "vm-medium"
-}
-
-data "metalcloud_os_template" "os1" {
-    label = "ubuntu-22-04"
 }
 
 data "metalcloud_os_template" "vmos1" {
@@ -62,56 +54,6 @@ resource "metalcloud_logical_network" "net1" {
 
     name = "net01"
     label = "net01"
-}
-
-resource "metalcloud_logical_network" "san1" {
-    infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
-    logical_network_profile_id = data.metalcloud_logical_network_profile.np01.logical_network_profile_id
-
-    name = "san01"
-    label = "san01"
-}
-
-resource "metalcloud_server_instance_group" "inst01" {
-    infrastructure_id =	 data.metalcloud_infrastructure.infra.infrastructure_id
-
-    name = "inst01"
-    label = "inst01"
-
-    instance_count = 1
-    server_type_id = data.metalcloud_server_type.srv1.server_type_id
-    os_template_id = data.metalcloud_os_template.os1.os_template_id
-
-    network_connections = [
-        {
-            logical_network_id = metalcloud_logical_network.net1.logical_network_id
-            tagged = true
-            access_mode = "l2"
-            mtu = 1500
-        },
-        {
-            logical_network_id = metalcloud_logical_network.san1.logical_network_id
-            tagged = false
-            access_mode = "l2"
-            mtu = 9200
-        }
-    ]
-
-    custom_variables = [
-        {
-            name = "key1"
-            value = "test1"
-        },
-        {
-            name = "key2"
-            value = "test2"
-        }
-    ]
-
-    depends_on = [
-        metalcloud_logical_network.net1,
-        metalcloud_logical_network.san1,
-    ]
 }
 
 resource "metalcloud_vm_instance_group" "vminst01" {
@@ -149,23 +91,6 @@ resource "metalcloud_vm_instance_group" "vminst01" {
     ]
 }
 
-resource "metalcloud_drive" "drive1" {
-    infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
-
-    size_mbytes = 4096
-    label = "drive01"
-    logical_network_id = metalcloud_logical_network.san1.logical_network_id
-
-    hosts = [
-        metalcloud_server_instance_group.inst01.server_instance_group_id
-    ]
-
-    depends_on = [
-        metalcloud_logical_network.san1,
-        metalcloud_server_instance_group.inst01,
-    ]
-}
-
 # Use this resource to effect deploys of the above resources.
 resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
     infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
@@ -184,9 +109,7 @@ resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
     # IMPORTANT. This is important to ensure that deploys happen after everything else. If you need to add or remove resources dynamically
     # use either count or for_each in the resources or move everything that is dynamic into a module and make this depend on the module
     depends_on = [
-        metalcloud_server_instance_group.inst01,
         metalcloud_vm_instance_group.vminst01,
-        metalcloud_drive.drive1,
     ]
 }
 
