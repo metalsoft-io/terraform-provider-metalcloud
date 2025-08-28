@@ -146,6 +146,7 @@ resource "metalcloud_vm_instance_group" "vminst01" {
 
     depends_on = [
         metalcloud_logical_network.net1,
+        metalcloud_server_instance_group.inst01,
     ]
 }
 
