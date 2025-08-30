@@ -13,8 +13,10 @@ The MetalCloud provider provides options to provision bare metal servers, switch
 The following arguments are supported:
 
 * `endpoint` - (Required) The **API endpoint to connect to.
-* `user_email` - (Required) **User's** email address used as the login identity.
 * `api_key` - (Required) The **User's** API_KEY.
+* `user_email` - **User's** email address used as the login identity.
+* `logging` - Set the logging level.
+* `insecure` - (Boolean) Allow insecure connections. Default is false.
 
 ## Example Usage
 
