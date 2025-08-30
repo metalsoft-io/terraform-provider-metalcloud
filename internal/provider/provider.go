@@ -2,6 +2,8 @@ package provider
 
 import (
 	"context"
+	"crypto/tls"
+	"net/http"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -33,6 +35,7 @@ type MetalCloudProviderModel struct {
 	ApiKey    types.String `tfsdk:"api_key"`
 	UserEmail types.String `tfsdk:"user_email"`
 	Logging   types.String `tfsdk:"logging"`
+	Insecure  types.Bool   `tfsdk:"insecure"`
 }
 
 func (p *MetalCloudProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -42,6 +45,7 @@ func (p *MetalCloudProvider) Metadata(ctx context.Context, req provider.Metadata
 
 func (p *MetalCloudProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: "The MetalCloud provider enables control over the MetalCloud's resources using Terraform.",
 		Attributes: map[string]schema.Attribute{
 			"endpoint": schema.StringAttribute{
 				MarkdownDescription: "MetalCloud API endpoint URL",
@@ -57,6 +61,10 @@ func (p *MetalCloudProvider) Schema(ctx context.Context, req provider.SchemaRequ
 			},
 			"logging": schema.StringAttribute{
 				MarkdownDescription: "Logging level",
+				Optional:            true,
+			},
+			"insecure": schema.BoolAttribute{
+				MarkdownDescription: "Allow insecure connections",
 				Optional:            true,
 			},
 		},
@@ -97,6 +105,15 @@ func (p *MetalCloudProvider) Configure(ctx context.Context, req provider.Configu
 			URL:         data.Endpoint.ValueString(),
 			Description: "MetalSoft",
 		},
+	}
+
+	// Allow insecure connections if specified
+	if !data.Insecure.IsNull() && data.Insecure.ValueBool() {
+		cfg.HTTPClient = &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+		}
 	}
 
 	// Set debug mode if logging is enabled
