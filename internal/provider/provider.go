@@ -133,6 +133,7 @@ func (p *MetalCloudProvider) DataSources(ctx context.Context) []func() datasourc
 		NewVmTypeDataSource,
 		NewOsTemplateDataSource,
 		NewLogicalNetworkProfileDataSource,
+		NewLogicalNetworkDataSource,
 		NewSubnetDataSource,
 		NewExtensionDataSource,
 		NewInfrastructureDataSource,
