@@ -38,6 +38,7 @@ type ServerInstanceGroupResourceModel struct {
 	InstanceCount         types.Int32              `tfsdk:"instance_count"`
 	ServerTypeId          types.String             `tfsdk:"server_type_id"`
 	OsTemplateId          types.String             `tfsdk:"os_template_id"`
+	StorageControllers    []StorageControllerModel `tfsdk:"storage_controllers"`
 	NetworkConnections    []NetworkConnectionModel `tfsdk:"network_connections"`
 	CustomVariables       []CustomVariableModel    `tfsdk:"custom_variables"`
 }
@@ -82,6 +83,11 @@ func (r *ServerInstanceGroupResource) Schema(ctx context.Context, req resource.S
 			"os_template_id": schema.StringAttribute{
 				MarkdownDescription: "Server Instance Group OS template Id",
 				Required:            true,
+			},
+			"storage_controllers": schema.SetNestedAttribute{
+				MarkdownDescription: "Storage controllers configuration for the server instances",
+				NestedObject:        StorageControllerAttribute,
+				Optional:            true,
 			},
 			"network_connections": schema.SetNestedAttribute{
 				MarkdownDescription: "Network connections for the server instance group",
@@ -148,6 +154,34 @@ func (r *ServerInstanceGroupResource) Create(ctx context.Context, req resource.C
 		DefaultServerTypeId: serverTypeId,
 		InstanceCount:       sdk.PtrInt32(data.InstanceCount.ValueInt32()),
 		OsTemplateId:        sdk.PtrInt32(osTemplateId),
+	}
+
+	if data.StorageControllers != nil {
+		defaultCustomStorageProfile := sdk.ServerInstanceStorageProfile{}
+		defaultCustomStorageProfile.Controllers = []sdk.ServerInstanceStorageProfileController{}
+
+		for _, controller := range data.StorageControllers {
+			volumes := []sdk.ServerInstanceStorageProfileControllerVolume{}
+
+			for _, volume := range controller.Volumes {
+				volumes = append(volumes, sdk.ServerInstanceStorageProfileControllerVolume{
+					ControllerName: volume.ControllerName.ValueString(),
+					VolumeName:     volume.VolumeName.ValueString(),
+					DiskSizeGb:     float32(volume.DiskSizeGb.ValueInt64()),
+					DiskType:       volume.DiskType.ValueString(),
+					DiskCount:      float32(volume.DiskCount.ValueInt64()),
+					RaidType:       volume.RaidType.ValueString(),
+				})
+			}
+
+			defaultCustomStorageProfile.Controllers = append(defaultCustomStorageProfile.Controllers, sdk.ServerInstanceStorageProfileController{
+				Id:      controller.StorageControllerId.ValueString(),
+				Mode:    controller.Mode.ValueString(),
+				Volumes: volumes,
+			})
+		}
+
+		request.DefaultCustomStorageProfile = &defaultCustomStorageProfile
 	}
 
 	if data.CustomVariables != nil {
@@ -235,17 +269,32 @@ func (r *ServerInstanceGroupResource) Read(ctx context.Context, req resource.Rea
 	data.Label = types.StringValue(serverInstanceGroup.Label)
 	data.Name = types.StringValue(*serverInstanceGroup.ServerGroupName)
 
-	tflog.Trace(ctx, fmt.Sprintf("read server instance group resource Id %s", data.ServerInstanceGroupId.ValueString()))
+	// Read storage controllers
+	if serverInstanceGroup.DefaultCustomStorageProfile != nil {
+		data.StorageControllers = make([]StorageControllerModel, 0, len(serverInstanceGroup.DefaultCustomStorageProfile.Controllers))
+		for _, controller := range serverInstanceGroup.DefaultCustomStorageProfile.Controllers {
+			storageController := StorageControllerModel{
+				StorageControllerId: types.StringValue(controller.Id),
+				Mode:                types.StringValue(controller.Mode),
+			}
 
-	// Read network connections
-	networkConnections, err := r.readNetworkConnections(ctx, &resp.Diagnostics, serverInstanceGroupId)
-	if err != nil {
-		return
+			if controller.Volumes != nil {
+				storageController.Volumes = make([]StorageVolumeModel, 0, len(controller.Volumes))
+				for _, volume := range controller.Volumes {
+					storageController.Volumes = append(storageController.Volumes, StorageVolumeModel{
+						ControllerName: types.StringValue(volume.ControllerName),
+						VolumeName:     types.StringValue(volume.VolumeName),
+						DiskSizeGb:     types.Int64Value(int64(volume.DiskSizeGb)),
+						DiskType:       types.StringValue(volume.DiskType),
+						DiskCount:      types.Int64Value(int64(volume.DiskCount)),
+						RaidType:       types.StringValue(volume.RaidType),
+					})
+				}
+			}
+
+			data.StorageControllers = append(data.StorageControllers, storageController)
+		}
 	}
-
-	data.NetworkConnections = networkConnections
-
-	tflog.Trace(ctx, fmt.Sprintf("read %d network connections for server instance group resource Id %s", len(data.NetworkConnections), data.ServerInstanceGroupId.ValueString()))
 
 	// Read custom variables
 	if serverInstanceGroup.CustomVariables != nil {
@@ -257,6 +306,18 @@ func (r *ServerInstanceGroupResource) Read(ctx context.Context, req resource.Rea
 			})
 		}
 	}
+
+	tflog.Trace(ctx, fmt.Sprintf("read server instance group resource Id %s", data.ServerInstanceGroupId.ValueString()))
+
+	// Read network connections
+	networkConnections, err := r.readNetworkConnections(ctx, &resp.Diagnostics, serverInstanceGroupId)
+	if err != nil {
+		return
+	}
+
+	data.NetworkConnections = networkConnections
+
+	tflog.Trace(ctx, fmt.Sprintf("read %d network connections for server instance group resource Id %s", len(data.NetworkConnections), data.ServerInstanceGroupId.ValueString()))
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -297,6 +358,38 @@ func (r *ServerInstanceGroupResource) Update(ctx context.Context, req resource.U
 
 	if osTemplateId != nil {
 		updates.OsTemplateId = osTemplateId
+	}
+
+	if data.StorageControllers != nil {
+		defaultCustomStorageProfile := sdk.ServerInstanceStorageProfile{}
+		defaultCustomStorageProfile.Controllers = []sdk.ServerInstanceStorageProfileController{}
+
+		for _, controller := range data.StorageControllers {
+			volumes := []sdk.ServerInstanceStorageProfileControllerVolume{}
+
+			for _, volume := range controller.Volumes {
+				volumes = append(volumes, sdk.ServerInstanceStorageProfileControllerVolume{
+					ControllerName: volume.ControllerName.ValueString(),
+					VolumeName:     volume.VolumeName.ValueString(),
+					DiskSizeGb:     float32(volume.DiskSizeGb.ValueInt64()),
+					DiskType:       volume.DiskType.ValueString(),
+					DiskCount:      float32(volume.DiskCount.ValueInt64()),
+					RaidType:       volume.RaidType.ValueString(),
+				})
+			}
+
+			defaultCustomStorageProfile.Controllers = append(defaultCustomStorageProfile.Controllers, sdk.ServerInstanceStorageProfileController{
+				Id:      controller.StorageControllerId.ValueString(),
+				Mode:    controller.Mode.ValueString(),
+				Volumes: volumes,
+			})
+		}
+
+		updates.DefaultCustomStorageProfile = &defaultCustomStorageProfile
+	} else {
+		updates.DefaultCustomStorageProfile = &sdk.ServerInstanceStorageProfile{
+			Controllers: []sdk.ServerInstanceStorageProfileController{},
+		}
 	}
 
 	if data.CustomVariables != nil {
