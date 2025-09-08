@@ -109,8 +109,9 @@ resource "metalcloud_drive_attachment" "db_storage" {
 
 ### Optional
 
-- `custom_variables` (Attributes Set) Environment variables and configuration parameters passed to all instances (see [below for nested schema](#nestedatt--custom_variables))
 - `name` (String) Human-readable name for the server instance group. If not specified, defaults to the label value
+- `storage_controllers` (Attributes Set) Storage controllers configuration for the server instances (see [below for nested schema](#nestedatt--storage_controllers))
+- `custom_variables` (Attributes Set) Environment variables and configuration parameters passed to all instances (see [below for nested schema](#nestedatt--custom_variables))
 - `network_connections` (Attributes Set) Network interfaces and connectivity configuration for all instances (see [below for nested schema](#nestedatt--network_connections))
 
 ### Read-Only
@@ -118,6 +119,27 @@ resource "metalcloud_drive_attachment" "db_storage" {
 - `server_instance_group_id` (String) Unique identifier assigned by MetalCloud after the group is created
 
 ## Nested Schema Reference
+
+<a id="nestedatt--storage_controllers"></a>
+### Nested Schema for `storage_controllers`
+
+Required:
+
+- `mode` (String) Storage controller mode
+- `storage_controller_id` (String) Storage controller Id
+- `volumes` (Attributes Set) Storage volumes configuration (see [below for nested schema](#nestedatt--storage_controllers--volumes))
+
+<a id="nestedatt--storage_controllers--volumes"></a>
+### Nested Schema for `storage_controllers.volumes`
+
+Required:
+
+- `controller_name` (String) Storage controller name
+- `disk_count` (Number) Volume disk count
+- `disk_size_gb` (Number) Volume disk size in GB
+- `disk_type` (String) Volume disk type
+- `raid_type` (String) Volume RAID type
+- `volume_name` (String) Storage volume name
 
 <a id="nestedatt--custom_variables"></a>
 ### Nested Schema for `custom_variables`

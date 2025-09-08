@@ -44,8 +44,8 @@ github.com/mattn/go-isatty v0.0.12/go.mod h1:cbi8OIDigv2wuxKPP5vlRcQ1OAZbq2CE4Ky
 github.com/mattn/go-isatty v0.0.14/go.mod h1:7GGIvUiUoEMVVmxf/4nioHXj79iQHKdU27kJ6hsGG94=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
-github.com/metalsoft-io/metalcloud-sdk-go v0.0.0-20250828071749-47589ad0bae4 h1:hAhj5d7WIzQnqEGILKV8qFOPFyywraN57N43kei5DtU=
-github.com/metalsoft-io/metalcloud-sdk-go v0.0.0-20250828071749-47589ad0bae4/go.mod h1:hiAan5sFB5IhIhhM1jczQ3hCM8K0mbZ9tnHFIYgdr9I=
+github.com/metalsoft-io/metalcloud-sdk-go v0.0.0-20250830153149-33a54328169c h1:gqlSVl27cnBGFziXqN0Ni8QXDxxyy/f+QhJRPOeQ4k8=
+github.com/metalsoft-io/metalcloud-sdk-go v0.0.0-20250830153149-33a54328169c/go.mod h1:hiAan5sFB5IhIhhM1jczQ3hCM8K0mbZ9tnHFIYgdr9I=
 github.com/mitchellh/go-testing-interface v1.14.1 h1:jrgshOhYAUVNMAJiKbEu7EqAwgJJ2JqpQmpLJOu07cU=
 github.com/mitchellh/go-testing-interface v1.14.1/go.mod h1:gfgS7OtZj6MA4U1UrDRp04twqAjfvlZyCfX3sDjEym8=
 github.com/oklog/run v1.2.0 h1:O8x3yXwah4A73hJdlrwo/2X6J62gE5qTMusH0dvz60E=
