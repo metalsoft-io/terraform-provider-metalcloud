@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -29,10 +30,11 @@ type ExtensionInstanceResource struct {
 
 // ExtensionInstanceResourceModel describes the resource data model.
 type ExtensionInstanceResourceModel struct {
-	ExtensionInstanceId types.String `tfsdk:"extension_instance_id"`
-	InfrastructureId    types.String `tfsdk:"infrastructure_id"`
-	Label               types.String `tfsdk:"label"`
-	ExtensionId         types.String `tfsdk:"extension_id"`
+	ExtensionInstanceId types.String         `tfsdk:"extension_instance_id"`
+	InfrastructureId    types.String         `tfsdk:"infrastructure_id"`
+	Label               types.String         `tfsdk:"label"`
+	ExtensionId         types.String         `tfsdk:"extension_id"`
+	InputVariables      []InputVariableModel `tfsdk:"input_variables"`
 }
 
 func (r *ExtensionInstanceResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -63,6 +65,11 @@ func (r *ExtensionInstanceResource) Schema(ctx context.Context, req resource.Sch
 			"extension_id": schema.StringAttribute{
 				MarkdownDescription: "Extension Id",
 				Required:            true,
+			},
+			"input_variables": schema.SetNestedAttribute{
+				MarkdownDescription: "Input variables for the extension instance",
+				Optional:            true,
+				NestedObject:        InputVariableAttribute,
 			},
 		},
 	}
@@ -108,12 +115,23 @@ func (r *ExtensionInstanceResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
+	request := sdk.CreateExtensionInstance{
+		Label:       sdk.PtrString(data.Label.ValueString()),
+		ExtensionId: sdk.PtrFloat32(extensionId),
+	}
+
+	if len(data.InputVariables) > 0 {
+		variables, shouldReturn := readVariables(data, &resp.Diagnostics)
+		if shouldReturn {
+			return
+		}
+
+		request.InputVariables = variables
+	}
+
 	extensionInstance, response, err := r.client.ExtensionInstanceAPI.
 		CreateExtensionInstance(ctx, infrastructureId).
-		CreateExtensionInstance(sdk.CreateExtensionInstance{
-			Label:       sdk.PtrString(data.Label.ValueString()),
-			ExtensionId: sdk.PtrFloat32(extensionId),
-		}).Execute()
+		CreateExtensionInstance(request).Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{201}, "create Extension Instance") {
 		return
 	}
@@ -158,6 +176,30 @@ func (r *ExtensionInstanceResource) Read(ctx context.Context, req resource.ReadR
 
 	data.Label = types.StringValue(extensionInstance.Label)
 
+	if len(extensionInstance.InputVariables) > 0 {
+		inputVariables := []InputVariableModel{}
+
+		for _, v := range extensionInstance.InputVariables {
+			variable := InputVariableModel{
+				Label: types.StringValue(v.Label),
+			}
+
+			if v.Value.String != nil {
+				variable.ValueStr = types.StringValue(*v.Value.String)
+			}
+			if v.Value.Bool != nil {
+				variable.ValueBool = types.BoolValue(*v.Value.Bool)
+			}
+			if v.Value.Int32 != nil {
+				variable.ValueInt = types.Int32Value(*v.Value.Int32)
+			}
+
+			inputVariables = append(inputVariables, variable)
+		}
+
+		data.InputVariables = inputVariables
+	}
+
 	tflog.Trace(ctx, fmt.Sprintf("read extension instance resource Id %s", data.ExtensionInstanceId.ValueString()))
 
 	// Save updated data into Terraform state
@@ -179,9 +221,20 @@ func (r *ExtensionInstanceResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
+	request := sdk.UpdateExtensionInstance{}
+
+	if len(data.InputVariables) > 0 {
+		variables, shouldReturn := readVariables(data, &resp.Diagnostics)
+		if shouldReturn {
+			return
+		}
+
+		request.InputVariables = variables
+	}
+
 	_, response, err := r.client.ExtensionInstanceAPI.
 		UpdateExtensionInstance(ctx, extensionInstanceId).
-		UpdateExtensionInstance(sdk.UpdateExtensionInstance{}).
+		UpdateExtensionInstance(request).
 		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "update Extension Instance") {
 		return
@@ -220,4 +273,37 @@ func (r *ExtensionInstanceResource) Delete(ctx context.Context, req resource.Del
 
 func (r *ExtensionInstanceResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("extension_instance_id"), req, resp)
+}
+
+func readVariables(data ExtensionInstanceResourceModel, diagnostics *diag.Diagnostics) ([]sdk.ExtensionVariable, bool) {
+	variables := []sdk.ExtensionVariable{}
+
+	for _, v := range data.InputVariables {
+		value := sdk.ExtensionVariableValue{}
+
+		if !v.ValueStr.IsNull() {
+			value.String = sdk.PtrString(v.ValueStr.ValueString())
+		}
+		if !v.ValueBool.IsNull() {
+			value.Bool = sdk.PtrBool(v.ValueBool.ValueBool())
+		}
+		if !v.ValueInt.IsNull() {
+			value.Int32 = sdk.PtrInt32(v.ValueInt.ValueInt32())
+		}
+
+		if value.String == nil && value.Bool == nil && value.Int32 == nil {
+			diagnostics.AddError(
+				"Invalid Input Variable",
+				fmt.Sprintf("Input variable '%s' must have at least one value set (value_str, value_bool, value_int)", v.Label.ValueString()),
+			)
+			return nil, true
+		}
+
+		variables = append(variables, sdk.ExtensionVariable{
+			Label: v.Label.ValueString(),
+			Value: value,
+		})
+	}
+
+	return variables, false
 }

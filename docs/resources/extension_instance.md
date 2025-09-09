@@ -24,6 +24,26 @@ resource "metalcloud_extension_instance" "monitoring" {
 }
 ```
 
+### Extension Instance with Input Variables
+
+```hcl
+resource "metalcloud_extension_instance" "monitoring" {
+  label             = "monitoring-ext"
+  extension_id      = "ext_monitoring_123"
+  infrastructure_id = metalcloud_infrastructure.main.infrastructure_id
+  input_variables = [
+    {
+      label = "var1"
+      value_string = "test1"
+    },
+    {
+      label = "var2"
+      value_int = 5
+    }
+  ]
+}
+```
+
 ### Extension Instance with Dependencies
 
 ```hcl

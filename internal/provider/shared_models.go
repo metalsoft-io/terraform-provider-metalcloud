@@ -113,3 +113,31 @@ var CustomVariableAttribute = schema.NestedAttributeObject{
 		},
 	},
 }
+
+type InputVariableModel struct {
+	Label     types.String `tfsdk:"label"`
+	ValueStr  types.String `tfsdk:"value_str"`
+	ValueBool types.Bool   `tfsdk:"value_bool"`
+	ValueInt  types.Int32  `tfsdk:"value_int"`
+}
+
+var InputVariableAttribute = schema.NestedAttributeObject{
+	Attributes: map[string]schema.Attribute{
+		"label": schema.StringAttribute{
+			MarkdownDescription: "Label of the input variable",
+			Required:            true,
+		},
+		"value_str": schema.StringAttribute{
+			MarkdownDescription: "String value of the input variable",
+			Optional:            true,
+		},
+		"value_bool": schema.BoolAttribute{
+			MarkdownDescription: "Boolean value of the input variable",
+			Optional:            true,
+		},
+		"value_int": schema.Int32Attribute{
+			MarkdownDescription: "Integer value of the input variable",
+			Optional:            true,
+		},
+	},
+}
