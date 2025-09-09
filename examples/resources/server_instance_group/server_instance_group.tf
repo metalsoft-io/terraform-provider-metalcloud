@@ -66,6 +66,23 @@ resource "metalcloud_server_instance_group" "inst01" {
     server_type_id = data.metalcloud_server_type.srv1.server_type_id
     os_template_id = data.metalcloud_os_template.os1.os_template_id
 
+    storage_controllers = [
+            {
+                storage_controller_id = "RAID.Slot.2-1"
+                mode = "RAID"
+                volumes = [
+                    {
+                        controller_name = "RAID.Slot.2-1"
+                        volume_name = "OS"
+                        disk_size_gb = 931
+                        disk_type = "HDD"
+                        disk_count = 2
+                        raid_type = "raid1"
+                    }
+                ]
+            }
+        ]
+
     network_connections = [
         {
             logical_network_id = metalcloud_logical_network.net1.logical_network_id
