@@ -23,22 +23,8 @@ data "metalcloud_site" "dc" {
     label = "${var.site}"
 }
 
-data "metalcloud_fabric" "wan" {
-    site_id = data.metalcloud_site.dc.site_id
-    label = "wan-fabric"
-}
-
-data "metalcloud_logical_network_profile" "np01" {
-    label = "np-01"
-    fabric_id = data.metalcloud_fabric.wan.fabric_id
-}
-
-data "metalcloud_server_type" "srv1" {
-    label = "M.16.64.2"
-}
-
-data "metalcloud_os_template" "os1" {
-    label = "ubuntu-22-04"
+data "metalcloud_extension" "my-app" {
+    label = "my-app"
 }
 
 data "metalcloud_infrastructure" "infra" {
@@ -48,46 +34,21 @@ data "metalcloud_infrastructure" "infra" {
     create_if_missing = true
 }
 
-resource "metalcloud_logical_network" "net1" {
-    infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
-    logical_network_profile_id = data.metalcloud_logical_network_profile.np01.logical_network_profile_id
-
-    name = "net01"
-    label = "net01"
-}
-
-resource "metalcloud_server_instance_group" "inst01" {
+resource "metalcloud_extension_instance" "app_inst1" {
     infrastructure_id =	 data.metalcloud_infrastructure.infra.infrastructure_id
+    extension_id = data.metalcloud_extension.my-app.extension_id
 
-    name = "inst01"
-    label = "inst01"
+    label = "app_inst1"
 
-    instance_count = 1
-    server_type_id = data.metalcloud_server_type.srv1.server_type_id
-    os_template_id = data.metalcloud_os_template.os1.os_template_id
-
-    network_connections = [
+    input_variables = [
         {
-            logical_network_id = metalcloud_logical_network.net1.logical_network_id
-            tagged = true
-            access_mode = "l2"
-            mtu = 1500
-        }
-    ]
-
-    custom_variables = [
-        {
-            name = "key1"
-            value = "test1"
+            label = "var1"
+            value_string = "test1"
         },
         {
-            name = "key2"
-            value = "test2"
+            label = "var2"
+            value_int = 5
         }
-    ]
-
-    depends_on = [
-        metalcloud_logical_network.net1,
     ]
 }
 
@@ -109,7 +70,7 @@ resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
     # IMPORTANT. This is important to ensure that deploys happen after everything else. If you need to add or remove resources dynamically
     # use either count or for_each in the resources or move everything that is dynamic into a module and make this depend on the module
     depends_on = [
-        metalcloud_server_instance_group.inst01,
+        metalcloud_extension_instance.app_inst1,
     ]
 }
 
