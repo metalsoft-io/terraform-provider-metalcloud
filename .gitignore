@@ -43,6 +43,6 @@ examples/simple_example/.terraform*
 examples/simple_example/.terraform.lock.hcl
 dist/
 
-.env
+.env*
 go.work
 go.work.sum

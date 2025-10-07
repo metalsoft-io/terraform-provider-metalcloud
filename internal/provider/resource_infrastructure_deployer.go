@@ -181,13 +181,15 @@ func (r *InfrastructureDeployerResource) Delete(ctx context.Context, req resourc
 		return
 	}
 
-	// TODO: Do we delete the infrastructure here?
-	response, err = r.client.InfrastructureAPI.
-		DeleteInfrastructure(ctx, infrastructureId).
-		IfMatch(fmt.Sprintf("%d", int(infrastructure.Revision))).
-		Execute()
-	if !ensureNoError(&resp.Diagnostics, err, response, []int{204}, "delete Infrastructure Deployer") {
-		return
+	if !data.PreventDeploy.ValueBool() {
+		// TODO: Do we delete the infrastructure here?
+		response, err = r.client.InfrastructureAPI.
+			DeleteInfrastructure(ctx, infrastructureId).
+			IfMatch(fmt.Sprintf("%d", int(infrastructure.Revision))).
+			Execute()
+		if !ensureNoError(&resp.Diagnostics, err, response, []int{204}, "delete Infrastructure Deployer") {
+			return
+		}
 	}
 }
 

@@ -7,7 +7,7 @@ toolchain go1.23.4
 require (
 	github.com/hashicorp/terraform-plugin-framework v1.15.1
 	github.com/hashicorp/terraform-plugin-log v0.9.0
-	github.com/metalsoft-io/metalcloud-sdk-go v0.0.0-20250830153149-33a54328169c
+	github.com/metalsoft-io/metalcloud-sdk-go v0.0.0-20251007142902-9afb58d9f99b
 )
 
 require (
