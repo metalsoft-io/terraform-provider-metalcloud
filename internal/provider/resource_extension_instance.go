@@ -232,9 +232,17 @@ func (r *ExtensionInstanceResource) Update(ctx context.Context, req resource.Upd
 		request.InputVariables = variables
 	}
 
-	_, response, err := r.client.ExtensionInstanceAPI.
+	extensionInstance, response, err := r.client.ExtensionInstanceAPI.
+		GetExtensionInstance(ctx, extensionInstanceId).
+		Execute()
+	if !ensureNoError(&resp.Diagnostics, err, response, []int{200, 404}, "read Extension Instance") {
+		return
+	}
+
+	_, response, err = r.client.ExtensionInstanceAPI.
 		UpdateExtensionInstance(ctx, extensionInstanceId).
 		UpdateExtensionInstance(request).
+		IfMatch(fmt.Sprintf("%d", int32(extensionInstance.Revision))).
 		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "update Extension Instance") {
 		return
@@ -259,7 +267,17 @@ func (r *ExtensionInstanceResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
-	response, err := r.client.ExtensionInstanceAPI.DeleteExtensionInstance(ctx, extensionInstanceId).Execute()
+	extensionInstance, response, err := r.client.ExtensionInstanceAPI.
+		GetExtensionInstance(ctx, extensionInstanceId).
+		Execute()
+	if !ensureNoError(&resp.Diagnostics, err, response, []int{200, 404}, "read Extension Instance") {
+		return
+	}
+
+	response, err = r.client.ExtensionInstanceAPI.
+		DeleteExtensionInstance(ctx, extensionInstanceId).
+		IfMatch(fmt.Sprintf("%d", int32(extensionInstance.Revision))).
+		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{204, 404}, "delete Extension Instance") {
 		return
 	}

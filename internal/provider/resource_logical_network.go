@@ -244,7 +244,17 @@ func (r *LogicalNetworkResource) Delete(ctx context.Context, req resource.Delete
 		return
 	}
 
-	response, err := r.client.LogicalNetworkAPI.DeleteLogicalNetwork(ctx, float32(logicalNetworkId)).Execute()
+	logicalNetwork, response, err := r.client.LogicalNetworkAPI.
+		GetLogicalNetwork(ctx, logicalNetworkId).
+		Execute()
+	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "read logical network") {
+		return
+	}
+
+	response, err = r.client.LogicalNetworkAPI.
+		DeleteLogicalNetwork(ctx, float32(logicalNetworkId)).
+		IfMatch(fmt.Sprintf("%d", logicalNetwork.Revision)).
+		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{204, 404}, "delete logical network") {
 		return
 	}

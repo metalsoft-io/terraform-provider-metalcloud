@@ -392,7 +392,17 @@ func (r *DriveResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 		return
 	}
 
-	response, err := r.client.DriveAPI.DeleteDrive(ctx, infrastructureId, driveId).Execute()
+	drive, response, err := r.client.DriveAPI.
+		GetDriveConfigInfo(ctx, infrastructureId, driveId).
+		Execute()
+	if !ensureNoError(&resp.Diagnostics, err, response, []int{200, 404}, "read Drive") {
+		return
+	}
+
+	response, err = r.client.DriveAPI.
+		DeleteDrive(ctx, infrastructureId, driveId).
+		IfMatch(fmt.Sprintf("%d", int32(drive.Revision))).
+		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{204, 404}, "delete Drive") {
 		return
 	}
