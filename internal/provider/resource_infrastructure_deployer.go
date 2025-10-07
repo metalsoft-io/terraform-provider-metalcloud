@@ -171,24 +171,30 @@ func (r *InfrastructureDeployerResource) Delete(ctx context.Context, req resourc
 		return
 	}
 
-	infrastructureId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
-	if !ok {
-		return
-	}
-
-	infrastructure, response, err := r.client.InfrastructureAPI.GetInfrastructure(ctx, infrastructureId).Execute()
-	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "read Infrastructure Deployer") {
-		return
-	}
-
 	if !data.PreventDeploy.ValueBool() {
-		// TODO: Do we delete the infrastructure here?
-		response, err = r.client.InfrastructureAPI.
-			DeleteInfrastructure(ctx, infrastructureId).
-			IfMatch(fmt.Sprintf("%d", int(infrastructure.Revision))).
-			Execute()
-		if !ensureNoError(&resp.Diagnostics, err, response, []int{204}, "delete Infrastructure Deployer") {
+		if !r.deployInfrastructure(ctx, &data, &resp.Diagnostics) {
 			return
+		}
+
+		if data.AwaitDeployFinish.ValueBool() {
+			// Delete the infrastructure only if the deploy was awaited
+			infrastructureId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
+			if !ok {
+				return
+			}
+
+			infrastructure, response, err := r.client.InfrastructureAPI.GetInfrastructure(ctx, infrastructureId).Execute()
+			if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "read Infrastructure") {
+				return
+			}
+
+			response, err = r.client.InfrastructureAPI.
+				DeleteInfrastructure(ctx, infrastructureId).
+				IfMatch(fmt.Sprintf("%d", int(infrastructure.Revision))).
+				Execute()
+			if !ensureNoError(&resp.Diagnostics, err, response, []int{204}, "delete Infrastructure") {
+				return
+			}
 		}
 	}
 }
@@ -204,7 +210,7 @@ func (r *InfrastructureDeployerResource) deployInfrastructure(ctx context.Contex
 	}
 
 	infrastructure, response, err := r.client.InfrastructureAPI.GetInfrastructure(ctx, infrastructureId).Execute()
-	if !ensureNoError(diagnostics, err, response, []int{200}, "create Infrastructure Deployer") {
+	if !ensureNoError(diagnostics, err, response, []int{200}, "read Infrastructure") {
 		return false
 	}
 
@@ -222,7 +228,7 @@ func (r *InfrastructureDeployerResource) deployInfrastructure(ctx context.Contex
 			AllowDataLoss: data.AllowDataLoss.ValueBool(),
 		}).
 		Execute()
-	if !ensureNoError(diagnostics, err, response, []int{202}, "create Infrastructure Deployer") {
+	if !ensureNoError(diagnostics, err, response, []int{202}, "deploy Infrastructure") {
 		return false
 	}
 
@@ -242,7 +248,7 @@ func (r *InfrastructureDeployerResource) deployInfrastructure(ctx context.Contex
 
 			case <-ticker.C:
 				infrastructure, response, err = r.client.InfrastructureAPI.GetInfrastructure(ctx, infrastructureId).Execute()
-				if !ensureNoError(diagnostics, err, response, []int{200}, "create Infrastructure Deployer") {
+				if !ensureNoError(diagnostics, err, response, []int{200}, "read Infrastructure") {
 					return false
 				}
 
