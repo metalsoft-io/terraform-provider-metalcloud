@@ -1,13 +1,17 @@
 package provider
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"slices"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	sdk "github.com/metalsoft-io/metalcloud-sdk-go"
 )
 
@@ -134,6 +138,66 @@ func ensureNoError(diagnostics *diag.Diagnostics, err error, result *http.Respon
 		diagnostics.AddError("MetalCloud Client Error", fmt.Sprintf("Unable to %s, got status code: %s (%d) - %s", operation, result.Status, result.StatusCode, result.Body))
 
 		return false
+	}
+
+	return true
+}
+
+func deployInfrastructure(ctx context.Context, client *sdk.APIClient, dataInfrastructureId types.String, dataAllowDataLoss types.Bool, dataAwaitDeployFinish types.Bool, diagnostics *diag.Diagnostics) bool {
+	infrastructureId, ok := convertTfStringToFloat32(diagnostics, "Infrastructure Id", dataInfrastructureId)
+	if !ok {
+		return false
+	}
+
+	infrastructure, response, err := client.InfrastructureAPI.GetInfrastructure(ctx, infrastructureId).Execute()
+	if !ensureNoError(diagnostics, err, response, []int{200}, "read Infrastructure") {
+		return false
+	}
+
+	if infrastructure.ServiceStatus == sdk.GENERICSERVICESTATUS_DELETED {
+		diagnostics.AddError(
+			"Invalid Infrastructure State",
+			fmt.Sprintf("Infrastructure Id %s is in DELETED state. Please restore it before initiating deploy.", dataInfrastructureId.ValueString()),
+		)
+		return false
+	}
+
+	_, response, err = client.InfrastructureAPI.
+		DeployInfrastructure(ctx, infrastructureId).
+		InfrastructureDeployOptions(sdk.InfrastructureDeployOptions{
+			AllowDataLoss: dataAllowDataLoss.ValueBool(),
+		}).
+		Execute()
+	if !ensureNoError(diagnostics, err, response, []int{202}, "deploy Infrastructure") {
+		return false
+	}
+
+	if dataAwaitDeployFinish.ValueBool() {
+		// Wait for the deployment finish or timeout
+		timeout := time.After(30 * time.Minute)
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-timeout:
+				diagnostics.AddError(
+					"Timeout Error",
+					fmt.Sprintf("Timed out waiting for infrastructure Id %s to be deployed", dataInfrastructureId.ValueString()),
+				)
+				return false
+
+			case <-ticker.C:
+				infrastructure, response, err = client.InfrastructureAPI.GetInfrastructure(ctx, infrastructureId).Execute()
+				if !ensureNoError(diagnostics, err, response, []int{200}, "read Infrastructure") {
+					return false
+				}
+
+				if strings.ToLower(*infrastructure.Config.DeployStatus) == "finished" {
+					tflog.Trace(ctx, fmt.Sprintf("infrastructure Id %s deployment finished", dataInfrastructureId.ValueString()))
+					return true
+				}
+			}
+		}
 	}
 
 	return true

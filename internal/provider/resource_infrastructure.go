@@ -3,10 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
-	"strings"
-	"time"
 
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -222,30 +219,27 @@ func (r *InfrastructureResource) Delete(ctx context.Context, req resource.Delete
 		return
 	}
 
+	infrastructureId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
+	if !ok {
+		return
+	}
+
+	infrastructure, response, err := r.client.InfrastructureAPI.GetInfrastructure(ctx, infrastructureId).Execute()
+	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "read Infrastructure") {
+		return
+	}
+
+	response, err = r.client.InfrastructureAPI.
+		DeleteInfrastructure(ctx, infrastructureId).
+		IfMatch(fmt.Sprintf("%d", int(infrastructure.Revision))).
+		Execute()
+	if !ensureNoError(&resp.Diagnostics, err, response, []int{204}, "delete Infrastructure") {
+		return
+	}
+
 	if !data.PreventDeploy.ValueBool() {
-		if !r.deployInfrastructure(ctx, &data, &resp.Diagnostics) {
+		if !deployInfrastructure(ctx, r.client, data.InfrastructureId, data.AllowDataLoss, data.AwaitDeployFinish, &resp.Diagnostics) {
 			return
-		}
-
-		if data.AwaitDeployFinish.ValueBool() {
-			// Delete the infrastructure only if the deploy was awaited
-			infrastructureId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
-			if !ok {
-				return
-			}
-
-			infrastructure, response, err := r.client.InfrastructureAPI.GetInfrastructure(ctx, infrastructureId).Execute()
-			if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "read Infrastructure") {
-				return
-			}
-
-			response, err = r.client.InfrastructureAPI.
-				DeleteInfrastructure(ctx, infrastructureId).
-				IfMatch(fmt.Sprintf("%d", int(infrastructure.Revision))).
-				Execute()
-			if !ensureNoError(&resp.Diagnostics, err, response, []int{204}, "delete Infrastructure") {
-				return
-			}
 		}
 	}
 
@@ -254,64 +248,4 @@ func (r *InfrastructureResource) Delete(ctx context.Context, req resource.Delete
 
 func (r *InfrastructureResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("infrastructure_id"), req, resp)
-}
-
-func (r *InfrastructureResource) deployInfrastructure(ctx context.Context, data *InfrastructureResourceModel, diagnostics *diag.Diagnostics) bool {
-	infrastructureId, ok := convertTfStringToFloat32(diagnostics, "Infrastructure Id", data.InfrastructureId)
-	if !ok {
-		return false
-	}
-
-	infrastructure, response, err := r.client.InfrastructureAPI.GetInfrastructure(ctx, infrastructureId).Execute()
-	if !ensureNoError(diagnostics, err, response, []int{200}, "read Infrastructure") {
-		return false
-	}
-
-	if infrastructure.ServiceStatus == sdk.GENERICSERVICESTATUS_DELETED {
-		diagnostics.AddError(
-			"Invalid Infrastructure State",
-			fmt.Sprintf("Infrastructure Id %s is in DELETED state. Please restore it before initiating deploy.", data.InfrastructureId.ValueString()),
-		)
-		return false
-	}
-
-	_, response, err = r.client.InfrastructureAPI.
-		DeployInfrastructure(ctx, infrastructureId).
-		InfrastructureDeployOptions(sdk.InfrastructureDeployOptions{
-			AllowDataLoss: data.AllowDataLoss.ValueBool(),
-		}).
-		Execute()
-	if !ensureNoError(diagnostics, err, response, []int{202}, "deploy Infrastructure") {
-		return false
-	}
-
-	if data.AwaitDeployFinish.ValueBool() {
-		// Wait for the deployment finish or timeout
-		timeout := time.After(30 * time.Minute)
-		ticker := time.NewTicker(10 * time.Second)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-timeout:
-				diagnostics.AddError(
-					"Timeout Error",
-					fmt.Sprintf("Timed out waiting for infrastructure Id %s to be deployed", data.InfrastructureId.ValueString()),
-				)
-				return false
-
-			case <-ticker.C:
-				infrastructure, response, err = r.client.InfrastructureAPI.GetInfrastructure(ctx, infrastructureId).Execute()
-				if !ensureNoError(diagnostics, err, response, []int{200}, "read Infrastructure") {
-					return false
-				}
-
-				if strings.ToLower(*infrastructure.Config.DeployStatus) == "finished" {
-					tflog.Trace(ctx, fmt.Sprintf("infrastructure Id %s deployment finished", data.InfrastructureId.ValueString()))
-					return true
-				}
-			}
-		}
-	}
-
-	return true
 }
