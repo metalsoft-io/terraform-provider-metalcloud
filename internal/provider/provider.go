@@ -129,6 +129,7 @@ func (p *MetalCloudProvider) Configure(ctx context.Context, req provider.Configu
 
 func (p *MetalCloudProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
+		NewInfrastructureResource,
 		NewLogicalNetworkResource,
 		NewServerInstanceGroupResource,
 		NewVmInstanceGroupResource,

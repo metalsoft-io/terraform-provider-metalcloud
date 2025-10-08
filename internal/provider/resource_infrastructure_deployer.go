@@ -171,32 +171,7 @@ func (r *InfrastructureDeployerResource) Delete(ctx context.Context, req resourc
 		return
 	}
 
-	if !data.PreventDeploy.ValueBool() {
-		if !r.deployInfrastructure(ctx, &data, &resp.Diagnostics) {
-			return
-		}
-
-		if data.AwaitDeployFinish.ValueBool() {
-			// Delete the infrastructure only if the deploy was awaited
-			infrastructureId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
-			if !ok {
-				return
-			}
-
-			infrastructure, response, err := r.client.InfrastructureAPI.GetInfrastructure(ctx, infrastructureId).Execute()
-			if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "read Infrastructure") {
-				return
-			}
-
-			response, err = r.client.InfrastructureAPI.
-				DeleteInfrastructure(ctx, infrastructureId).
-				IfMatch(fmt.Sprintf("%d", int(infrastructure.Revision))).
-				Execute()
-			if !ensureNoError(&resp.Diagnostics, err, response, []int{204}, "delete Infrastructure") {
-				return
-			}
-		}
-	}
+	// No action required to delete the infrastructure deployer. The infrastructure is deleted by the infrastructure resource.
 }
 
 func (r *InfrastructureDeployerResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
