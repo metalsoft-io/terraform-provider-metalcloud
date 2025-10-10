@@ -57,23 +57,36 @@ data "metalcloud_os_template" "os1" {
   label = "ubuntu-22-04"
 }
 
-data "metalcloud_infrastructure" "infra" {
-  site_id = data.metalcloud_site.dc.site_id
-  label = "my-infra01"
+resource "metalcloud_infrastructure" "infra" {
+    site_id = data.metalcloud_site.dc.site_id
+    label = "my-infra01"
 
-  create_if_missing = true
+    # Set this to false to actually trigger deploy when the infrastructure is deleted.
+    prevent_deploy = true
+
+    # These options will make terraform apply operation will wait for the deploy to finish (when prevent_deploy is false)
+    # instead of exiting while the deploy is ongoing
+    await_deploy_finish = false
+
+    # This option disables a safety check that metalsoft performs to prevent accidental data loss
+    # It is required when testing delete operations
+    allow_data_loss = true
 }
 
 resource "metalcloud_logical_network" "net1" {
-  infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+  infrastructure_id = metalcloud_infrastructure.infra.infrastructure_id
   logical_network_profile_id = data.metalcloud_logical_network_profile.np01.logical_network_profile_id
 
   name = "net01"
   label = "net01"
+
+  depends_on = [
+    metalcloud_infrastructure.infra,
+  ]
 }
 
 resource "metalcloud_server_instance_group" "inst01" {
-  infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+  infrastructure_id = metalcloud_infrastructure.infra.infrastructure_id
 
   name = "inst01"
   label = "inst01"
@@ -104,6 +117,7 @@ resource "metalcloud_server_instance_group" "inst01" {
 
   depends_on = [
     metalcloud_logical_network.net1,
+    metalcloud_infrastructure.infra,
   ]
 }
 
