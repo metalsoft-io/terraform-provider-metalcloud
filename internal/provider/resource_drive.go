@@ -128,7 +128,7 @@ func (r *DriveResource) Create(ctx context.Context, req resource.CreateRequest, 
 			return
 		}
 
-		request.LogicalNetworkId = sdk.PtrFloat32(logicalNetworkId)
+		request.LogicalNetworkId = logicalNetworkId
 	}
 
 	drive, response, err := r.client.DriveAPI.
