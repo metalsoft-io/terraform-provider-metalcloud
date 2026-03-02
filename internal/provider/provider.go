@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
@@ -36,6 +37,7 @@ type MetalCloudProviderModel struct {
 	UserEmail types.String `tfsdk:"user_email"`
 	Logging   types.String `tfsdk:"logging"`
 	Insecure  types.Bool   `tfsdk:"insecure"`
+	Timeout   types.Int32  `tfsdk:"timeout"`
 }
 
 func (p *MetalCloudProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -65,6 +67,10 @@ func (p *MetalCloudProvider) Schema(ctx context.Context, req provider.SchemaRequ
 			},
 			"insecure": schema.BoolAttribute{
 				MarkdownDescription: "Allow insecure connections",
+				Optional:            true,
+			},
+			"timeout": schema.Int32Attribute{
+				MarkdownDescription: "HTTP client timeout in seconds. Defaults to 300 (5 minutes).",
 				Optional:            true,
 			},
 		},
@@ -107,12 +113,23 @@ func (p *MetalCloudProvider) Configure(ctx context.Context, req provider.Configu
 		},
 	}
 
+	// Determine HTTP client timeout (default 5 minutes)
+	timeout := 300 * time.Second
+	if !data.Timeout.IsNull() {
+		timeout = time.Duration(data.Timeout.ValueInt32()) * time.Second
+	}
+
 	// Allow insecure connections if specified
 	if !data.Insecure.IsNull() && data.Insecure.ValueBool() {
 		cfg.HTTPClient = &http.Client{
+			Timeout: timeout,
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			},
+		}
+	} else {
+		cfg.HTTPClient = &http.Client{
+			Timeout: timeout,
 		}
 	}
 

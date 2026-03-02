@@ -46,3 +46,19 @@ dist/
 .env*
 go.work
 go.work.sum
+
+# AI / LLM local config
+CLAUDE.md
+AGENTS.md
+OPENAI.md
+TODO.md
+.github/copilot-instructions.md
+*copilot-instructions.md
+.claude/
+.cursor/
+.continue/
+.llm/
+.llms/
+.ai/
+.prompts/
+.aider*
