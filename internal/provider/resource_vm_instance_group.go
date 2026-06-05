@@ -142,10 +142,10 @@ func (r *VmInstanceGroupResource) Create(ctx context.Context, req resource.Creat
 	}
 
 	request := sdk.CreateVMInstanceGroup{
-		TypeId:        vmTypeId,
+		TypeId:        int64(vmTypeId),
 		InstanceCount: sdk.PtrFloat32(float32(data.InstanceCount.ValueInt64())),
 		DiskSizeGB:    float32(data.DiskSizeGb.ValueInt64()),
-		OsTemplateId:  osTemplateId,
+		OsTemplateId:  int64(osTemplateId),
 	}
 
 	vmInstanceGroup, result, err := r.client.VMInstanceGroupAPI.
@@ -181,14 +181,14 @@ func (r *VmInstanceGroupResource) Create(ctx context.Context, req resource.Creat
 		}
 
 		vmInstanceGroupConfig, response, err := r.client.VMInstanceGroupAPI.
-			GetVMInstanceGroupConfigInfo(ctx, infrastructureId, vmInstanceGroup.Id).
+			GetVMInstanceGroupConfigInfo(ctx, infrastructureId, float32(vmInstanceGroup.Id)).
 			Execute()
 		if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "get VM Instance Group config") {
 			return
 		}
 
 		_, response, err = r.client.VMInstanceGroupAPI.
-			UpdateVMInstanceGroupConfig(ctx, infrastructureId, vmInstanceGroup.Id).
+			UpdateVMInstanceGroupConfig(ctx, infrastructureId, float32(vmInstanceGroup.Id)).
 			UpdateVMInstanceGroup(request).
 			IfMatch(fmt.Sprintf("%d", int(vmInstanceGroupConfig.Revision))).
 			Execute()

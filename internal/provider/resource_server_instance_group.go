@@ -151,9 +151,9 @@ func (r *ServerInstanceGroupResource) Create(ctx context.Context, req resource.C
 	request := sdk.ServerInstanceGroupCreate{
 		Label:               sdk.PtrString(data.Label.ValueString()),
 		ServerGroupName:     sdk.PtrString(data.Name.ValueString()),
-		DefaultServerTypeId: serverTypeId,
+		DefaultServerTypeId: int64(serverTypeId),
 		InstanceCount:       sdk.PtrInt32(data.InstanceCount.ValueInt32()),
-		OsTemplateId:        sdk.PtrInt32(osTemplateId),
+		OsTemplateId:        sdk.PtrInt64(int64(osTemplateId)),
 	}
 
 	if data.StorageControllers != nil {
@@ -209,13 +209,13 @@ func (r *ServerInstanceGroupResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
-	data.ServerInstanceGroupId = convertInt32IdToTfString(serverInstanceGroup.Id)
+	data.ServerInstanceGroupId = convertInt64IdToTfString(serverInstanceGroup.Id)
 
 	tflog.Trace(ctx, fmt.Sprintf("created server instance group resource Id %s", data.ServerInstanceGroupId.ValueString()))
 
 	if data.NetworkConnections != nil {
 		for _, connection := range data.NetworkConnections {
-			err := r.createNetworkConnection(ctx, &resp.Diagnostics, serverInstanceGroup.Id, connection)
+			err := r.createNetworkConnection(ctx, &resp.Diagnostics, int32(serverInstanceGroup.Id), connection)
 			if err != nil {
 				resp.Diagnostics.AddError(
 					"Failed to create network connection",
@@ -263,9 +263,9 @@ func (r *ServerInstanceGroupResource) Read(ctx context.Context, req resource.Rea
 	}
 
 	data.InstanceCount = types.Int32Value(serverInstanceGroup.InstanceCount)
-	data.ServerTypeId = convertInt32IdToTfString(serverInstanceGroup.DefaultServerTypeId)
-	data.OsTemplateId = convertPtrInt32IdToTfString(serverInstanceGroup.OsTemplateId)
-	data.InfrastructureId = convertInt32IdToTfString(serverInstanceGroup.InfrastructureId)
+	data.ServerTypeId = convertInt64IdToTfString(serverInstanceGroup.DefaultServerTypeId)
+	data.OsTemplateId = convertPtrInt64IdToTfString(serverInstanceGroup.OsTemplateId)
+	data.InfrastructureId = convertInt64IdToTfString(serverInstanceGroup.InfrastructureId)
 	data.Label = types.StringValue(serverInstanceGroup.Label)
 	data.Name = types.StringValue(*serverInstanceGroup.ServerGroupName)
 
@@ -357,7 +357,7 @@ func (r *ServerInstanceGroupResource) Update(ctx context.Context, req resource.U
 	}
 
 	if osTemplateId != nil {
-		updates.OsTemplateId = osTemplateId
+		updates.OsTemplateId = sdk.PtrInt64(int64(*osTemplateId))
 	}
 
 	if data.StorageControllers != nil {

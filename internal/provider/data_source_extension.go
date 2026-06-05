@@ -89,7 +89,7 @@ func (d *ExtensionDataSource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
-	data.ExtensionId = convertPtrFloat32IdToTfString(extension.Data[0].Id)
+	data.ExtensionId = convertPtrInt64IdToTfString(extension.Data[0].Id)
 
 	tflog.Trace(ctx, fmt.Sprintf("read extension data source with label '%s' and id '%s'", data.Label.ValueString(), data.ExtensionId.ValueString()))
 

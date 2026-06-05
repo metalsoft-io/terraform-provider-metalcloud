@@ -123,7 +123,7 @@ func (r *InfrastructureResource) Create(ctx context.Context, req resource.Create
 	infrastructure, response, err := r.client.InfrastructureAPI.CreateInfrastructure(ctx).
 		InfrastructureCreate(sdk.InfrastructureCreate{
 			Label:  sdk.PtrString(data.Label.ValueString()),
-			SiteId: float32(siteId),
+			SiteId: int64(siteId),
 			Meta:   &sdk.InfrastructureMeta{},
 		}).
 		Execute()
@@ -131,7 +131,7 @@ func (r *InfrastructureResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	data.InfrastructureId = convertFloat32IdToTfString(infrastructure.Id)
+	data.InfrastructureId = convertInt64IdToTfString(infrastructure.Id)
 
 	tflog.Trace(ctx, fmt.Sprintf("created infrastructure resource Id %s", data.InfrastructureId.ValueString()))
 
@@ -162,7 +162,7 @@ func (r *InfrastructureResource) Read(ctx context.Context, req resource.ReadRequ
 	}
 
 	data.Label = types.StringValue(infrastructure.Label)
-	data.SiteId = convertFloat32IdToTfString(infrastructure.SiteId)
+	data.SiteId = convertInt64IdToTfString(infrastructure.SiteId)
 
 	tflog.Trace(ctx, fmt.Sprintf("read infrastructure resource Id %s", data.InfrastructureId.ValueString()))
 

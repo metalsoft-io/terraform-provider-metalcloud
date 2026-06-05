@@ -92,7 +92,7 @@ func (d *VmTypeDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	data.VmTypeId = convertFloat32IdToTfString(vmTypes.Data[0].Id)
+	data.VmTypeId = convertInt64IdToTfString(vmTypes.Data[0].Id)
 
 	tflog.Trace(ctx, fmt.Sprintf("read VM type data source with label '%s' and id '%s'", data.Label.ValueString(), data.VmTypeId.ValueString()))
 

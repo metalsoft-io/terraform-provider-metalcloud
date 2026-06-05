@@ -78,6 +78,18 @@ func convertPtrInt32IdToTfString(value *int32) types.String {
 	return types.StringValue(strconv.FormatInt(int64(*value), 10))
 }
 
+func convertInt64IdToTfString(value int64) types.String {
+	return types.StringValue(strconv.FormatInt(value, 10))
+}
+
+func convertPtrInt64IdToTfString(value *int64) types.String {
+	if value == nil {
+		return types.StringNull()
+	}
+
+	return types.StringValue(strconv.FormatInt(*value, 10))
+}
+
 func convertFloat32IdToTfString(value float32) types.String {
 	return types.StringValue(strconv.FormatInt(int64(value), 10))
 }
@@ -112,6 +124,18 @@ func ptrFloat32EqualsTfString(a *float32, b types.String) bool {
 	}
 
 	return strconv.FormatInt(int64(*a), 10) == b.ValueString()
+}
+
+func ptrInt64EqualsTfString(a *int64, b types.String) bool {
+	if a == nil && (b.IsNull() || b.IsUnknown()) {
+		return true
+	}
+
+	if a == nil || b.IsNull() || b.IsUnknown() {
+		return false
+	}
+
+	return strconv.FormatInt(*a, 10) == b.ValueString()
 }
 
 func containsStringValue(slice []types.String, value string) bool {

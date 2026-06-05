@@ -117,7 +117,7 @@ func (r *ExtensionInstanceResource) Create(ctx context.Context, req resource.Cre
 
 	request := sdk.CreateExtensionInstance{
 		Label:       sdk.PtrString(data.Label.ValueString()),
-		ExtensionId: sdk.PtrFloat32(extensionId),
+		ExtensionId: sdk.PtrInt64(int64(extensionId)),
 	}
 
 	if len(data.InputVariables) > 0 {
@@ -136,7 +136,7 @@ func (r *ExtensionInstanceResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	data.ExtensionInstanceId = convertFloat32IdToTfString(extensionInstance.Id)
+	data.ExtensionInstanceId = convertInt64IdToTfString(extensionInstance.Id)
 
 	tflog.Trace(ctx, fmt.Sprintf("created extension instance resource Id %s", data.ExtensionInstanceId.ValueString()))
 

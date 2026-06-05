@@ -118,8 +118,8 @@ func (r *LogicalNetworkResource) Create(ctx context.Context, req resource.Create
 		CreateLogicalNetworkFromProfile(sdk.CreateLogicalNetworkFromProfile{
 			Label:                   sdk.PtrString(data.Label.ValueString()),
 			Name:                    sdk.PtrString(data.Name.ValueString()),
-			LogicalNetworkProfileId: logicalNetworkProfileId,
-			InfrastructureId:        *sdk.NewNullableInt32(&infrastructureId),
+			LogicalNetworkProfileId: int64(logicalNetworkProfileId),
+			InfrastructureId:        *sdk.NewNullableInt64(sdk.PtrInt64(int64(infrastructureId))),
 		}).
 		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{201}, "create logical network") {
@@ -128,7 +128,7 @@ func (r *LogicalNetworkResource) Create(ctx context.Context, req resource.Create
 
 	tflog.Trace(ctx, fmt.Sprintf("created logical network: %v", network))
 
-	data.LogicalNetworkId = convertInt32IdToTfString(network.Id)
+	data.LogicalNetworkId = convertInt64IdToTfString(network.Id)
 
 	tflog.Trace(ctx, fmt.Sprintf("created logical network resource Id %s", data.LogicalNetworkId.ValueString()))
 
@@ -178,7 +178,7 @@ func (r *LogicalNetworkResource) Read(ctx context.Context, req resource.ReadRequ
 	}
 
 	if logicalNetwork.InfrastructureId.IsSet() {
-		data.InfrastructureId = convertInt32IdToTfString(*logicalNetwork.InfrastructureId.Get())
+		data.InfrastructureId = convertInt64IdToTfString(*logicalNetwork.InfrastructureId.Get())
 	} else {
 		data.InfrastructureId = types.StringNull()
 	}
