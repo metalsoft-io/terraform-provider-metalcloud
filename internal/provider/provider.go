@@ -163,6 +163,7 @@ func (p *MetalCloudProvider) EphemeralResources(ctx context.Context) []func() ep
 func (p *MetalCloudProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewSiteDataSource,
+		NewStoragePoolDataSource,
 		NewFabricDataSource,
 		NewServerTypeDataSource,
 		NewVmTypeDataSource,
