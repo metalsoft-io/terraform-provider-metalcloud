@@ -21,6 +21,7 @@ The `metalcloud_drive` resource manages iSCSI LUNs (Logical Unit Numbers) that p
 
 - `infrastructure_id` (String) The infrastructure ID where this drive will be created
 - `size_mbytes` (Number) Drive size in megabytes (MB). Minimum size varies by site configuration
+- `storage_pool_id` (String) Id of the storage pool the drive is assigned to. Changing this forces a new drive to be created. Use the `metalcloud_storage_pool` data source to look it up by site and technology
 
 ### Optional
 
