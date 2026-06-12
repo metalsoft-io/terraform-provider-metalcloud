@@ -32,6 +32,7 @@ type DriveResourceModel struct {
 	DriveId          types.String   `tfsdk:"drive_id"`
 	InfrastructureId types.String   `tfsdk:"infrastructure_id"`
 	SizeMb           types.Int32    `tfsdk:"size_mbytes"`
+	StoragePoolId    types.String   `tfsdk:"storage_pool_id"`
 	Label            types.String   `tfsdk:"label"`
 	LogicalNetworkId types.String   `tfsdk:"logical_network_id"`
 	Hosts            []types.String `tfsdk:"hosts"`
@@ -61,6 +62,13 @@ func (r *DriveResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 			"size_mbytes": schema.Int32Attribute{
 				MarkdownDescription: "Drive size in MB",
 				Required:            true,
+			},
+			"storage_pool_id": schema.StringAttribute{
+				MarkdownDescription: "Id of the storage pool the Drive is assigned to. Cannot be changed after creation.",
+				Required:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"label": schema.StringAttribute{
 				MarkdownDescription: "Drive label",
@@ -114,8 +122,14 @@ func (r *DriveResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
+	storagePoolId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Storage Pool Id", data.StoragePoolId)
+	if !ok {
+		return
+	}
+
 	request := sdk.CreateSharedDrive{
-		SizeMb: float32(data.SizeMb.ValueInt32()),
+		SizeMb:        float32(data.SizeMb.ValueInt32()),
+		StoragePoolId: storagePoolId,
 	}
 
 	if data.Label.ValueString() != "" {
