@@ -15,40 +15,6 @@ import (
 	sdk "github.com/metalsoft-io/metalcloud-sdk-go"
 )
 
-func convertTfStringToInt32(diagnostics *diag.Diagnostics, name string, value types.String) (int32, bool) {
-	if value.IsNull() || value.IsUnknown() {
-		return 0, true
-	}
-
-	intValue, err := strconv.Atoi(value.ValueString())
-	if err != nil {
-		diagnostics.AddError(
-			fmt.Sprintf("Invalid %s", name),
-			fmt.Sprintf("Unable to parse %s '%s': %v", name, value.ValueString(), err),
-		)
-		return 0, false
-	}
-
-	return int32(intValue), true
-}
-
-func convertTfStringToPtrInt32(diagnostics *diag.Diagnostics, name string, value types.String) (*int32, bool) {
-	if value.IsNull() || value.IsUnknown() {
-		return nil, true
-	}
-
-	intValue, err := strconv.Atoi(value.ValueString())
-	if err != nil {
-		diagnostics.AddError(
-			fmt.Sprintf("Invalid %s", name),
-			fmt.Sprintf("Unable to parse %s '%s': %v", name, value.ValueString(), err),
-		)
-		return nil, false
-	}
-
-	return sdk.PtrInt32(int32(intValue)), true
-}
-
 func convertTfStringToFloat32(diagnostics *diag.Diagnostics, name string, value types.String) (float32, bool) {
 	if value.IsNull() || value.IsUnknown() {
 		return 0, true
@@ -66,16 +32,38 @@ func convertTfStringToFloat32(diagnostics *diag.Diagnostics, name string, value 
 	return float32(intValue), true
 }
 
-func convertInt32IdToTfString(value int32) types.String {
-	return types.StringValue(strconv.FormatInt(int64(value), 10))
-}
-
-func convertPtrInt32IdToTfString(value *int32) types.String {
-	if value == nil {
-		return types.StringNull()
+func convertTfStringToInt64(diagnostics *diag.Diagnostics, name string, value types.String) (int64, bool) {
+	if value.IsNull() || value.IsUnknown() {
+		return 0, true
 	}
 
-	return types.StringValue(strconv.FormatInt(int64(*value), 10))
+	intValue, err := strconv.ParseInt(value.ValueString(), 10, 64)
+	if err != nil {
+		diagnostics.AddError(
+			fmt.Sprintf("Invalid %s", name),
+			fmt.Sprintf("Unable to parse %s '%s': %v", name, value.ValueString(), err),
+		)
+		return 0, false
+	}
+
+	return intValue, true
+}
+
+func convertTfStringToPtrInt64(diagnostics *diag.Diagnostics, name string, value types.String) (*int64, bool) {
+	if value.IsNull() || value.IsUnknown() {
+		return nil, true
+	}
+
+	intValue, err := strconv.ParseInt(value.ValueString(), 10, 64)
+	if err != nil {
+		diagnostics.AddError(
+			fmt.Sprintf("Invalid %s", name),
+			fmt.Sprintf("Unable to parse %s '%s': %v", name, value.ValueString(), err),
+		)
+		return nil, false
+	}
+
+	return sdk.PtrInt64(intValue), true
 }
 
 func convertInt64IdToTfString(value int64) types.String {
@@ -90,16 +78,20 @@ func convertPtrInt64IdToTfString(value *int64) types.String {
 	return types.StringValue(strconv.FormatInt(*value, 10))
 }
 
-func convertFloat32IdToTfString(value float32) types.String {
-	return types.StringValue(strconv.FormatInt(int64(value), 10))
-}
-
-func convertPtrFloat32IdToTfString(value *float32) types.String {
-	if value == nil {
-		return types.StringNull()
+func ptrInt64EqualsTfString(a *int64, b types.String) bool {
+	if a == nil && (b.IsNull() || b.IsUnknown()) {
+		return true
 	}
 
-	return types.StringValue(strconv.FormatInt(int64(*value), 10))
+	if a == nil || b.IsNull() || b.IsUnknown() {
+		return false
+	}
+
+	return strconv.FormatInt(*a, 10) == b.ValueString()
+}
+
+func convertFloat32IdToTfString(value float32) types.String {
+	return types.StringValue(strconv.FormatInt(int64(value), 10))
 }
 
 func convertFloat32ToTfInt32(value float32) types.Int32 {
@@ -112,30 +104,6 @@ func stringEqualsTfString(a string, b types.String) bool {
 	}
 
 	return a == b.ValueString()
-}
-
-func ptrFloat32EqualsTfString(a *float32, b types.String) bool {
-	if a == nil && (b.IsNull() || b.IsUnknown()) {
-		return true
-	}
-
-	if a == nil || b.IsNull() || b.IsUnknown() {
-		return false
-	}
-
-	return strconv.FormatInt(int64(*a), 10) == b.ValueString()
-}
-
-func ptrInt64EqualsTfString(a *int64, b types.String) bool {
-	if a == nil && (b.IsNull() || b.IsUnknown()) {
-		return true
-	}
-
-	if a == nil || b.IsNull() || b.IsUnknown() {
-		return false
-	}
-
-	return strconv.FormatInt(*a, 10) == b.ValueString()
 }
 
 func containsStringValue(slice []types.String, value string) bool {
@@ -168,7 +136,7 @@ func ensureNoError(diagnostics *diag.Diagnostics, err error, result *http.Respon
 }
 
 func deployInfrastructure(ctx context.Context, client *sdk.APIClient, dataInfrastructureId types.String, dataAllowDataLoss types.Bool, dataAwaitDeployFinish types.Bool, diagnostics *diag.Diagnostics) bool {
-	infrastructureId, ok := convertTfStringToFloat32(diagnostics, "Infrastructure Id", dataInfrastructureId)
+	infrastructureId, ok := convertTfStringToInt64(diagnostics, "Infrastructure Id", dataInfrastructureId)
 	if !ok {
 		return false
 	}

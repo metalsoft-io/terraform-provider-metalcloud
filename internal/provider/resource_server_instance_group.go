@@ -133,17 +133,17 @@ func (r *ServerInstanceGroupResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
-	infrastructureId, ok := convertTfStringToInt32(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
+	infrastructureId, ok := convertTfStringToInt64(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
 	if !ok {
 		return
 	}
 
-	serverTypeId, ok := convertTfStringToInt32(&resp.Diagnostics, "Server Type Id", data.ServerTypeId)
+	serverTypeId, ok := convertTfStringToInt64(&resp.Diagnostics, "Server Type Id", data.ServerTypeId)
 	if !ok {
 		return
 	}
 
-	osTemplateId, ok := convertTfStringToInt32(&resp.Diagnostics, "OS Template Id", data.OsTemplateId)
+	osTemplateId, ok := convertTfStringToInt64(&resp.Diagnostics, "OS Template Id", data.OsTemplateId)
 	if !ok {
 		return
 	}
@@ -151,9 +151,9 @@ func (r *ServerInstanceGroupResource) Create(ctx context.Context, req resource.C
 	request := sdk.ServerInstanceGroupCreate{
 		Label:               sdk.PtrString(data.Label.ValueString()),
 		ServerGroupName:     sdk.PtrString(data.Name.ValueString()),
-		DefaultServerTypeId: int64(serverTypeId),
+		DefaultServerTypeId: serverTypeId,
 		InstanceCount:       sdk.PtrInt32(data.InstanceCount.ValueInt32()),
-		OsTemplateId:        sdk.PtrInt64(int64(osTemplateId)),
+		OsTemplateId:        sdk.PtrInt64(osTemplateId),
 	}
 
 	if data.StorageControllers != nil {
@@ -215,7 +215,7 @@ func (r *ServerInstanceGroupResource) Create(ctx context.Context, req resource.C
 
 	if data.NetworkConnections != nil {
 		for _, connection := range data.NetworkConnections {
-			err := r.createNetworkConnection(ctx, &resp.Diagnostics, int32(serverInstanceGroup.Id), connection)
+			err := r.createNetworkConnection(ctx, &resp.Diagnostics, serverInstanceGroup.Id, connection)
 			if err != nil {
 				resp.Diagnostics.AddError(
 					"Failed to create network connection",
@@ -242,7 +242,7 @@ func (r *ServerInstanceGroupResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
-	serverInstanceGroupId, ok := convertTfStringToInt32(&resp.Diagnostics, "Server Instance Group Id", data.ServerInstanceGroupId)
+	serverInstanceGroupId, ok := convertTfStringToInt64(&resp.Diagnostics, "Server Instance Group Id", data.ServerInstanceGroupId)
 	if !ok {
 		return
 	}
@@ -333,7 +333,7 @@ func (r *ServerInstanceGroupResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
-	serverInstanceGroupId, ok := convertTfStringToInt32(&resp.Diagnostics, "Server Instance Group Id", data.ServerInstanceGroupId)
+	serverInstanceGroupId, ok := convertTfStringToInt64(&resp.Diagnostics, "Server Instance Group Id", data.ServerInstanceGroupId)
 	if !ok {
 		return
 	}
@@ -345,7 +345,7 @@ func (r *ServerInstanceGroupResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
-	osTemplateId, ok := convertTfStringToPtrInt32(&resp.Diagnostics, "OS Template Id", data.OsTemplateId)
+	osTemplateId, ok := convertTfStringToPtrInt64(&resp.Diagnostics, "OS Template Id", data.OsTemplateId)
 	if !ok {
 		return
 	}
@@ -357,7 +357,7 @@ func (r *ServerInstanceGroupResource) Update(ctx context.Context, req resource.U
 	}
 
 	if osTemplateId != nil {
-		updates.OsTemplateId = sdk.PtrInt64(int64(*osTemplateId))
+		updates.OsTemplateId = osTemplateId
 	}
 
 	if data.StorageControllers != nil {
@@ -504,7 +504,7 @@ func (r *ServerInstanceGroupResource) Delete(ctx context.Context, req resource.D
 		return
 	}
 
-	serverInstanceGroupId, ok := convertTfStringToInt32(&resp.Diagnostics, "Server Instance Group Id", data.ServerInstanceGroupId)
+	serverInstanceGroupId, ok := convertTfStringToInt64(&resp.Diagnostics, "Server Instance Group Id", data.ServerInstanceGroupId)
 	if !ok {
 		return
 	}
@@ -539,8 +539,8 @@ func (r *ServerInstanceGroupResource) ImportState(ctx context.Context, req resou
 	resource.ImportStatePassthroughID(ctx, path.Root("server_instance_group_id"), req, resp)
 }
 
-func (r *ServerInstanceGroupResource) createNetworkConnection(ctx context.Context, diagnostics *diag.Diagnostics, serverInstanceGroupId int32, connection NetworkConnectionModel) error {
-	logicalNetworkId, ok := convertTfStringToInt32(diagnostics, "Logical Network Id", connection.LogicalNetworkId)
+func (r *ServerInstanceGroupResource) createNetworkConnection(ctx context.Context, diagnostics *diag.Diagnostics, serverInstanceGroupId int64, connection NetworkConnectionModel) error {
+	logicalNetworkId, ok := convertTfStringToInt64(diagnostics, "Logical Network Id", connection.LogicalNetworkId)
 	if !ok {
 		return fmt.Errorf("invalid Logical Network Id: %s", connection.LogicalNetworkId.ValueString())
 	}
@@ -572,7 +572,7 @@ func (r *ServerInstanceGroupResource) createNetworkConnection(ctx context.Contex
 	return nil
 }
 
-func (r *ServerInstanceGroupResource) readNetworkConnections(ctx context.Context, diagnostics *diag.Diagnostics, serverInstanceGroupId int32) ([]NetworkConnectionModel, error) {
+func (r *ServerInstanceGroupResource) readNetworkConnections(ctx context.Context, diagnostics *diag.Diagnostics, serverInstanceGroupId int64) ([]NetworkConnectionModel, error) {
 	networkConnections, response, err := r.client.ServerInstanceGroupAPI.
 		GetServerInstanceGroupNetworkConfigurationConnections(ctx, serverInstanceGroupId).
 		Execute()
@@ -597,7 +597,7 @@ func (r *ServerInstanceGroupResource) readNetworkConnections(ctx context.Context
 	return result, nil
 }
 
-func (r *ServerInstanceGroupResource) updateNetworkConnection(ctx context.Context, diagnostics *diag.Diagnostics, serverInstanceGroupId int32, connection NetworkConnectionModel, existingConnection NetworkConnectionModel) error {
+func (r *ServerInstanceGroupResource) updateNetworkConnection(ctx context.Context, diagnostics *diag.Diagnostics, serverInstanceGroupId int64, connection NetworkConnectionModel, existingConnection NetworkConnectionModel) error {
 	logicalNetworkId, ok := convertTfStringToFloat32(diagnostics, "Logical Network Id", connection.LogicalNetworkId)
 	if !ok {
 		return fmt.Errorf("invalid Logical Network Id: %s", connection.LogicalNetworkId.ValueString())
@@ -636,8 +636,8 @@ func (r *ServerInstanceGroupResource) updateNetworkConnection(ctx context.Contex
 	return nil
 }
 
-func (r *ServerInstanceGroupResource) deleteNetworkConnection(ctx context.Context, diagnostics *diag.Diagnostics, serverInstanceGroupId int32, connectionId types.String) error {
-	logicalNetworkId, ok := convertTfStringToInt32(diagnostics, "Logical Network Id", connectionId)
+func (r *ServerInstanceGroupResource) deleteNetworkConnection(ctx context.Context, diagnostics *diag.Diagnostics, serverInstanceGroupId int64, connectionId types.String) error {
+	logicalNetworkId, ok := convertTfStringToInt64(diagnostics, "Logical Network Id", connectionId)
 	if !ok {
 		return fmt.Errorf("invalid Logical Network Id: %s", connectionId.ValueString())
 	}

@@ -115,7 +115,7 @@ func (r *InfrastructureResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	siteId, ok := convertTfStringToInt32(&resp.Diagnostics, "Site Id", data.SiteId)
+	siteId, ok := convertTfStringToInt64(&resp.Diagnostics, "Site Id", data.SiteId)
 	if !ok {
 		return
 	}
@@ -123,7 +123,7 @@ func (r *InfrastructureResource) Create(ctx context.Context, req resource.Create
 	infrastructure, response, err := r.client.InfrastructureAPI.CreateInfrastructure(ctx).
 		InfrastructureCreate(sdk.InfrastructureCreate{
 			Label:  sdk.PtrString(data.Label.ValueString()),
-			SiteId: int64(siteId),
+			SiteId: siteId,
 			Meta:   &sdk.InfrastructureMeta{},
 		}).
 		Execute()
@@ -149,7 +149,7 @@ func (r *InfrastructureResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
-	infrastructureId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
+	infrastructureId, ok := convertTfStringToInt64(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
 	if !ok {
 		return
 	}
@@ -180,7 +180,7 @@ func (r *InfrastructureResource) Update(ctx context.Context, req resource.Update
 		return
 	}
 
-	infrastructureId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
+	infrastructureId, ok := convertTfStringToInt64(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
 	if !ok {
 		return
 	}
@@ -193,7 +193,7 @@ func (r *InfrastructureResource) Update(ctx context.Context, req resource.Update
 	}
 
 	_, response, err = r.client.InfrastructureAPI.
-		UpdateInfrastructureConfiguration(ctx, float32(infrastructureId)).
+		UpdateInfrastructureConfiguration(ctx, infrastructureId).
 		UpdateInfrastructure(sdk.UpdateInfrastructure{
 			Label: sdk.PtrString(data.Label.ValueString()),
 		}).
@@ -219,7 +219,7 @@ func (r *InfrastructureResource) Delete(ctx context.Context, req resource.Delete
 		return
 	}
 
-	infrastructureId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
+	infrastructureId, ok := convertTfStringToInt64(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
 	if !ok {
 		return
 	}

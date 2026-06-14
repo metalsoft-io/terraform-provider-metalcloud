@@ -103,12 +103,12 @@ func (r *LogicalNetworkResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	infrastructureId, ok := convertTfStringToInt32(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
+	infrastructureId, ok := convertTfStringToInt64(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
 	if !ok {
 		return
 	}
 
-	logicalNetworkProfileId, ok := convertTfStringToInt32(&resp.Diagnostics, "Logical Network ProfileId Id", data.LogicalNetworkProfileId)
+	logicalNetworkProfileId, ok := convertTfStringToInt64(&resp.Diagnostics, "Logical Network ProfileId Id", data.LogicalNetworkProfileId)
 	if !ok {
 		return
 	}
@@ -118,8 +118,8 @@ func (r *LogicalNetworkResource) Create(ctx context.Context, req resource.Create
 		CreateLogicalNetworkFromProfile(sdk.CreateLogicalNetworkFromProfile{
 			Label:                   sdk.PtrString(data.Label.ValueString()),
 			Name:                    sdk.PtrString(data.Name.ValueString()),
-			LogicalNetworkProfileId: int64(logicalNetworkProfileId),
-			InfrastructureId:        *sdk.NewNullableInt64(sdk.PtrInt64(int64(infrastructureId))),
+			LogicalNetworkProfileId: logicalNetworkProfileId,
+			InfrastructureId:        *sdk.NewNullableInt64(&infrastructureId),
 		}).
 		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{201}, "create logical network") {
@@ -146,7 +146,7 @@ func (r *LogicalNetworkResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
-	logicalNetworkId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Logical Network Id", data.LogicalNetworkId)
+	logicalNetworkId, ok := convertTfStringToInt64(&resp.Diagnostics, "Logical Network Id", data.LogicalNetworkId)
 	if !ok {
 		return
 	}
@@ -199,7 +199,7 @@ func (r *LogicalNetworkResource) Update(ctx context.Context, req resource.Update
 		return
 	}
 
-	logicalNetworkId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Logical Network Id", data.LogicalNetworkId)
+	logicalNetworkId, ok := convertTfStringToInt64(&resp.Diagnostics, "Logical Network Id", data.LogicalNetworkId)
 	if !ok {
 		return
 	}
@@ -212,7 +212,7 @@ func (r *LogicalNetworkResource) Update(ctx context.Context, req resource.Update
 	}
 
 	_, response, err = r.client.LogicalNetworkAPI.
-		UpdateLogicalNetwork(ctx, float32(logicalNetworkId)).
+		UpdateLogicalNetwork(ctx, logicalNetworkId).
 		UpdateLogicalNetwork(sdk.UpdateLogicalNetwork{
 			Label: sdk.PtrString(data.Label.ValueString()),
 			Name:  sdk.PtrString(data.Name.ValueString()),
@@ -239,7 +239,7 @@ func (r *LogicalNetworkResource) Delete(ctx context.Context, req resource.Delete
 		return
 	}
 
-	logicalNetworkId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Logical Network Id", data.LogicalNetworkId)
+	logicalNetworkId, ok := convertTfStringToInt64(&resp.Diagnostics, "Logical Network Id", data.LogicalNetworkId)
 	if !ok {
 		return
 	}
@@ -252,7 +252,7 @@ func (r *LogicalNetworkResource) Delete(ctx context.Context, req resource.Delete
 	}
 
 	response, err = r.client.LogicalNetworkAPI.
-		DeleteLogicalNetwork(ctx, float32(logicalNetworkId)).
+		DeleteLogicalNetwork(ctx, logicalNetworkId).
 		IfMatch(fmt.Sprintf("%d", logicalNetwork.Revision)).
 		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{204, 404}, "delete logical network") {
