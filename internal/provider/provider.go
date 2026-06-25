@@ -153,6 +153,7 @@ func (p *MetalCloudProvider) Resources(ctx context.Context) []func() resource.Re
 		NewDriveResource,
 		NewExtensionInstanceResource,
 		NewInfrastructureDeployerResource,
+		NewNetworkDeviceResource,
 	}
 }
 
