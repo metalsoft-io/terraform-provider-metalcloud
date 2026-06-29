@@ -89,7 +89,7 @@ func (d *SiteDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	data.SiteId = convertInt32IdToTfString(site.Data[0].Id)
+	data.SiteId = convertInt64IdToTfString(site.Data[0].Id)
 
 	tflog.Trace(ctx, fmt.Sprintf("read site data source with label '%s' and id '%s'", data.Label.ValueString(), data.SiteId.ValueString()))
 

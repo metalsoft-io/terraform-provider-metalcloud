@@ -105,19 +105,19 @@ func (r *ExtensionInstanceResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	infrastructureId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
+	infrastructureId, ok := convertTfStringToInt64(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
 	if !ok {
 		return
 	}
 
-	extensionId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Extension Id", data.ExtensionId)
+	extensionId, ok := convertTfStringToInt64(&resp.Diagnostics, "Extension Id", data.ExtensionId)
 	if !ok {
 		return
 	}
 
 	request := sdk.CreateExtensionInstance{
 		Label:       sdk.PtrString(data.Label.ValueString()),
-		ExtensionId: sdk.PtrFloat32(extensionId),
+		ExtensionId: sdk.PtrInt64(extensionId),
 	}
 
 	if len(data.InputVariables) > 0 {
@@ -136,7 +136,7 @@ func (r *ExtensionInstanceResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	data.ExtensionInstanceId = convertFloat32IdToTfString(extensionInstance.Id)
+	data.ExtensionInstanceId = convertInt64IdToTfString(extensionInstance.Id)
 
 	tflog.Trace(ctx, fmt.Sprintf("created extension instance resource Id %s", data.ExtensionInstanceId.ValueString()))
 
@@ -154,7 +154,7 @@ func (r *ExtensionInstanceResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	extensionInstanceId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Extension Instance Id", data.ExtensionInstanceId)
+	extensionInstanceId, ok := convertTfStringToInt64(&resp.Diagnostics, "Extension Instance Id", data.ExtensionInstanceId)
 	if !ok {
 		return
 	}
@@ -216,7 +216,7 @@ func (r *ExtensionInstanceResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	extensionInstanceId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Extension Instance Id", data.ExtensionInstanceId)
+	extensionInstanceId, ok := convertTfStringToInt64(&resp.Diagnostics, "Extension Instance Id", data.ExtensionInstanceId)
 	if !ok {
 		return
 	}
@@ -262,7 +262,7 @@ func (r *ExtensionInstanceResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
-	extensionInstanceId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Extension Instance Id", data.ExtensionInstanceId)
+	extensionInstanceId, ok := convertTfStringToInt64(&resp.Diagnostics, "Extension Instance Id", data.ExtensionInstanceId)
 	if !ok {
 		return
 	}

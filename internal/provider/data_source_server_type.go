@@ -89,7 +89,7 @@ func (d *ServerTypeDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 
-	data.ServerTypeId = convertFloat32IdToTfString(serverType.Data[0].Id)
+	data.ServerTypeId = convertInt64IdToTfString(serverType.Data[0].Id)
 
 	tflog.Trace(ctx, fmt.Sprintf("read server_type data source with label '%s' and id '%s'", data.Label.ValueString(), data.ServerTypeId.ValueString()))
 

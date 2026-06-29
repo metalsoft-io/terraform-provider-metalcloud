@@ -99,10 +99,10 @@ func (d *LogicalNetworkDataSource) Read(ctx context.Context, req datasource.Read
 		return
 	}
 
-	var logicalNetworkId float32
+	var logicalNetworkId int64
 	for _, logicalNetwork := range logicalNetworks.Data {
 		if fmt.Sprintf("%d", logicalNetwork.FabricId) == data.FabricId.ValueString() {
-			logicalNetworkId = float32(logicalNetwork.Id)
+			logicalNetworkId = logicalNetwork.Id
 			break
 		}
 	}
@@ -112,7 +112,7 @@ func (d *LogicalNetworkDataSource) Read(ctx context.Context, req datasource.Read
 		return
 	}
 
-	data.LogicalNetworkId = convertFloat32IdToTfString(logicalNetworkId)
+	data.LogicalNetworkId = convertInt64IdToTfString(logicalNetworkId)
 
 	tflog.Trace(ctx, fmt.Sprintf("read logical network data source with label '%s' and id '%s'", data.Label.ValueString(), data.LogicalNetworkId.ValueString()))
 

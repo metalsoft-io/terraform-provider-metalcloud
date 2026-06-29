@@ -95,15 +95,15 @@ func (d *InfrastructureDataSource) Read(ctx context.Context, req datasource.Read
 	}
 
 	if len(infrastructure.Data) > 0 {
-		if convertFloat32IdToTfString(infrastructure.Data[0].SiteId) != data.SiteId {
+		if convertInt64IdToTfString(infrastructure.Data[0].SiteId) != data.SiteId {
 			resp.Diagnostics.AddError("Site mismatch", fmt.Sprintf("Site does not match expected value %s", data.SiteId.ValueString()))
 			return
 		}
 
-		data.InfrastructureId = convertFloat32IdToTfString(infrastructure.Data[0].Id)
+		data.InfrastructureId = convertInt64IdToTfString(infrastructure.Data[0].Id)
 	} else if data.CreateIfMissing.ValueBool() {
 		// Create the infrastructure if it does not exist
-		siteId, ok := convertTfStringToInt32(&resp.Diagnostics, "Site Id", data.SiteId)
+		siteId, ok := convertTfStringToInt64(&resp.Diagnostics, "Site Id", data.SiteId)
 		if !ok {
 			return
 		}
@@ -111,7 +111,7 @@ func (d *InfrastructureDataSource) Read(ctx context.Context, req datasource.Read
 		infrastructure, response, err := d.client.InfrastructureAPI.CreateInfrastructure(ctx).
 			InfrastructureCreate(sdk.InfrastructureCreate{
 				Label:  sdk.PtrString(data.Label.ValueString()),
-				SiteId: float32(siteId),
+				SiteId: siteId,
 				Meta:   &sdk.InfrastructureMeta{},
 			}).
 			Execute()
@@ -119,7 +119,7 @@ func (d *InfrastructureDataSource) Read(ctx context.Context, req datasource.Read
 			return
 		}
 
-		data.InfrastructureId = convertFloat32IdToTfString(infrastructure.Id)
+		data.InfrastructureId = convertInt64IdToTfString(infrastructure.Id)
 	} else {
 		resp.Diagnostics.AddError(
 			"Error getting infrastructure",

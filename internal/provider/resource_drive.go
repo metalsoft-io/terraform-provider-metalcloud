@@ -117,12 +117,12 @@ func (r *DriveResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	infrastructureId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
+	infrastructureId, ok := convertTfStringToInt64(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
 	if !ok {
 		return
 	}
 
-	storagePoolId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Storage Pool Id", data.StoragePoolId)
+	storagePoolId, ok := convertTfStringToInt64(&resp.Diagnostics, "Storage Pool Id", data.StoragePoolId)
 	if !ok {
 		return
 	}
@@ -137,12 +137,12 @@ func (r *DriveResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 
 	if data.LogicalNetworkId.ValueString() != "" {
-		logicalNetworkId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Logical Network Id", data.LogicalNetworkId)
+		logicalNetworkId, ok := convertTfStringToInt64(&resp.Diagnostics, "Logical Network Id", data.LogicalNetworkId)
 		if !ok {
 			return
 		}
 
-		request.LogicalNetworkId = sdk.PtrFloat32(logicalNetworkId)
+		request.LogicalNetworkId = sdk.PtrInt64(logicalNetworkId)
 	}
 
 	drive, response, err := r.client.DriveAPI.
@@ -153,7 +153,7 @@ func (r *DriveResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	data.DriveId = convertFloat32IdToTfString(drive.Id)
+	data.DriveId = convertInt64IdToTfString(drive.Id)
 
 	tflog.Trace(ctx, fmt.Sprintf("created drive resource Id %s", data.DriveId.ValueString()))
 
@@ -162,7 +162,7 @@ func (r *DriveResource) Create(ctx context.Context, req resource.CreateRequest, 
 		request := sdk.SharedDriveHostsModifyBulk{}
 
 		for _, host := range data.Hosts {
-			hostId, ok := convertTfStringToFloat32(&resp.Diagnostics, "host Id", host)
+			hostId, ok := convertTfStringToInt64(&resp.Diagnostics, "host Id", host)
 			if !ok {
 				return
 			}
@@ -199,12 +199,12 @@ func (r *DriveResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	infrastructureId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
+	infrastructureId, ok := convertTfStringToInt64(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
 	if !ok {
 		return
 	}
 
-	driveId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Drive Id", data.DriveId)
+	driveId, ok := convertTfStringToInt64(&resp.Diagnostics, "Drive Id", data.DriveId)
 	if !ok {
 		return
 	}
@@ -227,7 +227,7 @@ func (r *DriveResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	data.SizeMb = convertFloat32ToTfInt32(drive.SizeMb)
 	data.Label = types.StringValue(drive.Label)
 	if drive.LogicalNetworkId != nil {
-		data.LogicalNetworkId = convertFloat32IdToTfString(*drive.LogicalNetworkId)
+		data.LogicalNetworkId = convertInt64IdToTfString(*drive.LogicalNetworkId)
 	} else {
 		data.LogicalNetworkId = types.StringNull()
 	}
@@ -267,12 +267,12 @@ func (r *DriveResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	infrastructureId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
+	infrastructureId, ok := convertTfStringToInt64(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
 	if !ok {
 		return
 	}
 
-	driveId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Drive Id", data.DriveId)
+	driveId, ok := convertTfStringToInt64(&resp.Diagnostics, "Drive Id", data.DriveId)
 	if !ok {
 		return
 	}
@@ -297,13 +297,13 @@ func (r *DriveResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		mustUpdate = true
 	}
 
-	if !ptrFloat32EqualsTfString(drive.LogicalNetworkId, data.LogicalNetworkId) {
-		logicalNetworkId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Logical Network Id", data.LogicalNetworkId)
+	if !ptrInt64EqualsTfString(drive.LogicalNetworkId, data.LogicalNetworkId) {
+		logicalNetworkId, ok := convertTfStringToInt64(&resp.Diagnostics, "Logical Network Id", data.LogicalNetworkId)
 		if !ok {
 			return
 		}
 
-		request.LogicalNetworkId = sdk.PtrFloat32(logicalNetworkId)
+		request.LogicalNetworkId = sdk.PtrInt64(logicalNetworkId)
 		mustUpdate = true
 	}
 
@@ -342,7 +342,7 @@ func (r *DriveResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	// Find hosts to add
 	for _, host := range plannedHosts {
 		if !containsStringValue(existingHosts, host.ValueString()) {
-			hostId, ok := convertTfStringToFloat32(&resp.Diagnostics, "host Id", host)
+			hostId, ok := convertTfStringToInt64(&resp.Diagnostics, "host Id", host)
 			if !ok {
 				return
 			}
@@ -357,7 +357,7 @@ func (r *DriveResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	// Find hosts to remove
 	for _, host := range existingHosts {
 		if !containsStringValue(plannedHosts, host.ValueString()) {
-			hostId, ok := convertTfStringToFloat32(&resp.Diagnostics, "host Id", host)
+			hostId, ok := convertTfStringToInt64(&resp.Diagnostics, "host Id", host)
 			if !ok {
 				return
 			}
@@ -396,12 +396,12 @@ func (r *DriveResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 		return
 	}
 
-	infrastructureId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
+	infrastructureId, ok := convertTfStringToInt64(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
 	if !ok {
 		return
 	}
 
-	driveId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Drive Id", data.DriveId)
+	driveId, ok := convertTfStringToInt64(&resp.Diagnostics, "Drive Id", data.DriveId)
 	if !ok {
 		return
 	}

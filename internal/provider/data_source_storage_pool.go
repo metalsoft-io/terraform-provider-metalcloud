@@ -140,7 +140,7 @@ func (d *StoragePoolDataSource) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
-	data.StoragePoolId = convertFloat32IdToTfString(storage.Id)
+	data.StoragePoolId = convertInt64IdToTfString(storage.Id)
 
 	tflog.Trace(ctx, fmt.Sprintf("read storage pool data source for site '%s' with id '%s'", data.SiteId.ValueString(), data.StoragePoolId.ValueString()))
 

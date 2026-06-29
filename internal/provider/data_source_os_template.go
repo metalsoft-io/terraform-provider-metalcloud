@@ -92,7 +92,7 @@ func (d *OsTemplateDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 
-	data.OsTemplateId = convertInt32IdToTfString(templates.Data[0].Id)
+	data.OsTemplateId = convertInt64IdToTfString(templates.Data[0].Id)
 
 	tflog.Trace(ctx, fmt.Sprintf("read OS template data source with label '%s' and id '%s'", data.Label.ValueString(), data.OsTemplateId.ValueString()))
 

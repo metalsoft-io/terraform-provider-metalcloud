@@ -126,17 +126,17 @@ func (r *VmInstanceGroupResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
-	infrastructureId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
+	infrastructureId, ok := convertTfStringToInt64(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
 	if !ok {
 		return
 	}
 
-	vmTypeId, ok := convertTfStringToFloat32(&resp.Diagnostics, "VM Type Id", data.VmTypeId)
+	vmTypeId, ok := convertTfStringToInt64(&resp.Diagnostics, "VM Type Id", data.VmTypeId)
 	if !ok {
 		return
 	}
 
-	osTemplateId, ok := convertTfStringToFloat32(&resp.Diagnostics, "OS Template Id", data.OsTemplateId)
+	osTemplateId, ok := convertTfStringToInt64(&resp.Diagnostics, "OS Template Id", data.OsTemplateId)
 	if !ok {
 		return
 	}
@@ -161,7 +161,7 @@ func (r *VmInstanceGroupResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
-	data.VmInstanceGroupId = types.StringValue(fmt.Sprintf("%d", int32(vmInstanceGroup.Id)))
+	data.VmInstanceGroupId = convertInt64IdToTfString(vmInstanceGroup.Id)
 
 	tflog.Trace(ctx, fmt.Sprintf("created VM instance group resource Id %s", data.VmInstanceGroupId.ValueString()))
 
@@ -199,7 +199,7 @@ func (r *VmInstanceGroupResource) Create(ctx context.Context, req resource.Creat
 
 	if data.NetworkConnections != nil {
 		for _, connection := range data.NetworkConnections {
-			err := r.createVmNetworkConnection(ctx, &resp.Diagnostics, int32(infrastructureId), int32(vmInstanceGroup.Id), connection)
+			err := r.createVmNetworkConnection(ctx, &resp.Diagnostics, infrastructureId, vmInstanceGroup.Id, connection)
 			if err != nil {
 				resp.Diagnostics.AddError(
 					"Failed to create network connection",
@@ -226,12 +226,12 @@ func (r *VmInstanceGroupResource) Read(ctx context.Context, req resource.ReadReq
 		return
 	}
 
-	infrastructureId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
+	infrastructureId, ok := convertTfStringToInt64(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
 	if !ok {
 		return
 	}
 
-	vmInstanceGroupId, ok := convertTfStringToFloat32(&resp.Diagnostics, "VM Instance Group Id", data.VmInstanceGroupId)
+	vmInstanceGroupId, ok := convertTfStringToInt64(&resp.Diagnostics, "VM Instance Group Id", data.VmInstanceGroupId)
 	if !ok {
 		return
 	}
@@ -259,7 +259,7 @@ func (r *VmInstanceGroupResource) Read(ctx context.Context, req resource.ReadReq
 	tflog.Trace(ctx, fmt.Sprintf("read VM instance group resource Id %s", data.VmInstanceGroupId.ValueString()))
 
 	// Read network connections
-	networkConnections, err := r.readVmNetworkConnections(ctx, &resp.Diagnostics, int32(infrastructureId), int32(vmInstanceGroupId))
+	networkConnections, err := r.readVmNetworkConnections(ctx, &resp.Diagnostics, infrastructureId, vmInstanceGroupId)
 	if err != nil {
 		return
 	}
@@ -293,12 +293,12 @@ func (r *VmInstanceGroupResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
-	infrastructureId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
+	infrastructureId, ok := convertTfStringToInt64(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
 	if !ok {
 		return
 	}
 
-	vmInstanceGroupId, ok := convertTfStringToFloat32(&resp.Diagnostics, "VM Instance Group Id", data.VmInstanceGroupId)
+	vmInstanceGroupId, ok := convertTfStringToInt64(&resp.Diagnostics, "VM Instance Group Id", data.VmInstanceGroupId)
 	if !ok {
 		return
 	}
@@ -342,7 +342,7 @@ func (r *VmInstanceGroupResource) Update(ctx context.Context, req resource.Updat
 
 	// Handle network connections
 	// First, read existing connections
-	existingNetworkConnections, err := r.readVmNetworkConnections(ctx, &resp.Diagnostics, int32(infrastructureId), int32(vmInstanceGroupId))
+	existingNetworkConnections, err := r.readVmNetworkConnections(ctx, &resp.Diagnostics, infrastructureId, vmInstanceGroupId)
 	if err != nil {
 		return
 	}
@@ -358,7 +358,7 @@ func (r *VmInstanceGroupResource) Update(ctx context.Context, req resource.Updat
 		for _, connection := range data.NetworkConnections {
 			if existingConnectionMap[connection.LogicalNetworkId.ValueString()] == (NetworkConnectionModel{}) {
 				// This connection is not in the existing connections, so we will create it
-				err := r.createVmNetworkConnection(ctx, &resp.Diagnostics, int32(infrastructureId), int32(vmInstanceGroupId), connection)
+				err := r.createVmNetworkConnection(ctx, &resp.Diagnostics, infrastructureId, vmInstanceGroupId, connection)
 				if err != nil {
 					resp.Diagnostics.AddError(
 						"Failed to create network connection",
@@ -370,7 +370,7 @@ func (r *VmInstanceGroupResource) Update(ctx context.Context, req resource.Updat
 				tflog.Trace(ctx, fmt.Sprintf("created new network connection %s for VM instance group resource Id %d", connection.LogicalNetworkId.ValueString(), vmInstanceGroupId))
 			} else {
 				// This connection already exists, so we will update it
-				err := r.updateVmNetworkConnection(ctx, &resp.Diagnostics, int32(infrastructureId), int32(vmInstanceGroupId), connection, existingConnectionMap[connection.LogicalNetworkId.ValueString()])
+				err := r.updateVmNetworkConnection(ctx, &resp.Diagnostics, infrastructureId, vmInstanceGroupId, connection, existingConnectionMap[connection.LogicalNetworkId.ValueString()])
 				if err != nil {
 					resp.Diagnostics.AddError(
 						"Failed to update network connection",
@@ -388,7 +388,7 @@ func (r *VmInstanceGroupResource) Update(ctx context.Context, req resource.Updat
 		// Now handle deletions: any existing connections not in the plan should be deleted
 		for _, existingConn := range existingNetworkConnections {
 			if _, exists := processedConnectionMap[existingConn.LogicalNetworkId.ValueString()]; !exists {
-				r.deleteVmNetworkConnection(ctx, &resp.Diagnostics, int32(infrastructureId), int32(vmInstanceGroupId), existingConn.LogicalNetworkId)
+				r.deleteVmNetworkConnection(ctx, &resp.Diagnostics, infrastructureId, vmInstanceGroupId, existingConn.LogicalNetworkId)
 				if resp.Diagnostics.HasError() {
 					return
 				}
@@ -399,7 +399,7 @@ func (r *VmInstanceGroupResource) Update(ctx context.Context, req resource.Updat
 	} else {
 		// If no network connections are specified, delete all existing connections
 		for _, existingConn := range existingNetworkConnections {
-			r.deleteVmNetworkConnection(ctx, &resp.Diagnostics, int32(infrastructureId), int32(vmInstanceGroupId), existingConn.LogicalNetworkId)
+			r.deleteVmNetworkConnection(ctx, &resp.Diagnostics, infrastructureId, vmInstanceGroupId, existingConn.LogicalNetworkId)
 			if resp.Diagnostics.HasError() {
 				return
 			}
@@ -422,12 +422,12 @@ func (r *VmInstanceGroupResource) Delete(ctx context.Context, req resource.Delet
 		return
 	}
 
-	infrastructureId, ok := convertTfStringToFloat32(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
+	infrastructureId, ok := convertTfStringToInt64(&resp.Diagnostics, "Infrastructure Id", data.InfrastructureId)
 	if !ok {
 		return
 	}
 
-	vmInstanceGroupId, ok := convertTfStringToFloat32(&resp.Diagnostics, "VM Instance Group Id", data.VmInstanceGroupId)
+	vmInstanceGroupId, ok := convertTfStringToInt64(&resp.Diagnostics, "VM Instance Group Id", data.VmInstanceGroupId)
 	if !ok {
 		return
 	}
@@ -458,8 +458,8 @@ func (r *VmInstanceGroupResource) ImportState(ctx context.Context, req resource.
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func (r *VmInstanceGroupResource) createVmNetworkConnection(ctx context.Context, diagnostics *diag.Diagnostics, infrastructureId int32, vmInstanceGroupId int32, connection NetworkConnectionModel) error {
-	logicalNetworkId, ok := convertTfStringToInt32(diagnostics, "Logical Network Id", connection.LogicalNetworkId)
+func (r *VmInstanceGroupResource) createVmNetworkConnection(ctx context.Context, diagnostics *diag.Diagnostics, infrastructureId int64, vmInstanceGroupId int64, connection NetworkConnectionModel) error {
+	logicalNetworkId, ok := convertTfStringToInt64(diagnostics, "Logical Network Id", connection.LogicalNetworkId)
 	if !ok {
 		return fmt.Errorf("invalid Logical Network Id: %s", connection.LogicalNetworkId.ValueString())
 	}
@@ -491,7 +491,7 @@ func (r *VmInstanceGroupResource) createVmNetworkConnection(ctx context.Context,
 	return nil
 }
 
-func (r *VmInstanceGroupResource) readVmNetworkConnections(ctx context.Context, diagnostics *diag.Diagnostics, infrastructureId int32, vmInstanceGroupId int32) ([]NetworkConnectionModel, error) {
+func (r *VmInstanceGroupResource) readVmNetworkConnections(ctx context.Context, diagnostics *diag.Diagnostics, infrastructureId int64, vmInstanceGroupId int64) ([]NetworkConnectionModel, error) {
 	networkConnections, response, err := r.client.VMInstanceGroupAPI.
 		GetVMInstanceGroupNetworkConfigurationConnections(ctx, infrastructureId, vmInstanceGroupId).
 		Execute()
@@ -516,8 +516,8 @@ func (r *VmInstanceGroupResource) readVmNetworkConnections(ctx context.Context, 
 	return result, nil
 }
 
-func (r *VmInstanceGroupResource) updateVmNetworkConnection(ctx context.Context, diagnostics *diag.Diagnostics, infrastructureId int32, vmInstanceGroupId int32, connection NetworkConnectionModel, existingConnection NetworkConnectionModel) error {
-	logicalNetworkId, ok := convertTfStringToInt32(diagnostics, "Logical Network Id", connection.LogicalNetworkId)
+func (r *VmInstanceGroupResource) updateVmNetworkConnection(ctx context.Context, diagnostics *diag.Diagnostics, infrastructureId int64, vmInstanceGroupId int64, connection NetworkConnectionModel, existingConnection NetworkConnectionModel) error {
+	logicalNetworkId, ok := convertTfStringToInt64(diagnostics, "Logical Network Id", connection.LogicalNetworkId)
 	if !ok {
 		return fmt.Errorf("invalid Logical Network Id: %s", connection.LogicalNetworkId.ValueString())
 	}
@@ -555,8 +555,8 @@ func (r *VmInstanceGroupResource) updateVmNetworkConnection(ctx context.Context,
 	return nil
 }
 
-func (r *VmInstanceGroupResource) deleteVmNetworkConnection(ctx context.Context, diagnostics *diag.Diagnostics, infrastructureId int32, vmInstanceGroupId int32, connectionId types.String) error {
-	logicalNetworkId, ok := convertTfStringToInt32(diagnostics, "Logical Network Id", connectionId)
+func (r *VmInstanceGroupResource) deleteVmNetworkConnection(ctx context.Context, diagnostics *diag.Diagnostics, infrastructureId int64, vmInstanceGroupId int64, connectionId types.String) error {
+	logicalNetworkId, ok := convertTfStringToInt64(diagnostics, "Logical Network Id", connectionId)
 	if !ok {
 		return fmt.Errorf("invalid Logical Network Id: %s", connectionId.ValueString())
 	}
