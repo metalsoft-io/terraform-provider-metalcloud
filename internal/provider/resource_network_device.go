@@ -24,11 +24,8 @@ func NewNetworkDeviceResource() resource.Resource {
 	return &NetworkDeviceResource{}
 }
 
-// NetworkDeviceResource manages a single network device (switch). It mirrors the
-// per-switch half of ../nvidia-ra-scripts/import_switches.py (POST /network-devices),
-// plus an optional, editable fabric assignment driven by AddNetworkDevicesToFabric /
-// RemoveNetworkDeviceFromFabric. No deploy is triggered (consistent with the script
-// and the provider's separate InfrastructureDeployer / fabric-deploy step).
+// NetworkDeviceResource manages a single network device (switch).
+// No deploy is triggered.
 type NetworkDeviceResource struct {
 	client *sdk.APIClient
 }
@@ -324,10 +321,10 @@ func (r *NetworkDeviceResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	updateDevice := sdk.UpdateNetworkDevice{
-		SiteId:           sdk.PtrInt64(siteId),
-		Driver:           (*sdk.NetworkDeviceDriver)(sdk.PtrString(plan.Driver.ValueString())),
-		Position:         sdk.PtrString(plan.Position.ValueString()),
-		Username:         *sdk.NewNullableString(sdk.PtrString(plan.Username.ValueString())),
+		SiteId:             sdk.PtrInt64(siteId),
+		Driver:             (*sdk.NetworkDeviceDriver)(sdk.PtrString(plan.Driver.ValueString())),
+		Position:           sdk.PtrString(plan.Position.ValueString()),
+		Username:           *sdk.NewNullableString(sdk.PtrString(plan.Username.ValueString())),
 		ManagementPassword: sdk.PtrString(plan.ManagementPassword.ValueString()),
 	}
 	if !plan.ManagementAddress.IsNull() {
