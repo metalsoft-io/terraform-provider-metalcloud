@@ -154,6 +154,7 @@ func (p *MetalCloudProvider) Resources(ctx context.Context) []func() resource.Re
 		NewExtensionInstanceResource,
 		NewInfrastructureDeployerResource,
 		NewNetworkDeviceResource,
+		NewEndpointInstanceGroupResource,
 	}
 }
 
@@ -174,6 +175,7 @@ func (p *MetalCloudProvider) DataSources(ctx context.Context) []func() datasourc
 		NewSubnetDataSource,
 		NewExtensionDataSource,
 		NewInfrastructureDataSource,
+		NewEndpointDataSource,
 	}
 }
 
