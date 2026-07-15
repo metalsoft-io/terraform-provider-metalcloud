@@ -69,6 +69,7 @@ resource "metalcloud_endpoint_instance_group" "hgx_hosts" {
 - `tagged` (Boolean, Required) Whether the connection is VLAN-tagged.
 - `access_mode` (String, Required) The access mode (e.g. `l2`, `l3`).
 - `mtu` (Number, Optional) MTU for the connection (defaults to 1500 when omitted).
+- `interface_count` (Number, Optional) Number of network connection
 
 ## Attributes Reference
 

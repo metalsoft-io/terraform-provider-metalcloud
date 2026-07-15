@@ -10,6 +10,7 @@ type NetworkConnectionModel struct {
 	Tagged           types.Bool   `tfsdk:"tagged"`
 	AccessMode       types.String `tfsdk:"access_mode"`
 	Mtu              types.Int64  `tfsdk:"mtu"`
+	InterfaceCount   types.Int64  `tfsdk:"interface_count"`
 }
 
 var NetworkConnectionAttribute = schema.NestedAttributeObject{
@@ -28,6 +29,11 @@ var NetworkConnectionAttribute = schema.NestedAttributeObject{
 		},
 		"mtu": schema.Int64Attribute{
 			MarkdownDescription: "MTU for the network connection",
+			Optional:            true,
+			Computed:            true,
+		},
+		"interface_count": schema.Int64Attribute{
+			MarkdownDescription: "Number of network connection",
 			Optional:            true,
 			Computed:            true,
 		},

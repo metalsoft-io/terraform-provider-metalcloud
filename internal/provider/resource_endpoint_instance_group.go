@@ -143,14 +143,24 @@ func (r *EndpointInstanceGroupResource) Create(ctx context.Context, req resource
 		if !ok {
 			return
 		}
-		if err := r.addEndpointInstance(ctx, &resp.Diagnostics, infrastructureId, group.Id, endpointId); err != nil {
+		err := r.addEndpointInstance(ctx, &resp.Diagnostics, infrastructureId, group.Id, endpointId)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Failed to add endpoint instance",
+				fmt.Sprintf("Could not add endpoint to Endpoint Instance Group %d: %s", group.Id, err.Error()),
+			)
 			return
 		}
 	}
 
 	// Connect the group to the logical network(s).
 	for _, connection := range data.NetworkConnections {
-		if err := r.createNetworkConnection(ctx, &resp.Diagnostics, group.Id, connection); err != nil {
+		err := r.createNetworkConnection(ctx, &resp.Diagnostics, group.Id, connection)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Failed to create network connection",
+				fmt.Sprintf("Could not create network connection for Endpoint Instance Group %d: %s", group.Id, err.Error()),
+			)
 			return
 		}
 	}
@@ -247,14 +257,24 @@ func (r *EndpointInstanceGroupResource) Update(ctx context.Context, req resource
 		}
 		desired[endpointId] = true
 		if _, exists := currentByEndpoint[endpointId]; !exists {
-			if err := r.addEndpointInstance(ctx, &resp.Diagnostics, infrastructureId, groupId, endpointId); err != nil {
+			err := r.addEndpointInstance(ctx, &resp.Diagnostics, infrastructureId, groupId, endpointId)
+			if err != nil {
+				resp.Diagnostics.AddError(
+					"Failed to create network connection",
+					fmt.Sprintf("Could not create network connection for Endpoint Instance Group %d: %s", groupId, err.Error()),
+				)
 				return
 			}
 		}
 	}
 	for endpointId, instanceId := range currentByEndpoint {
 		if !desired[endpointId] {
-			if err := r.deleteEndpointInstance(ctx, &resp.Diagnostics, instanceId); err != nil {
+			err := r.deleteEndpointInstance(ctx, &resp.Diagnostics, instanceId)
+			if err != nil {
+				resp.Diagnostics.AddError(
+					"Failed to delete network connection",
+					fmt.Sprintf("Could not delete network connection for Endpoint Instance Group %d: %s", groupId, err.Error()),
+				)
 				return
 			}
 		}
@@ -274,16 +294,33 @@ func (r *EndpointInstanceGroupResource) Update(ctx context.Context, req resource
 		desiredNetworks[connection.LogicalNetworkId.ValueString()] = true
 		existing, found := existingByNetwork[connection.LogicalNetworkId.ValueString()]
 		if !found {
-			if err := r.createNetworkConnection(ctx, &resp.Diagnostics, groupId, connection); err != nil {
+			err := r.createNetworkConnection(ctx, &resp.Diagnostics, groupId, connection)
+			if err != nil {
+				resp.Diagnostics.AddError(
+					"Failed to create network connection",
+					fmt.Sprintf("Could not create network connection for Endpoint Instance Group %d: %s", groupId, err.Error()),
+				)
 				return
 			}
-		} else if err := r.updateNetworkConnection(ctx, &resp.Diagnostics, groupId, connection, existing); err != nil {
-			return
+		} else {
+			err := r.updateNetworkConnection(ctx, &resp.Diagnostics, groupId, connection, existing)
+			if err != nil {
+				resp.Diagnostics.AddError(
+					"Failed to update network connection",
+					fmt.Sprintf("Could not update network connection for Endpoint Instance Group %d: %s", groupId, err.Error()),
+				)
+				return
+			}
 		}
 	}
 	for _, existing := range existingConnections {
 		if !desiredNetworks[existing.LogicalNetworkId.ValueString()] {
-			if err := r.deleteNetworkConnection(ctx, &resp.Diagnostics, groupId, existing.LogicalNetworkId); err != nil {
+			err := r.deleteNetworkConnection(ctx, &resp.Diagnostics, groupId, existing.LogicalNetworkId)
+			if err != nil {
+				resp.Diagnostics.AddError(
+					"Failed to delete network connection",
+					fmt.Sprintf("Could not delete network connection for Endpoint Instance Group %d: %s", groupId, err.Error()),
+				)
 				return
 			}
 		}
@@ -400,6 +437,11 @@ func (r *EndpointInstanceGroupResource) createNetworkConnection(ctx context.Cont
 	} else {
 		request.Mtu = sdk.PtrInt32(int32(connection.Mtu.ValueInt64()))
 	}
+	if connection.InterfaceCount.IsNull() {
+		request.InterfaceCount = *sdk.NewNullableInt32(nil)
+	} else {
+		request.InterfaceCount = *sdk.NewNullableInt32(sdk.PtrInt32(int32(connection.InterfaceCount.ValueInt64())))
+	}
 
 	_, response, err := r.client.EndpointInstanceGroupAPI.
 		CreateEndpointInstanceGroupNetworkConfigurationConnection(ctx, groupId).
@@ -431,6 +473,11 @@ func (r *EndpointInstanceGroupResource) readNetworkConnections(ctx context.Conte
 		} else {
 			result[i].Mtu = types.Int64Null()
 		}
+		if conn.InterfaceCount.IsSet() {
+			result[i].InterfaceCount = types.Int64Value(int64(*conn.InterfaceCount.Get()))
+		} else {
+			result[i].InterfaceCount = types.Int64Null()
+		}
 	}
 	return result, nil
 }
@@ -457,6 +504,13 @@ func (r *EndpointInstanceGroupResource) updateNetworkConnection(ctx context.Cont
 			request.Mtu = nil
 		} else {
 			request.Mtu = sdk.PtrInt32(int32(connection.Mtu.ValueInt64()))
+		}
+	}
+	if connection.InterfaceCount != existingConnection.InterfaceCount {
+		if connection.InterfaceCount.IsNull() {
+			request.InterfaceCount = *sdk.NewNullableInt32(nil)
+		} else {
+			request.InterfaceCount = *sdk.NewNullableInt32(sdk.PtrInt32(int32(connection.InterfaceCount.ValueInt64())))
 		}
 	}
 
