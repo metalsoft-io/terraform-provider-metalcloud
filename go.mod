@@ -7,7 +7,7 @@ toolchain go1.25.3
 require (
 	github.com/hashicorp/terraform-plugin-framework v1.19.0
 	github.com/hashicorp/terraform-plugin-log v0.11.0
-	github.com/metalsoft-io/metalcloud-sdk-go v0.0.0-20260714064334-2926f92e1223
+	github.com/metalsoft-io/metalcloud-sdk-go v0.0.0-20260917103200-48d8f388710f
 )
 
 require (
@@ -30,6 +30,6 @@ require (
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260911204522-f61a6ca850bd // indirect
-	google.golang.org/grpc v1.83.2 // indirect
+	google.golang.org/grpc v1.85.0-dev.0.20260825072537-93e31b48545e // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 )
