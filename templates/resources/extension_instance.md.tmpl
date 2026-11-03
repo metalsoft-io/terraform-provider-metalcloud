@@ -1,71 +1,47 @@
 ---
 page_title: "metalcloud_extension_instance Resource - terraform-provider-metalcloud"
 description: |-
-  Extension Instance resource for deploying and managing MetalCloud extensions within infrastructures
+  Extension Instance resource for adding an instance of a MetalCloud extension to an infrastructure
 ---
 
 # metalcloud_extension_instance (Resource)
 
-Extension Instance resource allows you to deploy and manage MetalCloud extensions within your infrastructure. Extensions provide additional functionality and services that can be integrated with your server instances and other resources.
+Creates an instance of a MetalCloud **extension** inside an infrastructure and sets its input variables. Extensions are defined by the platform administrator; use the [`metalcloud_extension`](../data-sources/extension.md) data source to resolve an extension label to its Id.
 
-## Overview
-
-Extension instances are deployed within a specific infrastructure and provide services that can be consumed by server instance groups and other resources. They follow the same lifecycle management as other MetalCloud resources, supporting both design and deploy modes.
+Changes only take effect after a deploy. Use [`metalcloud_infrastructure_deployer`](infrastructure_deployer.md) with a `depends_on` on this resource.
 
 ## Example Usage
 
-### Basic Extension Instance
-
 ```hcl
-resource "metalcloud_extension_instance" "monitoring" {
-  label             = "monitoring-ext"
-  extension_id      = "ext_monitoring_123"
-  infrastructure_id = metalcloud_infrastructure.main.infrastructure_id
+data "metalcloud_extension" "my_app" {
+  label = "my-app"
 }
-```
 
-### Extension Instance with Input Variables
+data "metalcloud_infrastructure" "infra" {
+  site_id           = data.metalcloud_site.dc.site_id
+  label             = "my-infra01"
+  create_if_missing = true
+}
 
-```hcl
-resource "metalcloud_extension_instance" "monitoring" {
-  label             = "monitoring-ext"
-  extension_id      = "ext_monitoring_123"
-  infrastructure_id = metalcloud_infrastructure.main.infrastructure_id
+resource "metalcloud_extension_instance" "app_inst1" {
+  infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+  extension_id      = data.metalcloud_extension.my_app.extension_id
+  label             = "app_inst1"
+
   input_variables = [
     {
-      label = "var1"
-      value_string = "test1"
+      label     = "var1"
+      value_str = "test1"
     },
     {
-      label = "var2"
+      label     = "var2"
       value_int = 5
+    },
+    {
+      label      = "var3"
+      value_bool = true
     }
   ]
-}
-```
-
-### Extension Instance with Dependencies
-
-```hcl
-resource "metalcloud_infrastructure" "main" {
-  label = "production-env"
-}
-
-resource "metalcloud_extension_instance" "logging" {
-  label             = "centralized-logging"
-  extension_id      = "ext_elasticsearch_456"
-  infrastructure_id = metalcloud_infrastructure.main.infrastructure_id
-}
-
-resource "metalcloud_server_instance_group" "web_servers" {
-  label                    = "web-tier"
-  infrastructure_id        = metalcloud_infrastructure.main.infrastructure_id
-  instance_count          = 3
-  server_type_id          = "server_web_1"
-  os_template_id          = "ubuntu_22_04"
-  
-  # Extension instance can be referenced for configuration
-  depends_on = [metalcloud_extension_instance.logging]
 }
 ```
 
@@ -73,67 +49,33 @@ resource "metalcloud_server_instance_group" "web_servers" {
 
 ### Required
 
-- `extension_id` (String) The ID of the extension to deploy. This references a specific extension available in your MetalCloud environment.
-- `infrastructure_id` (String) The ID of the infrastructure where the extension instance will be deployed. The extension will be scoped to this infrastructure.
-- `label` (String) A human-readable label for the extension instance. Must be unique within the infrastructure.
+- `extension_id` (String) Id of the extension to instantiate. Changing this value forces a new resource.
+- `infrastructure_id` (String) Id of the infrastructure the instance belongs to. Changing this value forces a new resource.
+- `label` (String) Extension instance label. Changing this value forces a new resource.
+
+### Optional
+
+- `input_variables` (Attributes Set) Input variables passed to the extension. Updated in place (see [below for nested schema](#nestedatt--input_variables)).
 
 ### Read-Only
 
-- `extension_instance_id` (String) The unique identifier assigned to the extension instance after creation.
+- `extension_instance_id` (String) Id of the extension instance.
 
-## Extension Lifecycle
+<a id="nestedatt--input_variables"></a>
+### Nested Schema for `input_variables`
 
-Extension instances follow MetalCloud's standard lifecycle management:
+Required:
 
-### Design Mode
-When `prevent_deploy = true` is set on the infrastructure:
-- Extension instances are planned but not provisioned
-- Configuration can be validated without consuming resources
-- Changes can be reviewed before deployment
+- `label` (String) Name of the input variable as defined by the extension.
 
-### Deploy Mode
-When `prevent_deploy = false`:
-- Extension instances are provisioned and become active
-- Services provided by the extension become available
-- Integration with other infrastructure resources is established
+Optional:
 
-## Important Considerations
-
-### Resource Dependencies
-- Extension instances are scoped to a specific infrastructure
-- Some extensions may require specific network configurations or drives
-- Consider extension requirements when planning infrastructure capacity
-
-### Extension Availability
-- Extension availability depends on your MetalCloud environment configuration
-- Contact your MetalCloud administrator for available extensions
-- Some extensions may have licensing or resource requirements
-
-### Integration Points
-- Extensions can provide services consumed by server instance groups
-- Network connectivity between extensions and other resources is managed automatically within the infrastructure
-- Configuration of extension services may require additional setup outside of Terraform
-
-## State Management
-
-Extension instances maintain their configuration state separately from the underlying physical resources, similar to other MetalCloud resources. This means:
-
-- Extension instances can be stopped and restarted without losing configuration
-- Physical resource allocation is managed by MetalCloud's orchestration layer
-- Extension data persistence depends on the specific extension implementation
+- `value_bool` (Boolean) Boolean value. Set exactly one of `value_str`, `value_bool` or `value_int`.
+- `value_int` (Number) Integer value.
+- `value_str` (String) String value.
 
 ## Import
 
-Extension instances can be imported using their ID:
-
-```bash
-terraform import metalcloud_extension_instance.example 12345
+```sh
+terraform import metalcloud_extension_instance.app_inst1 <extension_instance_id>
 ```
-
-## Notes
-
-> **Extension Compatibility**: Ensure that the extension is compatible with your infrastructure configuration and other deployed resources.
-
-> **Resource Planning**: Some extensions may require significant resources. Plan infrastructure capacity accordingly.
-
-> **Network Requirements**: Extensions may have specific network requirements. Ensure proper logical network configuration.

@@ -138,6 +138,7 @@ resource "metalcloud_vm_instance_group" "vminst01" {
 
     instance_count = 1
     vm_type_id = data.metalcloud_vm_type.vm1.vm_type_id
+    vm_pool_id = var.vm_pool_id
     disk_size_gbytes = 10
     os_template_id = data.metalcloud_os_template.vmos1.os_template_id
 
@@ -221,5 +222,10 @@ variable "logging" {
 }
 
 variable "site" {
+    default=""
+}
+
+# Id of the VM pool the VM instances are provisioned from.
+variable "vm_pool_id" {
     default=""
 }

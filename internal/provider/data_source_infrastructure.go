@@ -112,7 +112,7 @@ func (d *InfrastructureDataSource) Read(ctx context.Context, req datasource.Read
 			InfrastructureCreate(sdk.InfrastructureCreate{
 				Label:  sdk.PtrString(data.Label.ValueString()),
 				SiteId: siteId,
-				Meta:   &sdk.InfrastructureMeta{},
+				Meta:   &sdk.InfrastructureMeta{Name: data.Label.ValueString()},
 			}).
 			Execute()
 		if !ensureNoError(&resp.Diagnostics, err, response, []int{201}, "create infrastructure") {

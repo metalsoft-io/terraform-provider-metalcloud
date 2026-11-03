@@ -1,173 +1,71 @@
 ---
 page_title: "metalcloud_drive Resource - terraform-provider-metalcloud"
 description: |-
-  Drive resource for managing persistent iSCSI LUNs in MetalCloud infrastructures
+  Drive resource for managing shared block-storage drives provisioned from a storage pool
 ---
 
 # metalcloud_drive (Resource)
 
-The `metalcloud_drive` resource manages iSCSI LUNs (Logical Unit Numbers) that provide persistent storage in MetalCloud. Drives are essential for stateful applications and maintain data across server instance lifecycle changes.
+A drive is a block-storage volume provisioned from a storage pool in the infrastructure's site. It is attached to server instance groups through the `hosts` attribute and is then visible to every instance in those groups.
 
-## Key Characteristics
+Creating, resizing, attaching or deleting a drive only records the change in the infrastructure design. Run a deploy with [`metalcloud_infrastructure_deployer`](infrastructure_deployer.md) to apply it.
 
-- **Persistent Storage**: Data survives server instance restarts, stops, and hardware changes
-- **Shared Access**: Can be attached to ServerInstanceGroups and accessed by all instances in the group
-- **iSCSI Protocol**: High-performance block storage accessible over the network
-- **Infrastructure Scoped**: Belongs to a specific infrastructure for security and isolation
+## Example Usage
+
+```hcl
+data "metalcloud_site" "dc" {
+  label = var.site
+}
+
+data "metalcloud_storage_pool" "iscsi" {
+  site_id    = data.metalcloud_site.dc.site_id
+  technology = "iscsi"
+}
+
+data "metalcloud_infrastructure" "infra" {
+  site_id           = data.metalcloud_site.dc.site_id
+  label             = "my-infra01"
+  create_if_missing = true
+}
+
+resource "metalcloud_drive" "data01" {
+  infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+  storage_pool_id   = data.metalcloud_storage_pool.iscsi.storage_pool_id
+  label             = "data01"
+  size_mbytes       = 40960
+
+  # Server instance groups that mount the drive.
+  hosts = [
+    metalcloud_server_instance_group.inst01.server_instance_group_id,
+  ]
+}
+```
 
 ## Schema
 
 ### Required
 
-- `infrastructure_id` (String) The infrastructure ID where this drive will be created
-- `size_mbytes` (Number) Drive size in megabytes (MB). Minimum size varies by site configuration
-- `storage_pool_id` (String) Id of the storage pool the drive is assigned to. Changing this forces a new drive to be created. Use the `metalcloud_storage_pool` data source to look it up by site and technology
+- `infrastructure_id` (String) Id of the infrastructure the drive belongs to. Changing this value forces a new resource.
+- `size_mbytes` (Number) Drive size in megabytes. Can be changed in place.
+- `storage_pool_id` (String) Id of the storage pool the drive is provisioned from. Use the `metalcloud_storage_pool` data source to look it up. Changing this value forces a new resource.
 
 ### Optional
 
-- `hosts` (List of String) List of host IDs that are using this drive. When attached to a ServerInstanceGroup, all instances in the group can access the drive
-- `label` (String) Human-readable label for the drive. Useful for identification and organization
-- `logical_network_id` (String) Logical Network ID for network-specific drive placement. Required for drives that need specific network connectivity
+- `hosts` (List of String) Ids of the server instance groups the drive is attached to. Entries added or removed here attach or detach the drive.
+- `label` (String) Drive label.
+- `logical_network_id` (String) Id of the logical network the drive is exposed on.
 
 ### Read-Only
 
-- `drive_id` (String) Unique identifier for the drive, assigned by MetalCloud
+- `drive_id` (String) Id of the drive.
 
-## Usage Examples
+## Import
 
-### Basic Drive Creation
-
-```hcl
-resource "metalcloud_drive" "app_data" {
-  infrastructure_id = metalcloud_infrastructure.main.infrastructure_id
-  size_mbytes      = 100000  # 100 GB
-  label           = "Application Data Drive"
-}
+```sh
+terraform import metalcloud_drive.data01 <drive_id>
 ```
 
-### Drive with Network Specification
+## Notes
 
-```hcl
-resource "metalcloud_drive" "database_storage" {
-  infrastructure_id   = metalcloud_infrastructure.main.infrastructure_id
-  size_mbytes        = 500000  # 500 GB
-  label             = "Database Storage"
-  logical_network_id = metalcloud_logical_network.storage_net.logical_network_id
-}
-```
-
-### Drive Attached to ServerInstanceGroup
-
-```hcl
-resource "metalcloud_infrastructure" "main" {
-  label           = "Production Environment"
-  datacenter_name = "us-west"
-}
-
-resource "metalcloud_drive" "shared_storage" {
-  infrastructure_id = metalcloud_infrastructure.main.infrastructure_id
-  size_mbytes      = 1000000  # 1 TB
-  label           = "Shared Application Storage"
-}
-
-resource "metalcloud_server_instance_group" "web_servers" {
-  infrastructure_id     = metalcloud_infrastructure.main.infrastructure_id
-  label                = "Web Server Cluster"
-  instance_count       = 3
-  instance_server_type = "M.8"
-  
-  drive_id = [
-    metalcloud_drive.shared_storage.drive_id
-  ]
-  
-  # OS and network configuration...
-}
-```
-
-## Important Considerations
-
-### Data Persistence
-
-> **Critical**: Drives provide the only persistent storage in MetalCloud. Local server storage is wiped when servers are released or reassigned. Always use drives for data that must survive infrastructure changes.
-
-### Performance Characteristics
-
-- **Concurrent Access**: Multiple instances can simultaneously read/write to the same drive
-- **Network Dependency**: Performance depends on network connectivity between instances and storage
-- **IOPS Scaling**: Performance typically scales with drive size
-
-### Size Planning
-
-- Consider future growth when setting `size_mbytes`
-- Drive resizing may require infrastructure redeployment
-- Factor in filesystem overhead (typically 5-10% of raw capacity)
-
-### Security and Access
-
-- Drives inherit the security context of their infrastructure
-- Access is controlled at the infrastructure level
-- Use separate infrastructures for security isolation between environments
-
-## Best Practices
-
-1. **Use Descriptive Labels**: Make drives easy to identify with meaningful labels
-2. **Right-Size Storage**: Allocate appropriate capacity considering growth and performance needs
-3. **Network Planning**: Use `logical_network_id` for drives requiring specific network placement
-4. **Backup Strategy**: Implement backup procedures for critical drive data
-5. **Monitoring**: Monitor drive usage and performance metrics
-
-## Common Use Cases
-
-### Database Storage
-```hcl
-resource "metalcloud_drive" "mysql_data" {
-  infrastructure_id = metalcloud_infrastructure.production.infrastructure_id
-  size_mbytes      = 200000  # 200 GB
-  label           = "MySQL Data Directory"
-}
-```
-
-### Shared Application Storage
-```hcl
-resource "metalcloud_drive" "app_shared" {
-  infrastructure_id = metalcloud_infrastructure.staging.infrastructure_id
-  size_mbytes      = 50000   # 50 GB
-  label           = "Shared Application Files"
-}
-```
-
-### Log Storage
-```hcl
-resource "metalcloud_drive" "log_storage" {
-  infrastructure_id = metalcloud_infrastructure.monitoring.infrastructure_id
-  size_mbytes      = 100000  # 100 GB
-  label           = "Centralized Log Storage"
-}
-```
-
-## Lifecycle Management
-
-- **Creation**: Drives are created during infrastructure deployment
-- **Attachment**: Can be attached to ServerInstanceGroups via the `drive_id` attribute
-- **Modification**: Size changes typically require infrastructure redeployment
-- **Deletion**: Removing a drive from configuration will delete it and all data permanently
-
-## Integration with Other Resources
-
-Drives are commonly used with:
-- `metalcloud_server_instance_group`: For attaching persistent storage to compute instances
-- `metalcloud_logical_network`: For network-specific storage placement
-- `metalcloud_infrastructure`: As the containing scope for drive resources
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Drive Not Visible**: Ensure the ServerInstanceGroup includes the drive in its `drive_id` list
-2. **Performance Issues**: Check network connectivity and consider drive placement on appropriate logical networks
-3. **Size Limitations**: Verify site-specific minimum and maximum drive size limits
-4. **Access Problems**: Confirm infrastructure-level permissions and network connectivity
-
-### Validation
-
-Always validate drive configuration in design mode (`prevent_deploy = true`) before applying changes to
+- Deleting the resource deletes the drive and its data at the next deploy.
+- `size_mbytes`, `label`, `logical_network_id` and `hosts` are updated in place.

@@ -1,84 +1,34 @@
 ---
 page_title: "metalcloud_logical_network Resource - terraform-provider-metalcloud"
 description: |-
-  Logical Network resource for creating isolated network segments within MetalCloud infrastructures
+  Logical Network resource for creating a network segment inside a MetalCloud infrastructure
 ---
 
 # metalcloud_logical_network (Resource)
 
-A **LogicalNetwork** provides network connectivity abstraction within a MetalCloud infrastructure. It creates an isolated network segment that can be shared across multiple ServerInstanceGroups while maintaining security boundaries.
+Creates a logical network in an infrastructure from a **logical network profile**. The profile, looked up with the [`metalcloud_logical_network_profile`](../data-sources/logical_network_profile.md) data source, defines the network kind and the fabric it lives on. Server, VM and endpoint instance groups connect to the network through their `network_connections`.
 
-## Key Features
-
-- **Network Isolation**: Creates isolated Layer 2 network segments
-- **Multi-Switch Redundancy**: Automatically spans multiple physical switches for high availability
-- **Flexible Implementation**: Supports various underlying technologies (VLAN, VXLAN, etc.) based on network profile
-- **Shared Connectivity**: Can be attached to multiple ServerInstanceGroups within the same infrastructure
-- **Site Distribution**: Networks can span across multiple sites for geographical distribution
-
-## Use Cases
-
-- **Application Tiers**: Separate frontend, backend, and database networks
-- **Security Zones**: Create DMZ, internal, and management networks
-- **Multi-Tenant Isolation**: Isolate different customers or departments
-- **Development Environments**: Separate dev, staging, and production networks
+Changes only take effect after a deploy.
 
 ## Example Usage
 
-### Basic Logical Network
-
 ```hcl
-resource "metalcloud_logical_network" "web_tier" {
-  infrastructure_id            = metalcloud_infrastructure.example.infrastructure_id
-  label                       = "web-tier-network"
-  name                        = "Web Tier Network"
-  logical_network_profile_id  = "vlan-default"
-}
-```
-
-### Multiple Networks for Application Tiers
-
-```hcl
-# Frontend network
-resource "metalcloud_logical_network" "frontend" {
-  infrastructure_id            = metalcloud_infrastructure.app.infrastructure_id
-  label                       = "frontend-net"
-  name                        = "Frontend Network"
-  logical_network_profile_id  = "vlan-frontend"
+data "metalcloud_fabric" "wan" {
+  site_id = data.metalcloud_site.dc.site_id
+  label   = "wan-fabric"
 }
 
-# Backend network
-resource "metalcloud_logical_network" "backend" {
-  infrastructure_id            = metalcloud_infrastructure.app.infrastructure_id
-  label                       = "backend-net"
-  name                        = "Backend Network"
-  logical_network_profile_id  = "vlan-backend"
+data "metalcloud_logical_network_profile" "np01" {
+  label     = "np-01"
+  fabric_id = data.metalcloud_fabric.wan.fabric_id
 }
 
-# Database network
-resource "metalcloud_logical_network" "database" {
-  infrastructure_id            = metalcloud_infrastructure.app.infrastructure_id
-  label                       = "database-net"
-  name                        = "Database Network"
-  logical_network_profile_id  = "vlan-database"
-}
-```
+resource "metalcloud_logical_network" "net1" {
+  infrastructure_id          = data.metalcloud_infrastructure.infra.infrastructure_id
+  logical_network_profile_id = data.metalcloud_logical_network_profile.np01.logical_network_profile_id
 
-### Attaching to ServerInstanceGroups
-
-```hcl
-resource "metalcloud_server_instance_group" "web_servers" {
-  infrastructure_id     = metalcloud_infrastructure.example.infrastructure_id
-  label                = "web-servers"
-  instance_count       = 3
-  
-  logical_network {
-    logical_network_id = metalcloud_logical_network.web_tier.logical_network_id
-  }
-  
-  logical_network {
-    logical_network_id = metalcloud_logical_network.backend.logical_network_id
-  }
+  name  = "net01"
+  label = "net01"
 }
 ```
 
@@ -86,58 +36,25 @@ resource "metalcloud_server_instance_group" "web_servers" {
 
 ### Required
 
-- `infrastructure_id` (String) Infrastructure ID where the logical network will be created. The network is scoped to this infrastructure and cannot be shared across different infrastructures.
-- `label` (String) Unique identifier for the logical network within the infrastructure. Used for referencing the network in API calls and Terraform configurations. Must be unique within the infrastructure.
-- `logical_network_profile_id` (String) Network profile that defines the underlying network technology and configuration. Common profiles include:
-  - `vlan-default`: Standard VLAN-based network
-  - `vxlan-overlay`: VXLAN overlay network for larger scale deployments
-  - Site-specific profiles may be available depending on network fabric
+- `infrastructure_id` (String) Id of the infrastructure the network belongs to. Changing this value forces a new resource.
+- `label` (String) Logical network label. Updated in place.
+- `logical_network_profile_id` (String) Id of the logical network profile the network is created from. Changing this value forces a new resource.
 
 ### Optional
 
-- `name` (String) Human-readable name for the logical network. Used in the MetalCloud UI for easier identification. If not specified, defaults to the label value.
+- `name` (String) Logical network name. Updated in place.
 
 ### Read-Only
 
-- `logical_network_id` (String) Unique system-generated identifier for the logical network. Used when referencing this network in other resources like ServerInstanceGroups.
+- `logical_network_id` (String) Id of the logical network.
 
-## Important Considerations
+## Import
 
-### Network Profiles
-
-The `logical_network_profile_id` determines the underlying network implementation:
-
-- **VLAN-based profiles**: Traditional VLAN segmentation with site-local scope
-- **VXLAN-based profiles**: Overlay networks that can span multiple sites
-- **Custom profiles**: Site-specific configurations for specialized requirements
-
-Contact your MetalCloud administrator to understand available profiles for your deployment.
-
-### Security and Isolation
-
-- Networks within the same infrastructure can communicate by default
-- Cross-infrastructure communication requires explicit firewall rules
-- Each LogicalNetwork provides Layer 2 isolation
-- Additional security should be implemented at the application level
-
-### Performance Considerations
-
-- Network performance depends on the underlying physical infrastructure
-- Multiple networks on the same ServerInstanceGroup share physical network interfaces
-- Consider bandwidth requirements when designing network topology
-
-### Lifecycle Management
-
-- LogicalNetworks can be created and destroyed independently
-- Removing a network that's attached to running instances will disrupt connectivity
-- Always plan network changes in design mode before deploying
+```sh
+terraform import metalcloud_logical_network.net1 <logical_network_id>
+```
 
 ## Related Resources
 
-- [metalcloud_server_instance_group](./server_instance_group.md) - Attach logical networks to compute instances
-- [metalcloud_infrastructure](./infrastructure.md) - Container for logical networks
-- [metalcloud_firewall_rule](./firewall_rule.md) - Control traffic between networks
-
-## See Also
-
--
+- [`metalcloud_server_instance_group`](server_instance_group.md), [`metalcloud_vm_instance_group`](vm_instance_group.md), [`metalcloud_endpoint_instance_group`](endpoint_instance_group.md) - Connect to the network
+- [`metalcloud_logical_network`](../data-sources/logical_network.md) - Look up an existing logical network

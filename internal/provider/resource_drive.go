@@ -56,8 +56,11 @@ func (r *DriveResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				},
 			},
 			"infrastructure_id": schema.StringAttribute{
-				MarkdownDescription: "Drive infrastructure Id",
+				MarkdownDescription: "Drive infrastructure Id. Changing it forces a new resource.",
 				Required:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"size_mbytes": schema.Int32Attribute{
 				MarkdownDescription: "Drive size in MB",

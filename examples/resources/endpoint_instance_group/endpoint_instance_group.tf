@@ -59,7 +59,7 @@ resource "metalcloud_endpoint_instance_group" "hgx_hosts" {
     {
       logical_network_id = metalcloud_logical_network.tenant_l3.logical_network_id
       tagged             = false
-      access_mode        = "l3"
+      access_mode        = "l2"
       mtu                = 9000
     }
   ]

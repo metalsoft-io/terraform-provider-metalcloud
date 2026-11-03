@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -35,6 +36,7 @@ type VmInstanceGroupResourceModel struct {
 	Label              types.String             `tfsdk:"label"`
 	InstanceCount      types.Int64              `tfsdk:"instance_count"`
 	VmTypeId           types.String             `tfsdk:"vm_type_id"`
+	VmPoolId           types.String             `tfsdk:"vm_pool_id"`
 	DiskSizeGb         types.Int64              `tfsdk:"disk_size_gbytes"`
 	OsTemplateId       types.String             `tfsdk:"os_template_id"`
 	NetworkConnections []NetworkConnectionModel `tfsdk:"network_connections"`
@@ -59,28 +61,50 @@ func (r *VmInstanceGroupResource) Schema(ctx context.Context, req resource.Schem
 				},
 			},
 			"infrastructure_id": schema.StringAttribute{
-				MarkdownDescription: "Infrastructure Id",
+				MarkdownDescription: "Infrastructure Id. Changing it forces a new resource.",
 				Required:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"label": schema.StringAttribute{
 				MarkdownDescription: "VM Instance Group label",
 				Required:            true,
 			},
 			"instance_count": schema.Int64Attribute{
-				MarkdownDescription: "VM Instance Group instance count",
+				MarkdownDescription: "VM Instance Group instance count. Changing it forces a new resource.",
 				Required:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
 			},
 			"vm_type_id": schema.StringAttribute{
-				MarkdownDescription: "VM Type Id",
+				MarkdownDescription: "VM Type Id. Changing it forces a new resource.",
 				Required:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"vm_pool_id": schema.StringAttribute{
+				MarkdownDescription: "VM Pool Id the instances are provisioned from. Changing it forces a new resource.",
+				Required:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"disk_size_gbytes": schema.Int64Attribute{
-				MarkdownDescription: "Disk size in GB",
+				MarkdownDescription: "Disk size in GB. Changing it forces a new resource.",
 				Required:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
 			},
 			"os_template_id": schema.StringAttribute{
-				MarkdownDescription: "OS template Id",
+				MarkdownDescription: "OS template Id. Changing it forces a new resource.",
 				Required:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"network_connections": schema.SetNestedAttribute{
 				MarkdownDescription: "Network connections for the VM instance group",
@@ -141,11 +165,17 @@ func (r *VmInstanceGroupResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
+	vmPoolId, ok := convertTfStringToInt64(&resp.Diagnostics, "VM Pool Id", data.VmPoolId)
+	if !ok {
+		return
+	}
+
 	request := sdk.CreateVMInstanceGroup{
 		TypeId:        vmTypeId,
 		InstanceCount: sdk.PtrFloat32(float32(data.InstanceCount.ValueInt64())),
 		DiskSizeGB:    float32(data.DiskSizeGb.ValueInt64()),
 		OsTemplateId:  osTemplateId,
+		VmPoolId:      vmPoolId,
 	}
 
 	vmInstanceGroup, result, err := r.client.VMInstanceGroupAPI.
@@ -254,6 +284,9 @@ func (r *VmInstanceGroupResource) Read(ctx context.Context, req resource.ReadReq
 	data.InstanceCount = types.Int64Value(int64(*vmInstanceGroup.InstanceCount))
 	// data.VmTypeId = convertFloat32IdToTfString(vmInstanceGroup.TypeId)
 	data.DiskSizeGb = types.Int64Value(int64(vmInstanceGroup.DiskSizeGB))
+	if vmInstanceGroup.VmPoolId != nil {
+		data.VmPoolId = convertPtrInt64IdToTfString(vmInstanceGroup.VmPoolId)
+	}
 	// data.OsTemplateId = convertFloat32IdToTfString(vmInstanceGroup.VolumeTemplateId)
 
 	tflog.Trace(ctx, fmt.Sprintf("read VM instance group resource Id %s", data.VmInstanceGroupId.ValueString()))
@@ -455,7 +488,7 @@ func (r *VmInstanceGroupResource) Delete(ctx context.Context, req resource.Delet
 }
 
 func (r *VmInstanceGroupResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	resource.ImportStatePassthroughID(ctx, path.Root("vm_instance_group_id"), req, resp)
 }
 
 func (r *VmInstanceGroupResource) createVmNetworkConnection(ctx context.Context, diagnostics *diag.Diagnostics, infrastructureId int64, vmInstanceGroupId int64, connection NetworkConnectionModel) error {
@@ -479,6 +512,12 @@ func (r *VmInstanceGroupResource) createVmNetworkConnection(ctx context.Context,
 		request.Mtu = sdk.PtrInt32(1500) // Default MTU value
 	} else {
 		request.Mtu = sdk.PtrInt32(int32(connection.Mtu.ValueInt64()))
+	}
+
+	if connection.InterfaceCount.IsNull() {
+		request.InterfaceCount = *sdk.NewNullableInt32(nil)
+	} else {
+		request.InterfaceCount = *sdk.NewNullableInt32(sdk.PtrInt32(int32(connection.InterfaceCount.ValueInt64())))
 	}
 
 	_, response, err := r.client.VMInstanceGroupAPI.
@@ -511,6 +550,11 @@ func (r *VmInstanceGroupResource) readVmNetworkConnections(ctx context.Context, 
 		} else {
 			result[i].Mtu = types.Int64Null()
 		}
+		if conn.InterfaceCount.IsSet() {
+			result[i].InterfaceCount = types.Int64Value(int64(*conn.InterfaceCount.Get()))
+		} else {
+			result[i].InterfaceCount = types.Int64Null()
+		}
 	}
 
 	return result, nil
@@ -541,6 +585,14 @@ func (r *VmInstanceGroupResource) updateVmNetworkConnection(ctx context.Context,
 			request.Mtu = nil
 		} else {
 			request.Mtu = sdk.PtrInt32(int32(connection.Mtu.ValueInt64()))
+		}
+	}
+
+	if connection.InterfaceCount != existingConnection.InterfaceCount {
+		if connection.InterfaceCount.IsNull() {
+			request.InterfaceCount = *sdk.NewNullableInt32(nil)
+		} else {
+			request.InterfaceCount = *sdk.NewNullableInt32(sdk.PtrInt32(int32(connection.InterfaceCount.ValueInt64())))
 		}
 	}
 

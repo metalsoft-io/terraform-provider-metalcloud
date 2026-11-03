@@ -6,14 +6,11 @@ description: |-
 
 # metalcloud_network_device (Resource)
 
-The `metalcloud_network_device` resource registers a single network device (switch) in MetalCloud and, optionally, attaches it to an existing network fabric. It is the Terraform-native equivalent of a bulk switch import: use `for_each` over a map of switches to register a whole inventory in one configuration.
+Registers a single network device (switch) in MetalCloud and, optionally, attaches it to an existing network fabric. Use `for_each` over a map of switches to register a whole inventory in one configuration.
 
-## Key Characteristics
-
-- **Per-switch lifecycle**: Each switch is an independent resource with full create/read/update/delete and import support.
-- **Optional, editable fabric assignment**: The `fabric_id` attribute attaches the switch to a fabric. Adding it attaches, changing it reassigns (detach old, attach new), and removing it detaches the switch.
-- **Explicit site**: Unlike the standalone import script, the switch's `site_id` is set explicitly rather than derived from the fabric, so a switch can exist independently of any fabric.
-- **No automatic deploy**: Creating, attaching, or reassigning a switch records the change via the API but does not push configuration to the hardware. Deploy the fabric separately to apply changes.
+- **Optional, editable fabric assignment**: `fabric_id` attaches the switch to a fabric. Adding it attaches, changing it reassigns (detach old, attach new), and removing it detaches the switch.
+- **Explicit site**: `site_id` is set explicitly rather than derived from the fabric, so a switch can exist independently of any fabric.
+- **No automatic deploy**: Creating, attaching or reassigning a switch records the change via the API but does not push configuration to the hardware. Deploy the fabric separately.
 
 ## Example Usage
 
@@ -45,19 +42,13 @@ resource "metalcloud_network_device" "leaf01" {
 }
 ```
 
-### Bulk import with `for_each`
+### Bulk registration with `for_each`
 
 ```hcl
 locals {
-  switch_defaults = {
-    driver          = "cumulus_linux"
-    username        = "cumulus"
-    management_port = 22
-  }
-
   switches = {
-    "leaf-su00-r0" = { position = "leaf", management_address = "192.168.200.11", loopback_address = "10.253.128.1", asn = 4200000000 }
-    "leaf-su00-r1" = { position = "leaf", management_address = "192.168.200.12", loopback_address = "10.253.128.2", asn = 4200000001 }
+    "leaf-su00-r0"  = { position = "leaf", management_address = "192.168.200.11", loopback_address = "10.253.128.1", asn = 4200000000 }
+    "leaf-su00-r1"  = { position = "leaf", management_address = "192.168.200.12", loopback_address = "10.253.128.2", asn = 4200000001 }
     "spine-su00-s0" = { position = "spine", management_address = "192.168.200.60" }
   }
 }
@@ -67,10 +58,10 @@ resource "metalcloud_network_device" "switch" {
 
   site_id             = data.metalcloud_site.dc.site_id
   identifier_string   = each.key
-  driver              = local.switch_defaults.driver
-  username            = local.switch_defaults.username
+  driver              = "cumulus_linux"
+  username            = "cumulus"
   management_password = var.switch_password
-  management_port     = local.switch_defaults.management_port
+  management_port     = 22
 
   position           = each.value.position
   management_address = each.value.management_address
@@ -97,8 +88,6 @@ resource "metalcloud_network_device" "standalone" {
     environment = "production"
     managed_by  = "terraform"
   }
-
-  # No fabric_id: the switch is registered but not attached to a fabric.
 }
 ```
 
@@ -106,52 +95,41 @@ resource "metalcloud_network_device" "standalone" {
 
 ### Required
 
-- `site_id` (String) Site ID the switch belongs to. Wire this from the `metalcloud_site` or `metalcloud_fabric` data source.
-- `driver` (String) Driver used to communicate with the device. Common values: `cumulus_linux`, `sonic_enterprise`, `nvidia_ufm`, `nvidia_dpu`, `arista_eos`, `nexus9000`, `junos`, `os_10`, `dell_s4048`, `dummy`.
-- `position` (String) Device position in the fabric. One of `tor`, `north`, `spine`, `super_spine`, `leaf`, `dpu`, `other`.
-- `username` (String) Management username.
+- `driver` (String) Driver used to communicate with the device. Accepted values include `cumulus_linux`, `sonic_enterprise`, `nvidia_ufm`, `nvidia_dpu`, `arista_eos`, `nexus9000`, `junos`, `os_10`, `dell_s4048`, `cisco_aci51`, `cisco_ndfc`, `vmware_vds` and `dummy`.
 - `management_password` (String, Sensitive) Management password. Never returned by the API, so it is not refreshed into state.
+- `position` (String) Device position in the fabric, for example `leaf`, `spine`, `super_spine`, `tor`, `north`, `dpu` or `other`.
+- `site_id` (String) Id of the site the switch belongs to.
+- `username` (String) Management username.
 
 ### Optional
 
-- `management_address` (String) Management (out-of-band) IP address.
-- `management_port` (Number) Management port (e.g. `22`).
+- `asn` (Number) BGP ASN.
+- `fabric_id` (String) Fabric to attach the switch to. Setting it attaches, changing it reassigns, clearing it detaches. No deploy is triggered.
 - `identifier_string` (String) Stable identifier string (hostname) for the switch.
 - `loopback_address` (String) IPv4 loopback address.
-- `asn` (Number) BGP ASN.
+- `management_address` (String) Management (out-of-band) IP address.
+- `management_port` (Number) Management port, for example `22`.
 - `serial_number` (String) Hardware serial number.
 - `tags_map` (Map of String) Key/value tags applied to the switch. Values must be strings.
-- `fabric_id` (String) Fabric to attach the switch to. Editable: setting it attaches, changing it reassigns (detach old + attach new), clearing it detaches. No deploy is triggered.
 
 ### Read-Only
 
-- `network_device_id` (String) Unique system-generated identifier for the network device.
+- `network_device_id` (String) Id of the network device.
 
-## Important Considerations
-
-### Idempotency and importing existing switches
-
-This resource always creates a new device on `terraform apply`. To bring a switch that already exists in MetalCloud under Terraform management, use `terraform import` rather than re-declaring it (a re-declare would attempt to create a duplicate):
+## Import
 
 ```sh
 terraform import metalcloud_network_device.leaf01 <network_device_id>
 ```
 
-A bare import does not populate `fabric_id` (the device API does not report which fabric it belongs to). Add the `fabric_id` afterwards; re-attaching an already-attached switch is a no-op upstream.
+Import does not populate `fabric_id`, because the device API does not report which fabric a device belongs to. Add `fabric_id` to the configuration afterwards; re-attaching an already attached switch is a no-op upstream.
 
-### Fabric membership drift
+## Notes
 
-Because the device API does not report its fabric, `Read` can only confirm that the fabric currently recorded in state still contains the switch. If the switch is detached from that fabric outside Terraform, the next refresh clears `fabric_id` to surface the drift. Detaching and re-attaching to a *different* fabric out-of-band is not detected unless the state's fabric no longer contains it.
-
-### No deploy
-
-Attaching, reassigning, or detaching a switch only records the intent via the API. To apply the change to the physical switches, deploy the fabric separately (for example through your fabric deploy workflow). This mirrors the behavior of the standalone switch-import script.
-
-### Optional field handling
-
-Unset optional attributes are left null and are only populated from the API when the device actually has a value, to avoid perpetual `null` ↔ empty/zero diffs. As a consequence, clearing a previously-set optional attribute may not be detected as drift on refresh.
+- **Fabric membership drift**: `Read` can only confirm that the fabric recorded in state still contains the switch. If the switch is detached outside Terraform, the next refresh clears `fabric_id`. A move to a different fabric done out-of-band is not detected unless the recorded fabric no longer contains the switch.
+- **Optional fields**: unset optional attributes stay null and are only populated from the API when the device has a value, to avoid perpetual null versus empty diffs. Clearing a previously set optional attribute out-of-band may therefore not show up as drift.
 
 ## Related Resources
 
-- [metalcloud_fabric](../data-sources/fabric.md) - Look up an existing fabric (and its site) to attach switches to.
-- [metalcloud_site](../data-sources/site.md) - Look up the site a switch belongs to.
+- [`metalcloud_fabric`](../data-sources/fabric.md) - Look up the fabric to attach switches to
+- [`metalcloud_site`](../data-sources/site.md) - Look up the site a switch belongs to

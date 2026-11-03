@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -30,12 +31,16 @@ type InfrastructureResource struct {
 
 // InfrastructureResourceModel describes the resource data model.
 type InfrastructureResourceModel struct {
-	InfrastructureId  types.String `tfsdk:"infrastructure_id"`
-	Label             types.String `tfsdk:"label"`
-	SiteId            types.String `tfsdk:"site_id"`
-	PreventDeploy     types.Bool   `tfsdk:"prevent_deploy"`
-	AwaitDeployFinish types.Bool   `tfsdk:"await_deploy_finish"`
-	AllowDataLoss     types.Bool   `tfsdk:"allow_data_loss"`
+	InfrastructureId           types.String `tfsdk:"infrastructure_id"`
+	Label                      types.String `tfsdk:"label"`
+	SiteId                     types.String `tfsdk:"site_id"`
+	PreventDeploy              types.Bool   `tfsdk:"prevent_deploy"`
+	AwaitDeployFinish          types.Bool   `tfsdk:"await_deploy_finish"`
+	AllowDataLoss              types.Bool   `tfsdk:"allow_data_loss"`
+	AttemptSoftShutdown        types.Bool   `tfsdk:"attempt_soft_shutdown"`
+	SoftShutdownTimeoutSeconds types.Int64  `tfsdk:"soft_shutdown_timeout_seconds"`
+	AttemptHardShutdown        types.Bool   `tfsdk:"attempt_hard_shutdown"`
+	ForceShutdown              types.Bool   `tfsdk:"force_shutdown"`
 }
 
 func (r *InfrastructureResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -60,8 +65,11 @@ func (r *InfrastructureResource) Schema(ctx context.Context, req resource.Schema
 				Required:            true,
 			},
 			"site_id": schema.StringAttribute{
-				MarkdownDescription: "Site Id",
+				MarkdownDescription: "Site Id. Changing it forces a new resource.",
 				Required:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"prevent_deploy": schema.BoolAttribute{
 				MarkdownDescription: "Prevent infrastructure deploy",
@@ -77,6 +85,30 @@ func (r *InfrastructureResource) Schema(ctx context.Context, req resource.Schema
 			},
 			"allow_data_loss": schema.BoolAttribute{
 				MarkdownDescription: "Allow data loss",
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
+			},
+			"attempt_soft_shutdown": schema.BoolAttribute{
+				MarkdownDescription: "Attempt a soft (ACPI) power off of the servers before the deploy",
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(true),
+			},
+			"soft_shutdown_timeout_seconds": schema.Int64Attribute{
+				MarkdownDescription: "Seconds to wait for the soft shutdown before attempting a hard shutdown",
+				Optional:            true,
+				Computed:            true,
+				Default:             int64default.StaticInt64(180),
+			},
+			"attempt_hard_shutdown": schema.BoolAttribute{
+				MarkdownDescription: "Force a hard power off when the soft shutdown timeout expires",
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(true),
+			},
+			"force_shutdown": schema.BoolAttribute{
+				MarkdownDescription: "Force an immediate shutdown of all servers in the infrastructure",
 				Optional:            true,
 				Computed:            true,
 				Default:             booldefault.StaticBool(false),
@@ -124,7 +156,7 @@ func (r *InfrastructureResource) Create(ctx context.Context, req resource.Create
 		InfrastructureCreate(sdk.InfrastructureCreate{
 			Label:  sdk.PtrString(data.Label.ValueString()),
 			SiteId: siteId,
-			Meta:   &sdk.InfrastructureMeta{},
+			Meta:   &sdk.InfrastructureMeta{Name: data.Label.ValueString()},
 		}).
 		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{201}, "create infrastructure") {
@@ -238,7 +270,7 @@ func (r *InfrastructureResource) Delete(ctx context.Context, req resource.Delete
 	}
 
 	if !data.PreventDeploy.ValueBool() {
-		if !deployInfrastructure(ctx, r.client, data.InfrastructureId, data.AllowDataLoss, data.AwaitDeployFinish, &resp.Diagnostics) {
+		if !deployInfrastructure(ctx, r.client, data.InfrastructureId, buildDeployOptions(data.AllowDataLoss, data.AttemptSoftShutdown, data.SoftShutdownTimeoutSeconds, data.AttemptHardShutdown, data.ForceShutdown), data.AwaitDeployFinish, &resp.Diagnostics) {
 			return
 		}
 	}

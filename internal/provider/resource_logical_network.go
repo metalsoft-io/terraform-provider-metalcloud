@@ -62,12 +62,18 @@ func (r *LogicalNetworkResource) Schema(ctx context.Context, req resource.Schema
 				Optional:            true,
 			},
 			"logical_network_profile_id": schema.StringAttribute{
-				MarkdownDescription: "Logical Network Profile Id",
+				MarkdownDescription: "Logical Network Profile Id. Changing it forces a new resource.",
 				Required:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"infrastructure_id": schema.StringAttribute{
-				MarkdownDescription: "Infrastructure Id",
+				MarkdownDescription: "Infrastructure Id. Changing it forces a new resource.",
 				Required:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 		},
 	}

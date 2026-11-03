@@ -1,99 +1,77 @@
 ---
 page_title: "metalcloud_server_instance_group Resource - terraform-provider-metalcloud"
 description: |-
-  A ServerInstanceGroup is a collection of identical server instances managed as a single unit, providing horizontal scaling and consistent configuration across all instances.
+  Server Instance Group resource for provisioning a group of identical bare-metal servers
 ---
 
 # metalcloud_server_instance_group (Resource)
 
-A **ServerInstanceGroup** is a fundamental resource in MetalCloud that represents a collection of identical server instances managed as a single unit. All instances within the group share the same configuration including OS template, storage drives, and network connections.
+A server instance group is a set of identical bare-metal server instances managed as one unit. All instances share the server type, OS template, storage controller layout, network connections and custom variables defined on the group.
 
-## Key Features
-
-- **Horizontal Scaling**: Dynamically adjust the number of instances using `instance_count`
-- **Consistent Configuration**: All instances share identical OS templates, drives, and network settings
-- **Group-Level Operations**: Management operations are performed at the group level, not individual instances
-- **High Availability**: Instances are distributed across available physical servers for redundancy
-
-## Use Cases
-
-- **Application Clusters**: Deploy identical application servers that can be load-balanced
-- **Container Orchestration**: Provision worker nodes for Kubernetes or other container platforms
-- **Web Server Farms**: Scale web servers horizontally based on demand
-- **Distributed Databases**: Deploy database cluster nodes with shared storage
-- **Microservices**: Run multiple instances of stateless services
+Changes only take effect after a deploy. Use [`metalcloud_infrastructure_deployer`](infrastructure_deployer.md) with a `depends_on` on this resource.
 
 ## Example Usage
 
-### Basic Server Instance Group
-
 ```hcl
-resource "metalcloud_server_instance_group" "web_servers" {
-  infrastructure_id = metalcloud_infrastructure.example.infrastructure_id
-  label            = "web-cluster"
-  name             = "Web Server Cluster"
-  instance_count   = 3
-  server_type_id   = "server_type_small"
-  os_template_id   = "ubuntu_22_04"
+data "metalcloud_server_type" "srv1" {
+  label = "M.16.64.2"
+}
+
+data "metalcloud_os_template" "os1" {
+  label = "ubuntu-22-04"
+}
+
+resource "metalcloud_logical_network" "net1" {
+  infrastructure_id          = data.metalcloud_infrastructure.infra.infrastructure_id
+  logical_network_profile_id = data.metalcloud_logical_network_profile.np01.logical_network_profile_id
+  name                       = "net01"
+  label                      = "net01"
+}
+
+resource "metalcloud_server_instance_group" "inst01" {
+  infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+
+  name  = "inst01"
+  label = "inst01"
+
+  instance_count = 1
+  server_type_id = data.metalcloud_server_type.srv1.server_type_id
+  os_template_id = data.metalcloud_os_template.os1.os_template_id
+
+  storage_controllers = [
+    {
+      storage_controller_id = "RAID.Slot.2-1"
+      mode                  = "RAID"
+      volumes = [
+        {
+          controller_name = "RAID.Slot.2-1"
+          volume_name     = "OS"
+          disk_size_gb    = 931
+          disk_type       = "HDD"
+          disk_count      = 2
+          raid_type       = "raid1"
+        }
+      ]
+    }
+  ]
 
   network_connections = [
     {
-      logical_network_id = metalcloud_logical_network.public.logical_network_id
-      access_mode       = "public"
-      tagged           = false
-    },
-    {
-      logical_network_id = metalcloud_logical_network.private.logical_network_id
-      access_mode       = "private"
-      tagged           = true
-      mtu              = 9000
+      logical_network_id = metalcloud_logical_network.net1.logical_network_id
+      tagged             = true
+      access_mode        = "l2"
+      mtu                = 1500
     }
   ]
 
   custom_variables = [
     {
-      name  = "APP_ENV"
-      value = "production"
-    },
-    {
-      name  = "CLUSTER_SIZE"
-      value = "3"
-    }
-  ]
-}
-```
-
-### Server Instance Group with Shared Storage
-
-```hcl
-resource "metalcloud_server_instance_group" "database_cluster" {
-  infrastructure_id = metalcloud_infrastructure.example.infrastructure_id
-  label            = "db-cluster"
-  name             = "Database Cluster"
-  instance_count   = 2
-  server_type_id   = "server_type_large"
-  os_template_id   = "centos_8"
-
-  network_connections = [
-    {
-      logical_network_id = metalcloud_logical_network.database.logical_network_id
-      access_mode       = "private"
-      tagged           = false
+      name  = "key1"
+      value = "test1"
     }
   ]
 
-  custom_variables = [
-    {
-      name  = "DB_CLUSTER_MODE"
-      value = "primary-replica"
-    }
-  ]
-}
-
-# Attach shared storage to the database cluster
-resource "metalcloud_drive_attachment" "db_storage" {
-  drive_id                  = metalcloud_drive.shared_storage.drive_id
-  server_instance_group_id  = metalcloud_server_instance_group.database_cluster.server_instance_group_id
+  depends_on = [metalcloud_logical_network.net1]
 }
 ```
 
@@ -101,148 +79,73 @@ resource "metalcloud_drive_attachment" "db_storage" {
 
 ### Required
 
-- `infrastructure_id` (String) The ID of the infrastructure that will contain this server instance group
-- `instance_count` (Number) Number of server instances to provision in this group. Can be scaled up or down dynamically
-- `label` (String) Unique identifier for the server instance group within the infrastructure. Used for internal references
-- `os_template_id` (String) ID of the OS template that will be applied to all instances in the group
-- `server_type_id` (String) ID of the server type that defines the hardware specifications for all instances
+- `infrastructure_id` (String) Id of the infrastructure the group belongs to. Changing this value forces a new resource.
+- `instance_count` (Number) Number of server instances in the group. Updated in place to scale the group.
+- `label` (String) Server instance group label.
+- `os_template_id` (String) Id of the OS template installed on every instance.
+- `server_type_id` (String) Id of the server type used for every instance.
 
 ### Optional
 
-- `name` (String) Human-readable name for the server instance group. If not specified, defaults to the label value
-- `storage_controllers` (Attributes Set) Storage controllers configuration for the server instances (see [below for nested schema](#nestedatt--storage_controllers))
-- `custom_variables` (Attributes Set) Environment variables and configuration parameters passed to all instances (see [below for nested schema](#nestedatt--custom_variables))
-- `network_connections` (Attributes Set) Network interfaces and connectivity configuration for all instances (see [below for nested schema](#nestedatt--network_connections))
+- `custom_variables` (Attributes Set) Custom variables passed to the instances (see [below for nested schema](#nestedatt--custom_variables)).
+- `name` (String) Server instance group name.
+- `network_connections` (Attributes Set) Logical networks the instances connect to (see [below for nested schema](#nestedatt--network_connections)).
+- `storage_controllers` (Attributes Set) Storage controller and volume layout applied to every instance (see [below for nested schema](#nestedatt--storage_controllers)).
 
 ### Read-Only
 
-- `server_instance_group_id` (String) Unique identifier assigned by MetalCloud after the group is created
+- `server_instance_group_id` (String) Id of the server instance group.
 
-## Nested Schema Reference
+<a id="nestedatt--custom_variables"></a>
+### Nested Schema for `custom_variables`
+
+Required:
+
+- `name` (String) Name of the custom variable.
+- `value` (String) Value of the custom variable.
+
+<a id="nestedatt--network_connections"></a>
+### Nested Schema for `network_connections`
+
+Required:
+
+- `logical_network_id` (String) Id of the logical network to connect to.
+- `tagged` (Boolean) Whether the connection is VLAN tagged.
+- `access_mode` (String) Access mode of the connection. The API currently accepts `l2`.
+
+Optional:
+
+- `interface_count` (Number) Number of interfaces connected to this logical network on each server. Left to the platform default when omitted.
+- `mtu` (Number) MTU of the connection. Defaults to `1500` when omitted.
 
 <a id="nestedatt--storage_controllers"></a>
 ### Nested Schema for `storage_controllers`
 
 Required:
 
-- `mode` (String) Storage controller mode
-- `storage_controller_id` (String) Storage controller Id
-- `volumes` (Attributes Set) Storage volumes configuration (see [below for nested schema](#nestedatt--storage_controllers--volumes))
+- `mode` (String) Storage controller mode, for example `RAID`.
+- `storage_controller_id` (String) Id of the storage controller as reported by the server, for example `RAID.Slot.2-1`.
+- `volumes` (Attributes Set) Volumes created on the controller (see [below for nested schema](#nestedatt--storage_controllers--volumes)).
 
 <a id="nestedatt--storage_controllers--volumes"></a>
 ### Nested Schema for `storage_controllers.volumes`
 
 Required:
 
-- `controller_name` (String) Storage controller name
-- `disk_count` (Number) Volume disk count
-- `disk_size_gb` (Number) Volume disk size in GB
-- `disk_type` (String) Volume disk type
-- `raid_type` (String) Volume RAID type
-- `volume_name` (String) Storage volume name
-
-<a id="nestedatt--custom_variables"></a>
-### Nested Schema for `custom_variables`
-
-Custom variables are environment variables or configuration parameters that are passed to all instances during provisioning. These can be used by OS templates for configuration automation.
-
-**Required:**
-
-- `name` (String) Name of the custom variable. Must be a valid environment variable name
-- `value` (String) Value of the custom variable. Will be available to all instances in the group
-
-**Example:**
-```hcl
-custom_variables = [
-  {
-    name  = "APPLICATION_PORT"
-    value = "8080"
-  },
-  {
-    name  = "LOG_LEVEL"
-    value = "INFO"
-  }
-]
-```
-
-<a id="nestedatt--network_connections"></a>
-### Nested Schema for `network_connections`
-
-Network connections define how instances in the group connect to logical networks. Each connection creates a network interface on all instances.
-
-**Required:**
-
-- `access_mode` (String) Determines the type of network access. Valid values:
-  - `"public"` - Internet-accessible network interface
-  - `"private"` - Internal network interface for inter-service communication
-  - `"storage"` - Dedicated interface for storage traffic (iSCSI, NFS)
-- `logical_network_id` (String) ID of the logical network to connect to
-- `tagged` (Boolean) Whether to use VLAN tagging on this connection:
-  - `true` - Use VLAN tagging (802.1Q)
-  - `false` - Untagged/native VLAN
-
-**Optional:**
-
-- `mtu` (Number) Maximum Transmission Unit size for this network connection. Default is typically 1500. Common values:
-  - `1500` - Standard Ethernet MTU
-  - `9000` - Jumbo frames for high-performance applications
-
-**Example:**
-```hcl
-network_connections = [
-  {
-    logical_network_id = metalcloud_logical_network.public.logical_network_id
-    access_mode       = "public"
-    tagged           = false
-  },
-  {
-    logical_network_id = metalcloud_logical_network.storage.logical_network_id
-    access_mode       = "storage"
-    tagged           = true
-    mtu              = 9000
-  }
-]
-```
-
-## Important Notes
-
-### Instance Management
-
-- **Group Operations**: All management operations (start, stop, scale) are performed at the group level
-- **Identical Configuration**: All instances in a group are identical and cannot be individually customized
-- **Hardware Distribution**: MetalCloud automatically distributes instances across available physical servers for high availability
-
-### Scaling Considerations
-
-- **Dynamic Scaling**: The `instance_count` can be modified to scale the group up or down
-- **Zero Downtime**: Scaling operations are performed without affecting existing instances
-- **Resource Limits**: Scaling is subject to available hardware resources in the infrastructure's site
-
-### Network Behavior
-
-- **Consistent Connectivity**: All instances receive the same network connections
-- **Load Balancing**: External load balancers should be used to distribute traffic across instances
-- **Internal Communication**: Instances can communicate with each other through private networks
-
-### Storage Considerations
-
-- **Shared Drives**: Drives attached to a ServerInstanceGroup are accessible by all instances
-- **Local Storage**: Each instance has local storage that is ephemeral and wiped when the instance is released
-- **Persistent Data**: Use attached drives for data that must persist across instance lifecycle changes
-
-## Related Resources
-
-- [`metalcloud_infrastructure`](infrastructure.md) - Container for the server instance group
-- [`metalcloud_drive`](drive.md) - Persistent storage that can be attached to the group
-- [`metalcloud_drive_attachment`](drive_attachment.md) - Connects drives to server instance groups
-- [`metalcloud_logical_network`](logical_network.md) - Networks that instances can connect to
-- [`metalcloud_server_type`](../data-sources/server_type.md) - Hardware specifications for instances
-- [`metalcloud_os_template`](../data-sources/os_template.md) - Operating system configuration for instances
+- `controller_name` (String) Name of the controller the volume is created on.
+- `disk_count` (Number) Number of disks in the volume.
+- `disk_size_gb` (Number) Size of each disk in GB.
+- `disk_type` (String) Disk type, for example `HDD`, `SSD` or `NVME`.
+- `raid_type` (String) RAID level of the volume, for example `raid0`, `raid1`, `raid5` or `raid10`.
+- `volume_name` (String) Name of the volume.
 
 ## Import
 
-Server Instance Groups can be imported using their ID:
-
-```shell
-terraform import metalcloud_server_instance_group.example 12345
+```sh
+terraform import metalcloud_server_instance_group.inst01 <server_instance_group_id>
 ```
+
+## Notes
+
+- All attributes except `infrastructure_id` are updated in place. Network connections are reconciled individually: connections are created, updated or deleted based on `logical_network_id`.
+- Attach shared storage with the `hosts` attribute of [`metalcloud_drive`](drive.md).

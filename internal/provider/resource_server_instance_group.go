@@ -61,8 +61,11 @@ func (r *ServerInstanceGroupResource) Schema(ctx context.Context, req resource.S
 				},
 			},
 			"infrastructure_id": schema.StringAttribute{
-				MarkdownDescription: "Server Instance Group infrastructure Id",
+				MarkdownDescription: "Server Instance Group infrastructure Id. Changing it forces a new resource.",
 				Required:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"label": schema.StringAttribute{
 				MarkdownDescription: "Server Instance Group label",
@@ -562,6 +565,12 @@ func (r *ServerInstanceGroupResource) createNetworkConnection(ctx context.Contex
 		request.Mtu = sdk.PtrInt32(int32(connection.Mtu.ValueInt64()))
 	}
 
+	if connection.InterfaceCount.IsNull() {
+		request.InterfaceCount = *sdk.NewNullableInt32(nil)
+	} else {
+		request.InterfaceCount = *sdk.NewNullableInt32(sdk.PtrInt32(int32(connection.InterfaceCount.ValueInt64())))
+	}
+
 	_, response, err := r.client.ServerInstanceGroupAPI.
 		CreateServerInstanceGroupNetworkConfigurationConnection(ctx, serverInstanceGroupId).
 		CreateServerInstanceGroupNetworkConnection(request).Execute()
@@ -591,6 +600,11 @@ func (r *ServerInstanceGroupResource) readNetworkConnections(ctx context.Context
 			result[i].Mtu = types.Int64Value(int64(*conn.Mtu))
 		} else {
 			result[i].Mtu = types.Int64Null()
+		}
+		if conn.InterfaceCount.IsSet() {
+			result[i].InterfaceCount = types.Int64Value(int64(*conn.InterfaceCount.Get()))
+		} else {
+			result[i].InterfaceCount = types.Int64Null()
 		}
 	}
 
@@ -622,6 +636,14 @@ func (r *ServerInstanceGroupResource) updateNetworkConnection(ctx context.Contex
 			request.Mtu = nil
 		} else {
 			request.Mtu = sdk.PtrInt32(int32(connection.Mtu.ValueInt64()))
+		}
+	}
+
+	if connection.InterfaceCount != existingConnection.InterfaceCount {
+		if connection.InterfaceCount.IsNull() {
+			request.InterfaceCount = *sdk.NewNullableInt32(nil)
+		} else {
+			request.InterfaceCount = *sdk.NewNullableInt32(sdk.PtrInt32(int32(connection.InterfaceCount.ValueInt64())))
 		}
 	}
 

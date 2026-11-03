@@ -43,7 +43,7 @@ resource "metalcloud_extension_instance" "app_inst1" {
     input_variables = [
         {
             label = "var1"
-            value_string = "test1"
+            value_str = "test1"
         },
         {
             label = "var2"

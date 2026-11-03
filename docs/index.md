@@ -12,11 +12,12 @@ The MetalCloud provider provides options to provision bare metal servers, switch
 
 The following arguments are supported:
 
-* `endpoint` - (Required) The **API endpoint to connect to.
-* `api_key` - (Required) The **User's** API_KEY.
-* `user_email` - **User's** email address used as the login identity.
-* `logging` - Set the logging level.
-* `insecure` - (Boolean) Allow insecure connections. Default is false.
+* `endpoint` - (Required) The MetalCloud API endpoint URL.
+* `api_key` - (Required) The user's API key.
+* `user_email` - (Optional) The user's email address.
+* `logging` - (Optional) Logging level. Set to `"true"` to enable debug logging.
+* `insecure` - (Optional, Boolean) Allow insecure TLS connections. Defaults to `false`.
+* `timeout` - (Optional, Number) HTTP client timeout in seconds. Defaults to `300`.
 
 ## Example Usage
 
@@ -36,7 +37,7 @@ provider "metalcloud" {
 }
 
 data "metalcloud_site" "dc" {
-  label = "${var.site}"
+  label = var.site
 }
 
 data "metalcloud_fabric" "wan" {
@@ -123,7 +124,7 @@ resource "metalcloud_server_instance_group" "inst01" {
 
 # Use this resource to effect deploys of the above resources.
 resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
-  infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+  infrastructure_id = metalcloud_infrastructure.infra.infrastructure_id
 
   # Set this to false to actually trigger deploys.
   prevent_deploy = true

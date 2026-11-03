@@ -55,16 +55,25 @@ func (r *ExtensionInstanceResource) Schema(ctx context.Context, req resource.Sch
 				},
 			},
 			"infrastructure_id": schema.StringAttribute{
-				MarkdownDescription: "Extension Instance infrastructure Id",
+				MarkdownDescription: "Extension Instance infrastructure Id. Changing it forces a new resource.",
 				Required:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"label": schema.StringAttribute{
-				MarkdownDescription: "Extension Instance label",
+				MarkdownDescription: "Extension Instance label. Changing it forces a new resource.",
 				Required:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"extension_id": schema.StringAttribute{
-				MarkdownDescription: "Extension Id",
+				MarkdownDescription: "Extension Id. Changing it forces a new resource.",
 				Required:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"input_variables": schema.SetNestedAttribute{
 				MarkdownDescription: "Input variables for the extension instance",

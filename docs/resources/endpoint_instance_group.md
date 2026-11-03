@@ -6,9 +6,9 @@ description: |-
 
 # metalcloud_endpoint_instance_group (Resource)
 
-Attaches a set of **endpoints** (unmanaged nodes such as HGX hosts) to one or more **logical networks**. The resource creates an endpoint instance group in the given infrastructure, adds each selected endpoint to it as an endpoint instance, and connects the group to the logical network(s).
+Attaches a set of **endpoints** (unmanaged nodes such as HGX hosts) to one or more **logical networks**. The resource creates an endpoint instance group in the given infrastructure, adds each selected endpoint to it as an endpoint instance, and connects the group to the logical networks.
 
-A deploy is required afterwards to apply the attachment — use [`metalcloud_infrastructure_deployer`](infrastructure_deployer.md) with a `depends_on` this resource.
+A deploy is required afterwards to apply the attachment. Use [`metalcloud_infrastructure_deployer`](infrastructure_deployer.md) with a `depends_on` on this resource.
 
 ## Example Usage
 
@@ -42,7 +42,7 @@ resource "metalcloud_endpoint_instance_group" "hgx_hosts" {
     {
       logical_network_id = metalcloud_logical_network.tenant_l3.logical_network_id
       tagged             = false
-      access_mode        = "l3"
+      access_mode        = "l2"
       mtu                = 9000
     }
   ]
@@ -51,29 +51,35 @@ resource "metalcloud_endpoint_instance_group" "hgx_hosts" {
 }
 ```
 
-## Argument Reference
+## Schema
 
 ### Required
 
-- `infrastructure_id` (String) The infrastructure the endpoint instance group belongs to. Changing this forces a new resource.
-- `endpoint_ids` (Set of String) Ids of the endpoints to attach. Each becomes an endpoint instance in the group. Use the [`metalcloud_endpoint`](../data-sources/endpoint.md) data source to resolve labels to ids.
+- `endpoint_ids` (Set of String) Ids of the endpoints to attach. Each becomes an endpoint instance in the group. Use the [`metalcloud_endpoint`](../data-sources/endpoint.md) data source to resolve labels to Ids. Entries added or removed here create or delete endpoint instances in place.
+- `infrastructure_id` (String) Id of the infrastructure the group belongs to. Changing this value forces a new resource.
 
 ### Optional
 
-- `label` (String) The endpoint instance group label. Assigned by the platform if omitted. Changing this forces a new resource.
-- `network_connections` (Attributes List) The logical networks this group of endpoints connects to. See below.
+- `label` (String) Endpoint instance group label. Assigned by the platform when omitted. Changing this value forces a new resource.
+- `network_connections` (Attributes List) Logical networks this group of endpoints connects to (see [below for nested schema](#nestedatt--network_connections)).
 
+### Read-Only
+
+- `endpoint_instance_group_id` (String) Id of the endpoint instance group.
+
+<a id="nestedatt--network_connections"></a>
 ### Nested Schema for `network_connections`
 
-- `logical_network_id` (String, Required) The logical network to connect to.
-- `tagged` (Boolean, Required) Whether the connection is VLAN-tagged.
-- `access_mode` (String, Required) The access mode (e.g. `l2`, `l3`).
-- `mtu` (Number, Optional) MTU for the connection (defaults to 1500 when omitted).
-- `interface_count` (Number, Optional) Number of network connection
+Required:
 
-## Attributes Reference
+- `logical_network_id` (String) Id of the logical network to connect to.
+- `tagged` (Boolean) Whether the connection is VLAN tagged.
+- `access_mode` (String) Access mode of the connection. The API currently accepts `l2`.
 
-- `endpoint_instance_group_id` (String) The Id of the created endpoint instance group.
+Optional:
+
+- `interface_count` (Number) Number of interfaces connected to this logical network on each endpoint. Left to the platform default when omitted.
+- `mtu` (Number) MTU of the connection. Defaults to `1500` when omitted.
 
 ## Import
 

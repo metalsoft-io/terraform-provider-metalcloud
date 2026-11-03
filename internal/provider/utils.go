@@ -135,7 +135,21 @@ func ensureNoError(diagnostics *diag.Diagnostics, err error, result *http.Respon
 	return true
 }
 
-func deployInfrastructure(ctx context.Context, client *sdk.APIClient, dataInfrastructureId types.String, dataAllowDataLoss types.Bool, dataAwaitDeployFinish types.Bool, diagnostics *diag.Diagnostics) bool {
+// buildDeployOptions assembles the deploy request body from the Terraform attributes shared by the
+// infrastructure and infrastructure deployer resources.
+func buildDeployOptions(allowDataLoss types.Bool, attemptSoftShutdown types.Bool, softShutdownTimeoutSeconds types.Int64, attemptHardShutdown types.Bool, forceShutdown types.Bool) sdk.InfrastructureDeployOptions {
+	return sdk.InfrastructureDeployOptions{
+		AllowDataLoss: allowDataLoss.ValueBool(),
+		ShutdownOptions: sdk.InfrastructureDeployShutdownOptions{
+			AttemptSoftShutdown: attemptSoftShutdown.ValueBool(),
+			SoftShutdownTimeout: float32(softShutdownTimeoutSeconds.ValueInt64()),
+			AttemptHardShutdown: attemptHardShutdown.ValueBool(),
+			ForceShutdown:       forceShutdown.ValueBool(),
+		},
+	}
+}
+
+func deployInfrastructure(ctx context.Context, client *sdk.APIClient, dataInfrastructureId types.String, deployOptions sdk.InfrastructureDeployOptions, dataAwaitDeployFinish types.Bool, diagnostics *diag.Diagnostics) bool {
 	infrastructureId, ok := convertTfStringToInt64(diagnostics, "Infrastructure Id", dataInfrastructureId)
 	if !ok {
 		return false
@@ -156,9 +170,7 @@ func deployInfrastructure(ctx context.Context, client *sdk.APIClient, dataInfras
 
 	_, response, err = client.InfrastructureAPI.
 		DeployInfrastructure(ctx, infrastructureId).
-		InfrastructureDeployOptions(sdk.InfrastructureDeployOptions{
-			AllowDataLoss: dataAllowDataLoss.ValueBool(),
-		}).
+		InfrastructureDeployOptions(deployOptions).
 		Execute()
 	if !ensureNoError(diagnostics, err, response, []int{202}, "deploy Infrastructure") {
 		return false
