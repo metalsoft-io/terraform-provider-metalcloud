@@ -612,7 +612,7 @@ func (r *ServerInstanceGroupResource) readNetworkConnections(ctx context.Context
 }
 
 func (r *ServerInstanceGroupResource) updateNetworkConnection(ctx context.Context, diagnostics *diag.Diagnostics, serverInstanceGroupId int64, connection NetworkConnectionModel, existingConnection NetworkConnectionModel) error {
-	logicalNetworkId, ok := convertTfStringToFloat32(diagnostics, "Logical Network Id", connection.LogicalNetworkId)
+	logicalNetworkId, ok := convertTfStringToInt64(diagnostics, "Logical Network Id", connection.LogicalNetworkId)
 	if !ok {
 		return fmt.Errorf("invalid Logical Network Id: %s", connection.LogicalNetworkId.ValueString())
 	}
