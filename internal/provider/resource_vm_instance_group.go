@@ -550,7 +550,7 @@ func (r *VmInstanceGroupResource) readVmNetworkConnections(ctx context.Context, 
 		} else {
 			result[i].Mtu = types.Int64Null()
 		}
-		if conn.InterfaceCount.IsSet() {
+		if conn.InterfaceCount.Get() != nil {
 			result[i].InterfaceCount = types.Int64Value(int64(*conn.InterfaceCount.Get()))
 		} else {
 			result[i].InterfaceCount = types.Int64Null()
