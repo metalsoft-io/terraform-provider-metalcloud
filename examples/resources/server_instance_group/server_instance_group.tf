@@ -77,7 +77,7 @@ resource "metalcloud_server_instance_group" "inst01" {
                         disk_size_gb = 931
                         disk_type = "HDD"
                         disk_count = 2
-                        raid_type = "raid1"
+                        raid_type = "RAID1"
                     }
                 ]
             }

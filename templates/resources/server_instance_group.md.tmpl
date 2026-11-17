@@ -49,7 +49,7 @@ resource "metalcloud_server_instance_group" "inst01" {
           disk_size_gb    = 931
           disk_type       = "HDD"
           disk_count      = 2
-          raid_type       = "raid1"
+          raid_type       = "RAID1"
         }
       ]
     }
@@ -136,7 +136,7 @@ Required:
 - `disk_count` (Number) Number of disks in the volume.
 - `disk_size_gb` (Number) Size of each disk in GB.
 - `disk_type` (String) Disk type, for example `HDD`, `SSD` or `NVME`.
-- `raid_type` (String) RAID level of the volume, for example `raid0`, `raid1`, `raid5` or `raid10`.
+- `raid_type` (String) RAID level of the volume. One of `RAID0`, `RAID1`, `RAID5` or `RAID10`.
 - `volume_name` (String) Name of the volume.
 
 ## Import

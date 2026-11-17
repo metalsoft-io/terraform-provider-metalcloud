@@ -4,6 +4,7 @@ go 1.27.3
 
 require (
 	github.com/hashicorp/terraform-plugin-framework v1.19.0
+	github.com/hashicorp/terraform-plugin-framework-validators v0.19.0
 	github.com/hashicorp/terraform-plugin-log v0.11.0
 	github.com/metalsoft-io/metalcloud-sdk-go v0.0.0-20261016131609-a10cc8565f65
 )

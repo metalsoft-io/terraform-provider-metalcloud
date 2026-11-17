@@ -1,7 +1,9 @@
 package provider
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -72,8 +74,11 @@ var StorageVolumeAttribute = schema.NestedAttributeObject{
 			Required:            true,
 		},
 		"raid_type": schema.StringAttribute{
-			MarkdownDescription: "Volume RAID type",
+			MarkdownDescription: "Volume RAID type. One of `RAID0`, `RAID1`, `RAID5` or `RAID10`.",
 			Required:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("RAID0", "RAID1", "RAID5", "RAID10"),
+			},
 		},
 	},
 }
