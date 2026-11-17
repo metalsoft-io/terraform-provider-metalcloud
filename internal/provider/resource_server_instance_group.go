@@ -353,10 +353,16 @@ func (r *ServerInstanceGroupResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
+	serverTypeId, ok := convertTfStringToInt64(&resp.Diagnostics, "Server Type Id", data.ServerTypeId)
+	if !ok {
+		return
+	}
+
 	updates := sdk.ServerInstanceGroupUpdate{
-		Label:           sdk.PtrString(data.Label.ValueString()),
-		ServerGroupName: sdk.PtrString(data.Name.ValueString()),
-		InstanceCount:   sdk.PtrInt32(data.InstanceCount.ValueInt32()),
+		Label:               sdk.PtrString(data.Label.ValueString()),
+		ServerGroupName:     sdk.PtrString(data.Name.ValueString()),
+		InstanceCount:       sdk.PtrInt32(data.InstanceCount.ValueInt32()),
+		DefaultServerTypeId: sdk.PtrInt64(serverTypeId),
 	}
 
 	if osTemplateId != nil {
