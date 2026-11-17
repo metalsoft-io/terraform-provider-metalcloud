@@ -318,7 +318,11 @@ func (r *ServerInstanceGroupResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
-	data.NetworkConnections = networkConnections
+	// An empty result is stored as null unless the prior state held an empty
+	// set, so that both an omitted block and an explicit [] stay in sync.
+	if len(networkConnections) > 0 || data.NetworkConnections != nil {
+		data.NetworkConnections = networkConnections
+	}
 
 	tflog.Trace(ctx, fmt.Sprintf("read %d network connections for server instance group resource Id %s", len(data.NetworkConnections), data.ServerInstanceGroupId.ValueString()))
 
