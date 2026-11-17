@@ -400,8 +400,19 @@ func (r *ServerInstanceGroupResource) Update(ctx context.Context, req resource.U
 
 		updates.DefaultCustomStorageProfile = &defaultCustomStorageProfile
 	} else {
-		updates.DefaultCustomStorageProfile = &sdk.ServerInstanceStorageProfile{
-			Controllers: []sdk.ServerInstanceStorageProfileController{},
+		// Only send an empty profile to clear one that was previously configured.
+		// Sending any profile counts as a custom RAID change, which requires the
+		// enableCustomRaidConfiguration quota, so omit it when there is nothing to clear.
+		var priorStorageControllers []StorageControllerModel
+		resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("storage_controllers"), &priorStorageControllers)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		if len(priorStorageControllers) > 0 {
+			updates.DefaultCustomStorageProfile = &sdk.ServerInstanceStorageProfile{
+				Controllers: []sdk.ServerInstanceStorageProfileController{},
+			}
 		}
 	}
 
