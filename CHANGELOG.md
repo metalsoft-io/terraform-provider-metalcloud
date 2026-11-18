@@ -1,56 +1,31 @@
-## 2.2.0 (Unreleased)
-## 2.1.2 (May 01, 2019)
-
-* This release includes another upgrade of the Terraform SDK, primarily for the purposes of aligning versions with other providers prior to the v0.12.0 release. The changes in the SDK should not affect the behavior of this particular provider.
-
-## 2.1.1 (April 11, 2019)
-
-OTHER:
-
-* This release includes an upgrade of the Terraform SDK to the latest version, primarily for the purposes of aligning versions with other providers prior to the v0.12.0 release. The changes in the SDK should not affect the behavior of this particular provider.
-
-## 2.1.0 (February 28, 2019)
-
-IMPROVEMENTS:
-
-* The previous release contains an SDK incompatible with TF 0.12. Fortunately 0.12 was not released yet so upgrading the vendored sdk makes this release compatible with 0.12.
-
-## 2.0.0 (January 14, 2019)
+## 8.0.0 (Unreleased)
 
 UPGRADE COMPATIBILITY NOTES:
 
-* Template provider v2.0.0 switches template implementations from HIL to HCL 2.0 templates and uses the set of functions from Terraform v0.12. The new version is broadly compatible for most straightforward template usage, but there are some particular differences to watch out for:
-  * HCL 2.0 template syntax includes a new `%{ ... }` construct for control structures, like `%{ if a == b } ... %{ endif }`. If your existing templates contain any `%{` sequences you will need to now escape them as `%%{` to ensure correct parsing.
-  * The `format` function from Terraform is now a new implementation using the HCL type system rather than based on the Go `fmt` package. The basic features are still compatible, but there are some differences in the handling of some more complex verbs, like `%#v` which now uses JSON syntax instead of Go-like syntax.
-  * HIL apparently incorrectly treated `$$` (without a following `{` as an escape for `$` even though such escaping was not actually required, while the new parser correctly only deals with `$${` as an escape for `${`. This issue was unfortunately not known at the time of the 2.0.0 release. If you have a template that was using a sequence like `$$FOO` as an escaped form of `$FOO`, remove the extra dollar sign to get the expected interpretation. Dollar sign escaping is only needed as part of escaping the full `${` sequence, not dollar signs in isolation.
-* The `filename` argument is no longer supported in `template_file`. This argument was deprecated long before this provider was split into its own codebase. Replace uses of `filename = "foo"` with `template = file("foo")` to get a similar result.
-* In `template_cloudinit_config`, we now require gzip output to be base64 encoded, because Terraform Core expects all strings to be valid UTF-8 and would previously silently corrupt raw gzip output in some cases. Base64 encoding is the standard way to represent small binary payloads in Terraform configuration, and so other providers that expect binary data should have mechanisms to accept Base64 data. For example, in `aws_instance` you can use `user_data_base64` instead of `user_data`.
-* Please note that Terraform v0.12 now has a built-in function `templatefile` which behaves in much the same way as the `template_file` data source. You may wish to switch to using the function rather than the data source after upgrading to Terraform v0.12.
+* The provider is built for the MetalCloud v8.0 API. Use provider 8.x with MetalCloud v8.0 controllers and pin the version, for example `version = "~> 8.0"`.
+* `metalcloud_drive` and `metalcloud_vm_instance_group` are imported by `<infrastructure_id>:<id>`, for example `terraform import metalcloud_drive.data01 1234:5678`. Importing by the plain Id never worked. (MS-10918)
+* `raid_type` in `storage_controllers` accepts only `RAID0`, `RAID1`, `RAID5` and `RAID10`. Lowercase values such as `raid1`, which the API rejects, now fail at `terraform plan`. (MS-10915)
+* `metalcloud_server_instance_group`, `metalcloud_vm_instance_group` and `metalcloud_infrastructure` read their pending (design) configuration instead of the deployed one. State and `terraform plan` now show what Terraform has written, not what is deployed. The first refresh after upgrading replaces deployed values in state with design values. (MS-10918)
+
+DEPRECATIONS:
+
+* `create_if_missing` on the `metalcloud_infrastructure` data source is deprecated. Data sources are read during `terraform plan`, so it created the infrastructure during `plan` and Terraform never tracked or destroyed it. Use the `metalcloud_infrastructure` resource and import an existing infrastructure instead; the resource documentation explains how to migrate. (MS-6131)
 
 IMPROVEMENTS:
 
-* The provider is now compatible with Terraform v0.12, while retaining compatibility with prior versions.
-* The template language now supports simple control structures. The `for` construct allows repetition and the `if` construct allows conditional output. For example:
-  ```
-  %{ for addr in ip_addrs ~}
-  backend ${addr}
-  %{ endfor ~}
-  ```
-  This is the same syntax used for string templates within the Terraform language itself, from Terraform v0.12.
-* Expressions within interpolation sequences `${ ... }` have the same new functionality added in Terraform v0.12, including the expanded set of available functions.
+* `metalcloud_server_type` data source: add `disk_count` and `storage_controllers`, with the RAID types, controller modes and disks of each controller. (MS-8468)
+* Deploys started with `await_deploy_finish = true` are awaited for up to 2 hours instead of 30 minutes. (MS-5065)
+* `terraform destroy` warns when `metalcloud_infrastructure` has `prevent_deploy = true`, because the infrastructure is then only marked for deletion and stays active until it is deployed. (MS-9909)
+* Importing `metalcloud_drive` sets `storage_pool_id`, and importing `metalcloud_vm_instance_group` sets `label`, `vm_type_id` and `os_template_id`, so the first plan after an import does not replace the resource. (MS-10918)
+* Importing `metalcloud_infrastructure` sets the deploy options to their defaults, so the first plan after an import shows no changes. (MS-6131)
+* Documentation: fix the provider and getting started examples, document deploys and destroy, and document importing an infrastructure and the resources inside it. (MS-339, MS-6131)
 
-## 1.0.0 (September 26, 2017)
+BUG FIXES:
 
-* No changes from 0.1.1; just adjusting to [the new version numbering scheme](https://www.hashicorp.com/blog/hashicorp-terraform-provider-versioning/).
-
-## 0.1.1 (June 21, 2017)
-
-NOTES:
-
-Bumping the provider version to get around provider caching issues - still same functionality
-
-## 0.1.0 (June 21, 2017)
-
-NOTES:
-
-* Same functionality as that of Terraform 0.9.8. Repacked as part of [Provider Splitout](https://www.hashicorp.com/blog/upcoming-provider-changes-in-terraform-0-10/)
+* Stop waiting for a deploy when one of its jobs fails, and report the failure, instead of waiting until the timeout. (MS-10320)
+* `metalcloud_server_instance_group`: an update now converges. Before, every apply reissued the same update until the infrastructure was deployed. The same applies to `metalcloud_vm_instance_group` (`instance_count`, `label`, `custom_variables`) and to the `metalcloud_infrastructure` label. (MS-10918)
+* `metalcloud_server_instance_group`: send `server_type_id` on update. Changing it had no effect. (MS-10916)
+* `metalcloud_server_instance_group`: only send an empty storage profile when `storage_controllers` is removed from the configuration, instead of clearing the profile on every update. (MS-10919)
+* `metalcloud_server_instance_group`, `metalcloud_vm_instance_group`: an omitted `network_connections` no longer shows a perpetual diff against an empty set. (MS-10917)
+* `metalcloud_server_instance_group`, `metalcloud_vm_instance_group`, `metalcloud_endpoint_instance_group`: fix a crash when the API returns a null `interfaceCount` for a network connection. (MS-10914)
+* Fix the Ids sent when updating network connections after the switch to the v8.0 SDK.
