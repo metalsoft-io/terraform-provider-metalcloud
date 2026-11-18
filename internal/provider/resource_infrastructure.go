@@ -193,7 +193,13 @@ func (r *InfrastructureResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
-	data.Label = types.StringValue(infrastructure.Label)
+	// Update writes the label to the design configuration, which only reaches the
+	// infrastructure object with the next deploy, so read it from the configuration.
+	if infrastructure.Config.Label != nil {
+		data.Label = types.StringValue(*infrastructure.Config.Label)
+	} else {
+		data.Label = types.StringValue(infrastructure.Label)
+	}
 	data.SiteId = convertInt64IdToTfString(infrastructure.SiteId)
 
 	// The deploy options exist only in Terraform. After an import they are null, so set them to

@@ -281,7 +281,15 @@ func (r *VmInstanceGroupResource) Read(ctx context.Context, req resource.ReadReq
 		return
 	}
 
-	data.InstanceCount = types.Int64Value(int64(*vmInstanceGroup.InstanceCount))
+	// The group object holds the deployed configuration, while Update writes the design
+	// configuration in vmInstanceGroup.Config. Read the design-time attributes from Config
+	// so that state matches what Update writes before the next deploy.
+	if vmInstanceGroup.Config.InstanceCount != nil {
+		data.InstanceCount = types.Int64Value(int64(*vmInstanceGroup.Config.InstanceCount))
+	} else if vmInstanceGroup.InstanceCount != nil {
+		data.InstanceCount = types.Int64Value(int64(*vmInstanceGroup.InstanceCount))
+	}
+	data.Label = types.StringValue(vmInstanceGroup.Config.Label)
 	// data.VmTypeId = convertFloat32IdToTfString(vmInstanceGroup.TypeId)
 	data.DiskSizeGb = types.Int64Value(int64(vmInstanceGroup.DiskSizeGB))
 	if vmInstanceGroup.VmPoolId != nil {
@@ -306,9 +314,9 @@ func (r *VmInstanceGroupResource) Read(ctx context.Context, req resource.ReadReq
 	tflog.Trace(ctx, fmt.Sprintf("read %d network connections for VM instance group resource Id %s", len(data.NetworkConnections), data.VmInstanceGroupId.ValueString()))
 
 	// Read custom variables
-	if vmInstanceGroup.CustomVariables != nil {
-		data.CustomVariables = make([]CustomVariableModel, 0, len(vmInstanceGroup.CustomVariables))
-		for name, value := range vmInstanceGroup.CustomVariables {
+	if vmInstanceGroup.Config.CustomVariables != nil {
+		data.CustomVariables = make([]CustomVariableModel, 0, len(vmInstanceGroup.Config.CustomVariables))
+		for name, value := range vmInstanceGroup.Config.CustomVariables {
 			data.CustomVariables = append(data.CustomVariables, CustomVariableModel{
 				Name:  types.StringValue(name),
 				Value: types.StringValue(fmt.Sprintf("%v", value)),

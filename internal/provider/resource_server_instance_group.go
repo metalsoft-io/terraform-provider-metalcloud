@@ -265,17 +265,32 @@ func (r *ServerInstanceGroupResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
-	data.InstanceCount = types.Int32Value(serverInstanceGroup.InstanceCount)
-	data.ServerTypeId = convertInt64IdToTfString(serverInstanceGroup.DefaultServerTypeId)
-	data.OsTemplateId = convertPtrInt64IdToTfString(serverInstanceGroup.OsTemplateId)
 	data.InfrastructureId = convertInt64IdToTfString(serverInstanceGroup.InfrastructureId)
-	data.Label = types.StringValue(serverInstanceGroup.Label)
-	data.Name = types.StringValue(*serverInstanceGroup.ServerGroupName)
+
+	// The group object holds the deployed configuration. Update writes the design
+	// configuration, which only reaches the deployed object with the next deploy, so
+	// read the design configuration to keep state in line with what Update writes.
+	config, response, err := r.client.ServerInstanceGroupAPI.
+		GetServerInstanceGroupConfig(ctx, serverInstanceGroupId).
+		Execute()
+	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "read Server Instance Group configuration") {
+		return
+	}
+
+	data.InstanceCount = types.Int32Value(config.InstanceCount)
+	data.ServerTypeId = convertInt64IdToTfString(config.DefaultServerTypeId)
+	data.OsTemplateId = convertPtrInt64IdToTfString(config.OsTemplateId)
+	data.Label = types.StringValue(config.Label)
+	if config.ServerGroupName != nil {
+		data.Name = types.StringValue(*config.ServerGroupName)
+	} else if serverInstanceGroup.ServerGroupName != nil {
+		data.Name = types.StringValue(*serverInstanceGroup.ServerGroupName)
+	}
 
 	// Read storage controllers
-	if serverInstanceGroup.DefaultCustomStorageProfile != nil {
-		data.StorageControllers = make([]StorageControllerModel, 0, len(serverInstanceGroup.DefaultCustomStorageProfile.Controllers))
-		for _, controller := range serverInstanceGroup.DefaultCustomStorageProfile.Controllers {
+	if config.DefaultCustomStorageProfile != nil {
+		data.StorageControllers = make([]StorageControllerModel, 0, len(config.DefaultCustomStorageProfile.Controllers))
+		for _, controller := range config.DefaultCustomStorageProfile.Controllers {
 			storageController := StorageControllerModel{
 				StorageControllerId: types.StringValue(controller.Id),
 				Mode:                types.StringValue(controller.Mode),
@@ -300,9 +315,9 @@ func (r *ServerInstanceGroupResource) Read(ctx context.Context, req resource.Rea
 	}
 
 	// Read custom variables
-	if serverInstanceGroup.CustomVariables != nil {
-		data.CustomVariables = make([]CustomVariableModel, 0, len(serverInstanceGroup.CustomVariables))
-		for name, value := range serverInstanceGroup.CustomVariables {
+	if config.CustomVariables != nil {
+		data.CustomVariables = make([]CustomVariableModel, 0, len(config.CustomVariables))
+		for name, value := range config.CustomVariables {
 			data.CustomVariables = append(data.CustomVariables, CustomVariableModel{
 				Name:  types.StringValue(name),
 				Value: types.StringValue(fmt.Sprintf("%v", value)),
