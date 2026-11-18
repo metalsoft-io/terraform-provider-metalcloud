@@ -196,13 +196,53 @@ func deployInfrastructure(ctx context.Context, client *sdk.APIClient, dataInfras
 					return false
 				}
 
-				if strings.ToLower(*infrastructure.Config.DeployStatus) == "finished" {
+				if strings.ToLower(infrastructure.Config.GetDeployStatus()) == "finished" {
 					tflog.Trace(ctx, fmt.Sprintf("infrastructure Id %s deployment finished", dataInfrastructureId.ValueString()))
 					return true
+				}
+
+				// deployStatus has no failed state: a deploy whose jobs fail (for example on
+				// validation) stays "ongoing". Check the deploy's job group for failed jobs.
+				if deployFailed(ctx, client, infrastructure, dataInfrastructureId, diagnostics) {
+					return false
 				}
 			}
 		}
 	}
 
 	return true
+}
+
+// deployFailed reports whether the infrastructure's current deploy job group has jobs in error,
+// adding a diagnostic when it does. If the job group cannot be read (for example because the
+// caller lacks permission to read job groups), it logs a warning and reports no failure so that
+// polling falls back to waiting on deployStatus.
+func deployFailed(ctx context.Context, client *sdk.APIClient, infrastructure *sdk.Infrastructure, dataInfrastructureId types.String, diagnostics *diag.Diagnostics) bool {
+	jobGroupId, ok := infrastructure.Config.GetInfrastructureDeployIdOk()
+	if !ok || jobGroupId == nil {
+		return false
+	}
+
+	stats, response, err := client.JobAPI.GetJobGroupStatistics(ctx, *jobGroupId).Execute()
+	if err != nil || response == nil || response.StatusCode != 200 {
+		status := 0
+		if response != nil {
+			status = response.StatusCode
+		}
+		tflog.Warn(ctx, fmt.Sprintf("unable to read deploy job group %d for infrastructure Id %s (status %d): %v; waiting on deploy status only",
+			*jobGroupId, dataInfrastructureId.ValueString(), status, err))
+		return false
+	}
+
+	if stats.JobsThrownError > 0 {
+		diagnostics.AddError(
+			"Deploy Failed",
+			fmt.Sprintf("Deploy of infrastructure Id %s failed: %d of %d jobs in deploy job group %d are in error. "+
+				"Inspect the job group in MetalCloud, fix the cause and retry or cancel the deploy before applying again.",
+				dataInfrastructureId.ValueString(), stats.JobsThrownError, stats.JobsTotal, *jobGroupId),
+		)
+		return true
+	}
+
+	return false
 }
