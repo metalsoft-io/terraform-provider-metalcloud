@@ -273,6 +273,15 @@ func (r *InfrastructureResource) Delete(ctx context.Context, req resource.Delete
 		if !deployInfrastructure(ctx, r.client, data.InfrastructureId, buildDeployOptions(data.AllowDataLoss, data.AttemptSoftShutdown, data.SoftShutdownTimeoutSeconds, data.AttemptHardShutdown, data.ForceShutdown), data.AwaitDeployFinish, &resp.Diagnostics) {
 			return
 		}
+	} else {
+		resp.Diagnostics.AddWarning(
+			"Infrastructure Marked for Deletion but Not Deployed",
+			fmt.Sprintf("Infrastructure Id %s was marked for deletion, but no deploy was triggered because prevent_deploy is true. "+
+				"If it was deployed, its resources remain active until the infrastructure is deployed in MetalCloud. "+
+				"To have terraform destroy tear it down, set prevent_deploy = false and run terraform apply before terraform destroy; "+
+				"the setting is read from state, so changing it only in configuration has no effect on destroy.",
+				data.InfrastructureId.ValueString()),
+		)
 	}
 
 	tflog.Trace(ctx, fmt.Sprintf("deleted infrastructure resource Id %s", data.InfrastructureId.ValueString()))
