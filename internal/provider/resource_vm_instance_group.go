@@ -477,16 +477,28 @@ func (r *VmInstanceGroupResource) Delete(ctx context.Context, req resource.Delet
 		return
 	}
 
-	vmInstanceGroupConfig, response, err := r.client.VMInstanceGroupAPI.
-		GetVMInstanceGroupConfigInfo(ctx, infrastructureId, vmInstanceGroupId).
+	// The delete is checked against the revision of the group itself, not of its design
+	// configuration, which has its own revision. Sending the configuration revision fails
+	// with 412 Precondition Failed once the two differ.
+	vmInstanceGroup, response, err := r.client.VMInstanceGroupAPI.
+		GetInfrastructureVMInstanceGroup(ctx, infrastructureId, vmInstanceGroupId).
 		Execute()
-	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "get VM Instance Group config") {
+	if !ensureNoError(&resp.Diagnostics, err, response, []int{200, 404}, "get VM Instance Group") {
 		return
+	}
+	if response.StatusCode == 404 {
+		// Resource not found - nothing to delete
+		return
+	}
+
+	etag := response.Header.Get("ETag")
+	if etag == "" {
+		etag = fmt.Sprintf("%d", vmInstanceGroup.Revision)
 	}
 
 	response, err = r.client.VMInstanceGroupAPI.
 		DeleteVMInstanceGroup(ctx, infrastructureId, vmInstanceGroupId).
-		IfMatch(fmt.Sprintf("%d", int(vmInstanceGroupConfig.Revision))).
+		IfMatch(etag).
 		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{204, 404}, "delete VM Instance Group") {
 		return

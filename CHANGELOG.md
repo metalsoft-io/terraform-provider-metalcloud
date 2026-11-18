@@ -28,4 +28,5 @@ BUG FIXES:
 * `metalcloud_server_instance_group`: only send an empty storage profile when `storage_controllers` is removed from the configuration, instead of clearing the profile on every update. (MS-10919)
 * `metalcloud_server_instance_group`, `metalcloud_vm_instance_group`: an omitted `network_connections` no longer shows a perpetual diff against an empty set. (MS-10917)
 * `metalcloud_server_instance_group`, `metalcloud_vm_instance_group`, `metalcloud_endpoint_instance_group`: fix a crash when the API returns a null `interfaceCount` for a network connection. (MS-10914)
+* `metalcloud_vm_instance_group`: fix `terraform destroy` failing with `412 Precondition Failed`. The delete sent the revision of the group's design configuration instead of the revision of the group. (MS-8649)
 * Fix the Ids sent when updating network connections after the switch to the v8.0 SDK.
