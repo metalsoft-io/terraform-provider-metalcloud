@@ -94,6 +94,8 @@ Optional:
 
 - `interface_count` (Number) Number of interfaces connected to this logical network on each VM. Left to the platform default when omitted.
 - `mtu` (Number) MTU of the connection. Defaults to `1500` when omitted.
+- `provision_instance_dns_records` (Boolean) Create DNS records (A and PTR) on this logical network for each VM, named after its hostname in the DNS zone. When omitted, a new connection is created without them and an existing connection keeps its current setting.
+- `provision_load_balancing_dns_record` (Boolean) Create a DNS load balancing record (A) on this logical network that points to all VMs in the group, named after the group's hostname in the DNS zone. When omitted, a new connection is created without it and an existing connection keeps its current setting.
 
 ## Import
 

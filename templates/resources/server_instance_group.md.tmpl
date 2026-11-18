@@ -61,6 +61,9 @@ resource "metalcloud_server_instance_group" "inst01" {
       tagged             = true
       access_mode        = "l2"
       mtu                = 1500
+
+      # Create DNS records for each server instance on this network.
+      provision_instance_dns_records = true
     }
   ]
 
@@ -88,6 +91,7 @@ resource "metalcloud_server_instance_group" "inst01" {
 ### Optional
 
 - `custom_variables` (Attributes Set) Custom variables passed to the instances (see [below for nested schema](#nestedatt--custom_variables)).
+- `hostname` (String) Hostname of the group, up to 63 letters, digits and hyphens. It names the group's DNS load balancing record, created on the network connections that set `provision_load_balancing_dns_record`; without it the record gets a generated name. Updated in place. Removing it from the configuration keeps the current hostname.
 - `name` (String) Server instance group name.
 - `network_connections` (Attributes Set) Logical networks the instances connect to (see [below for nested schema](#nestedatt--network_connections)).
 - `storage_controllers` (Attributes Set) Storage controller and volume layout applied to every instance (see [below for nested schema](#nestedatt--storage_controllers)).
@@ -117,6 +121,8 @@ Optional:
 
 - `interface_count` (Number) Number of interfaces connected to this logical network on each server. Left to the platform default when omitted.
 - `mtu` (Number) MTU of the connection. Defaults to `1500` when omitted.
+- `provision_instance_dns_records` (Boolean) Create DNS records (A and PTR) on this logical network for each server, named after its hostname in the DNS zone. When omitted, a new connection is created without them and an existing connection keeps its current setting.
+- `provision_load_balancing_dns_record` (Boolean) Create a DNS load balancing record (A) on this logical network that points to all servers in the group, named after the group's `hostname` in the DNS zone. When omitted, a new connection is created without it and an existing connection keeps its current setting.
 
 <a id="nestedatt--storage_controllers"></a>
 ### Nested Schema for `storage_controllers`

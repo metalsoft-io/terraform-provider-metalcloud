@@ -1,11 +1,17 @@
 package provider
 
 import (
+	"regexp"
+
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	sdk "github.com/metalsoft-io/metalcloud-sdk-go"
 )
+
+// hostnameRegexp matches a DNS label: letters, digits and hyphens.
+var hostnameRegexp = regexp.MustCompile(`^[A-Za-z0-9-]+$`)
 
 type NetworkConnectionModel struct {
 	LogicalNetworkId types.String `tfsdk:"logical_network_id"`
@@ -13,6 +19,9 @@ type NetworkConnectionModel struct {
 	AccessMode       types.String `tfsdk:"access_mode"`
 	Mtu              types.Int64  `tfsdk:"mtu"`
 	InterfaceCount   types.Int64  `tfsdk:"interface_count"`
+
+	ProvisionInstanceDnsRecords     types.Bool `tfsdk:"provision_instance_dns_records"`
+	ProvisionLoadBalancingDnsRecord types.Bool `tfsdk:"provision_load_balancing_dns_record"`
 }
 
 var NetworkConnectionAttribute = schema.NestedAttributeObject{
@@ -39,7 +48,53 @@ var NetworkConnectionAttribute = schema.NestedAttributeObject{
 			Optional:            true,
 			Computed:            true,
 		},
+		"provision_instance_dns_records": schema.BoolAttribute{
+			MarkdownDescription: "Create DNS records (A and PTR) on this logical network for every instance in the group. " +
+				"The record name is the instance's hostname, or a generated name such as `server-instance-24`, in the DNS zone. When omitted, new connections are created without them and existing connections keep their current setting.",
+			Optional: true,
+			Computed: true,
+		},
+		"provision_load_balancing_dns_record": schema.BoolAttribute{
+			MarkdownDescription: "Create a DNS load balancing record (A) on this logical network that points to all instances in the group. " +
+				"The record name is the group's hostname, or a generated name such as `server-instance-group-34`, in the DNS zone. When omitted, new connections are created without them and existing connections keep their current setting.",
+			Optional: true,
+			Computed: true,
+		},
 	},
+}
+
+// networkConnectionDns returns the DNS settings of a network connection in the form the API expects. Settings
+// that are not set in the configuration take their value from fallback, the existing connection.
+func networkConnectionDns(connection NetworkConnectionModel, fallback NetworkConnectionModel) sdk.NullableDnsRecordsEndpointGroupLogicalNetwork {
+	value := func(planned types.Bool, existing types.Bool) *bool {
+		if planned.IsNull() || planned.IsUnknown() {
+			return sdk.PtrBool(existing.ValueBool())
+		}
+		return sdk.PtrBool(planned.ValueBool())
+	}
+
+	return *sdk.NewNullableDnsRecordsEndpointGroupLogicalNetwork(&sdk.DnsRecordsEndpointGroupLogicalNetwork{
+		ProvisionInstanceDnsRecords:     value(connection.ProvisionInstanceDnsRecords, fallback.ProvisionInstanceDnsRecords),
+		ProvisionLoadBalancingDnsRecord: value(connection.ProvisionLoadBalancingDnsRecord, fallback.ProvisionLoadBalancingDnsRecord),
+	})
+}
+
+// networkConnectionDnsChanged reports whether the configuration changes a DNS setting of an existing network connection.
+func networkConnectionDnsChanged(connection NetworkConnectionModel, existingConnection NetworkConnectionModel) bool {
+	changed := func(planned types.Bool, existing types.Bool) bool {
+		return !planned.IsNull() && !planned.IsUnknown() && planned.ValueBool() != existing.ValueBool()
+	}
+
+	return changed(connection.ProvisionInstanceDnsRecords, existingConnection.ProvisionInstanceDnsRecords) ||
+		changed(connection.ProvisionLoadBalancingDnsRecord, existingConnection.ProvisionLoadBalancingDnsRecord)
+}
+
+// setNetworkConnectionDns sets the DNS settings of a network connection read from the API. Settings that the
+// API does not return are disabled, which is the API default.
+func setNetworkConnectionDns(connection *NetworkConnectionModel, dns sdk.NullableDnsRecordsEndpointGroupLogicalNetwork) {
+	records := dns.Get()
+	connection.ProvisionInstanceDnsRecords = types.BoolValue(records != nil && records.GetProvisionInstanceDnsRecords())
+	connection.ProvisionLoadBalancingDnsRecord = types.BoolValue(records != nil && records.GetProvisionLoadBalancingDnsRecord())
 }
 
 type StorageVolumeModel struct {

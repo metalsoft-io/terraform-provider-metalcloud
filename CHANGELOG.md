@@ -13,6 +13,8 @@ DEPRECATIONS:
 
 IMPROVEMENTS:
 
+* `metalcloud_server_instance_group`, `metalcloud_vm_instance_group`, `metalcloud_endpoint_instance_group`: add `provision_instance_dns_records` and `provision_load_balancing_dns_record` to `network_connections`, to create DNS records for the instances and a DNS load balancing record for the group on a logical network. (MS-8395)
+* `metalcloud_server_instance_group`: add `hostname`, which names the group's DNS load balancing record. (MS-8395)
 * `metalcloud_server_type` data source: add `disk_count` and `storage_controllers`, with the RAID types, controller modes and disks of each controller. (MS-8468)
 * Deploys started with `await_deploy_finish = true` are awaited for up to 2 hours instead of 30 minutes. (MS-5065)
 * `terraform destroy` warns when `metalcloud_infrastructure` has `prevent_deploy = true`, because the infrastructure is then only marked for deletion and stays active until it is deployed. (MS-9909)
@@ -29,4 +31,5 @@ BUG FIXES:
 * `metalcloud_server_instance_group`, `metalcloud_vm_instance_group`: an omitted `network_connections` no longer shows a perpetual diff against an empty set. (MS-10917)
 * `metalcloud_server_instance_group`, `metalcloud_vm_instance_group`, `metalcloud_endpoint_instance_group`: fix a crash when the API returns a null `interfaceCount` for a network connection. (MS-10914)
 * `metalcloud_vm_instance_group`: fix `terraform destroy` failing with `412 Precondition Failed`. The delete sent the revision of the group's design configuration instead of the revision of the group. (MS-8649)
+* `metalcloud_server_instance_group`, `metalcloud_vm_instance_group`, `metalcloud_endpoint_instance_group`: fix `Provider returned invalid result object after apply` when a network connection without `interface_count` is created or changed, and stop sending `interfaceCount: 0` for it on update.
 * Fix the Ids sent when updating network connections after the switch to the v8.0 SDK.

@@ -168,6 +168,16 @@ func (r *EndpointInstanceGroupResource) Create(ctx context.Context, req resource
 	tflog.Trace(ctx, fmt.Sprintf("created endpoint instance group Id %s with %d endpoint(s) and %d network connection(s)",
 		data.EndpointInstanceGroupId.ValueString(), len(endpointIds), len(data.NetworkConnections)))
 
+	// Store the connections as the API returns them, so that computed values such as
+	// interface_count are known in state.
+	if data.NetworkConnections != nil {
+		networkConnections, err := r.readNetworkConnections(ctx, &resp.Diagnostics, group.Id)
+		if err != nil {
+			return
+		}
+		data.NetworkConnections = networkConnections
+	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -328,6 +338,16 @@ func (r *EndpointInstanceGroupResource) Update(ctx context.Context, req resource
 
 	tflog.Trace(ctx, fmt.Sprintf("updated endpoint instance group Id %s", data.EndpointInstanceGroupId.ValueString()))
 
+	// Store the connections as the API returns them, so that computed values such as
+	// interface_count are known in state.
+	if data.NetworkConnections != nil {
+		networkConnections, err := r.readNetworkConnections(ctx, &resp.Diagnostics, groupId)
+		if err != nil {
+			return
+		}
+		data.NetworkConnections = networkConnections
+	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -432,16 +452,18 @@ func (r *EndpointInstanceGroupResource) createNetworkConnection(ctx context.Cont
 		Tagged:           connection.Tagged.ValueBool(),
 		AccessMode:       accessMode,
 	}
-	if connection.Mtu.IsNull() {
+	if connection.Mtu.IsNull() || connection.Mtu.IsUnknown() {
 		request.Mtu = sdk.PtrInt32(1500)
 	} else {
 		request.Mtu = sdk.PtrInt32(int32(connection.Mtu.ValueInt64()))
 	}
-	if connection.InterfaceCount.IsNull() {
+	if connection.InterfaceCount.IsNull() || connection.InterfaceCount.IsUnknown() {
 		request.InterfaceCount = *sdk.NewNullableInt32(nil)
 	} else {
 		request.InterfaceCount = *sdk.NewNullableInt32(sdk.PtrInt32(int32(connection.InterfaceCount.ValueInt64())))
 	}
+
+	request.Dns = networkConnectionDns(connection, NetworkConnectionModel{})
 
 	_, response, err := r.client.EndpointInstanceGroupAPI.
 		CreateEndpointInstanceGroupNetworkConfigurationConnection(ctx, groupId).
@@ -478,6 +500,7 @@ func (r *EndpointInstanceGroupResource) readNetworkConnections(ctx context.Conte
 		} else {
 			result[i].InterfaceCount = types.Int64Null()
 		}
+		setNetworkConnectionDns(&result[i], conn.Dns)
 	}
 	return result, nil
 }
@@ -499,19 +522,23 @@ func (r *EndpointInstanceGroupResource) updateNetworkConnection(ctx context.Cont
 		}
 		request.AccessMode = &accessMode
 	}
-	if connection.Mtu != existingConnection.Mtu {
+	if !connection.Mtu.IsUnknown() && connection.Mtu != existingConnection.Mtu {
 		if connection.Mtu.IsNull() {
 			request.Mtu = nil
 		} else {
 			request.Mtu = sdk.PtrInt32(int32(connection.Mtu.ValueInt64()))
 		}
 	}
-	if connection.InterfaceCount != existingConnection.InterfaceCount {
+	if !connection.InterfaceCount.IsUnknown() && connection.InterfaceCount != existingConnection.InterfaceCount {
 		if connection.InterfaceCount.IsNull() {
 			request.InterfaceCount = *sdk.NewNullableInt32(nil)
 		} else {
 			request.InterfaceCount = *sdk.NewNullableInt32(sdk.PtrInt32(int32(connection.InterfaceCount.ValueInt64())))
 		}
+	}
+
+	if networkConnectionDnsChanged(connection, existingConnection) {
+		request.Dns = networkConnectionDns(connection, existingConnection)
 	}
 
 	_, response, err := r.client.EndpointInstanceGroupAPI.

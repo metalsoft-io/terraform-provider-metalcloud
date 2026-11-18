@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	sdk "github.com/metalsoft-io/metalcloud-sdk-go"
@@ -35,6 +37,7 @@ type ServerInstanceGroupResourceModel struct {
 	InfrastructureId      types.String             `tfsdk:"infrastructure_id"`
 	Label                 types.String             `tfsdk:"label"`
 	Name                  types.String             `tfsdk:"name"`
+	Hostname              types.String             `tfsdk:"hostname"`
 	InstanceCount         types.Int32              `tfsdk:"instance_count"`
 	ServerTypeId          types.String             `tfsdk:"server_type_id"`
 	OsTemplateId          types.String             `tfsdk:"os_template_id"`
@@ -74,6 +77,20 @@ func (r *ServerInstanceGroupResource) Schema(ctx context.Context, req resource.S
 			"name": schema.StringAttribute{
 				MarkdownDescription: "Server Instance Group name",
 				Optional:            true,
+			},
+			"hostname": schema.StringAttribute{
+				MarkdownDescription: "Hostname of the group: the name of its DNS load balancing record, created on the network connections " +
+					"that set `provision_load_balancing_dns_record`. Up to 63 letters, digits and hyphens. When omitted, the record gets a generated name. " +
+					"Removing it from the configuration keeps the current hostname.",
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.String{
+					stringvalidator.LengthBetween(1, 63),
+					stringvalidator.RegexMatches(hostnameRegexp, "must contain only letters, digits and hyphens"),
+				},
 			},
 			"instance_count": schema.Int32Attribute{
 				MarkdownDescription: "Server Instance Group instance count",
@@ -159,6 +176,10 @@ func (r *ServerInstanceGroupResource) Create(ctx context.Context, req resource.C
 		OsTemplateId:        sdk.PtrInt64(osTemplateId),
 	}
 
+	if !data.Hostname.IsNull() && !data.Hostname.IsUnknown() {
+		request.Hostname = sdk.PtrString(data.Hostname.ValueString())
+	}
+
 	if data.StorageControllers != nil {
 		defaultCustomStorageProfile := sdk.ServerInstanceStorageProfile{}
 		defaultCustomStorageProfile.Controllers = []sdk.ServerInstanceStorageProfileController{}
@@ -213,6 +234,9 @@ func (r *ServerInstanceGroupResource) Create(ctx context.Context, req resource.C
 	}
 
 	data.ServerInstanceGroupId = convertInt64IdToTfString(serverInstanceGroup.Id)
+	if data.Hostname.IsUnknown() {
+		data.Hostname = types.StringPointerValue(serverInstanceGroup.Hostname)
+	}
 
 	tflog.Trace(ctx, fmt.Sprintf("created server instance group resource Id %s", data.ServerInstanceGroupId.ValueString()))
 
@@ -229,6 +253,16 @@ func (r *ServerInstanceGroupResource) Create(ctx context.Context, req resource.C
 
 			tflog.Trace(ctx, fmt.Sprintf("created network connection %s for server instance group resource Id %s", connection.LogicalNetworkId.ValueString(), data.ServerInstanceGroupId.ValueString()))
 		}
+	}
+
+	// Store the connections as the API returns them, so that computed values such as
+	// interface_count are known in state.
+	if data.NetworkConnections != nil {
+		networkConnections, err := r.readNetworkConnections(ctx, &resp.Diagnostics, serverInstanceGroup.Id)
+		if err != nil {
+			return
+		}
+		data.NetworkConnections = networkConnections
 	}
 
 	// Save data into Terraform state
@@ -281,6 +315,7 @@ func (r *ServerInstanceGroupResource) Read(ctx context.Context, req resource.Rea
 	data.ServerTypeId = convertInt64IdToTfString(config.DefaultServerTypeId)
 	data.OsTemplateId = convertPtrInt64IdToTfString(config.OsTemplateId)
 	data.Label = types.StringValue(config.Label)
+	data.Hostname = types.StringPointerValue(config.Hostname)
 	if config.ServerGroupName != nil {
 		data.Name = types.StringValue(*config.ServerGroupName)
 	} else if serverInstanceGroup.ServerGroupName != nil {
@@ -384,6 +419,10 @@ func (r *ServerInstanceGroupResource) Update(ctx context.Context, req resource.U
 		DefaultServerTypeId: sdk.PtrInt64(serverTypeId),
 	}
 
+	if !data.Hostname.IsNull() && !data.Hostname.IsUnknown() {
+		updates.Hostname = sdk.PtrString(data.Hostname.ValueString())
+	}
+
 	if osTemplateId != nil {
 		updates.OsTemplateId = osTemplateId
 	}
@@ -450,13 +489,17 @@ func (r *ServerInstanceGroupResource) Update(ctx context.Context, req resource.U
 		updates.CustomVariables = map[string]interface{}{}
 	}
 
-	_, response, err = r.client.ServerInstanceGroupAPI.
+	updatedConfig, response, err := r.client.ServerInstanceGroupAPI.
 		UpdateServerInstanceGroupConfig(ctx, serverInstanceGroupId).
 		ServerInstanceGroupUpdate(updates).
 		IfMatch(response.Header[http.CanonicalHeaderKey("ETag")][0]).
 		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "update Server Instance Group") {
 		return
+	}
+
+	if data.Hostname.IsUnknown() {
+		data.Hostname = types.StringPointerValue(updatedConfig.Hostname)
 	}
 
 	tflog.Trace(ctx, fmt.Sprintf("updated server instance group resource Id %s", data.ServerInstanceGroupId.ValueString()))
@@ -529,6 +572,16 @@ func (r *ServerInstanceGroupResource) Update(ctx context.Context, req resource.U
 		}
 	}
 
+	// Store the connections as the API returns them, so that computed values such as
+	// interface_count are known in state.
+	if data.NetworkConnections != nil {
+		networkConnections, err := r.readNetworkConnections(ctx, &resp.Diagnostics, serverInstanceGroupId)
+		if err != nil {
+			return
+		}
+		data.NetworkConnections = networkConnections
+	}
+
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -595,17 +648,19 @@ func (r *ServerInstanceGroupResource) createNetworkConnection(ctx context.Contex
 		AccessMode:       accessMode,
 	}
 
-	if connection.Mtu.IsNull() {
+	if connection.Mtu.IsNull() || connection.Mtu.IsUnknown() {
 		request.Mtu = sdk.PtrInt32(1500) // Default MTU value
 	} else {
 		request.Mtu = sdk.PtrInt32(int32(connection.Mtu.ValueInt64()))
 	}
 
-	if connection.InterfaceCount.IsNull() {
+	if connection.InterfaceCount.IsNull() || connection.InterfaceCount.IsUnknown() {
 		request.InterfaceCount = *sdk.NewNullableInt32(nil)
 	} else {
 		request.InterfaceCount = *sdk.NewNullableInt32(sdk.PtrInt32(int32(connection.InterfaceCount.ValueInt64())))
 	}
+
+	request.Dns = networkConnectionDns(connection, NetworkConnectionModel{})
 
 	_, response, err := r.client.ServerInstanceGroupAPI.
 		CreateServerInstanceGroupNetworkConfigurationConnection(ctx, serverInstanceGroupId).
@@ -642,6 +697,7 @@ func (r *ServerInstanceGroupResource) readNetworkConnections(ctx context.Context
 		} else {
 			result[i].InterfaceCount = types.Int64Null()
 		}
+		setNetworkConnectionDns(&result[i], conn.Dns)
 	}
 
 	return result, nil
@@ -667,7 +723,7 @@ func (r *ServerInstanceGroupResource) updateNetworkConnection(ctx context.Contex
 		request.AccessMode = &accessMode
 	}
 
-	if connection.Mtu != existingConnection.Mtu {
+	if !connection.Mtu.IsUnknown() && connection.Mtu != existingConnection.Mtu {
 		if connection.Mtu.IsNull() {
 			request.Mtu = nil
 		} else {
@@ -675,12 +731,16 @@ func (r *ServerInstanceGroupResource) updateNetworkConnection(ctx context.Contex
 		}
 	}
 
-	if connection.InterfaceCount != existingConnection.InterfaceCount {
+	if !connection.InterfaceCount.IsUnknown() && connection.InterfaceCount != existingConnection.InterfaceCount {
 		if connection.InterfaceCount.IsNull() {
 			request.InterfaceCount = *sdk.NewNullableInt32(nil)
 		} else {
 			request.InterfaceCount = *sdk.NewNullableInt32(sdk.PtrInt32(int32(connection.InterfaceCount.ValueInt64())))
 		}
+	}
+
+	if networkConnectionDnsChanged(connection, existingConnection) {
+		request.Dns = networkConnectionDns(connection, existingConnection)
 	}
 
 	_, response, err := r.client.ServerInstanceGroupAPI.
