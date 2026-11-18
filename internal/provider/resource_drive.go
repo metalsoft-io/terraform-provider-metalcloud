@@ -431,6 +431,29 @@ func (r *DriveResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 	tflog.Trace(ctx, fmt.Sprintf("deleted drive resource Id %s", data.DriveId.ValueString()))
 }
 
+// ImportState imports a drive by "<infrastructure_id>:<drive_id>". The drive can only be read through
+// its infrastructure, and storage_pool_id is set here because Read does not refresh it: left unset,
+// the first plan after the import would replace the drive.
 func (r *DriveResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("drive_id"), req, resp)
+	infrastructureId, driveId, ok := parseInfrastructureChildImportId(&resp.Diagnostics, req.ID, "drive_id")
+	if !ok {
+		return
+	}
+
+	drive, response, err := r.client.DriveAPI.GetDriveConfigInfo(ctx, infrastructureId, driveId).Execute()
+	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "read Drive for import") {
+		return
+	}
+
+	if drive.StoragePoolId == nil {
+		resp.Diagnostics.AddError(
+			"Cannot Import Drive",
+			fmt.Sprintf("Drive %d in infrastructure %d has no storage pool, so storage_pool_id cannot be determined.", driveId, infrastructureId),
+		)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("infrastructure_id"), convertInt64IdToTfString(infrastructureId))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("drive_id"), convertInt64IdToTfString(driveId))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("storage_pool_id"), convertInt64IdToTfString(*drive.StoragePoolId))...)
 }

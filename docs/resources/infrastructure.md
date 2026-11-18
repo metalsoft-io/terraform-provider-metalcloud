@@ -108,11 +108,11 @@ Configurations that use the [`metalcloud_infrastructure`](../data-sources/infras
 
 ### Resources inside the infrastructure
 
-The infrastructure import covers only the infrastructure itself. The following resources can also be imported by their own Id:
+The infrastructure import covers only the infrastructure itself. The resources inside it are imported separately:
 
-* `metalcloud_server_instance_group` by `server_instance_group_id`
-* `metalcloud_logical_network` by `logical_network_id`
-* `metalcloud_endpoint_instance_group` by `endpoint_instance_group_id`
-* `metalcloud_extension_instance` by `extension_instance_id`
-
-`metalcloud_drive` and `metalcloud_vm_instance_group` cannot be imported yet: they need the infrastructure Id to be read, and the import does not provide it.
+* `metalcloud_server_instance_group` by `<server_instance_group_id>`
+* `metalcloud_logical_network` by `<logical_network_id>`
+* `metalcloud_endpoint_instance_group` by `<endpoint_instance_group_id>`
+* `metalcloud_extension_instance` by `<extension_instance_id>`
+* `metalcloud_drive` by `<infrastructure_id>:<drive_id>`
+* `metalcloud_vm_instance_group` by `<infrastructure_id>:<vm_instance_group_id>`

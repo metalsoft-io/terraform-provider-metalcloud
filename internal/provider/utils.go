@@ -246,3 +246,22 @@ func deployFailed(ctx context.Context, client *sdk.APIClient, infrastructure *sd
 
 	return false
 }
+
+// parseInfrastructureChildImportId parses an import Id of the form "<infrastructure_id>:<id>",
+// used by resources that can only be read through their infrastructure.
+func parseInfrastructureChildImportId(diagnostics *diag.Diagnostics, importId string, idName string) (int64, int64, bool) {
+	parts := strings.Split(importId, ":")
+	if len(parts) == 2 {
+		infrastructureId, errInfrastructure := strconv.ParseInt(strings.TrimSpace(parts[0]), 10, 64)
+		childId, errChild := strconv.ParseInt(strings.TrimSpace(parts[1]), 10, 64)
+		if errInfrastructure == nil && errChild == nil && infrastructureId > 0 && childId > 0 {
+			return infrastructureId, childId, true
+		}
+	}
+
+	diagnostics.AddError(
+		"Invalid Import Id",
+		fmt.Sprintf("Expected an import Id of the form <infrastructure_id>:<%s>, for example 1234:5678, got %q.", idName, importId),
+	)
+	return 0, 0, false
+}

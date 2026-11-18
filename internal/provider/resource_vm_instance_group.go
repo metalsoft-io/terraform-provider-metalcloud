@@ -491,8 +491,56 @@ func (r *VmInstanceGroupResource) Delete(ctx context.Context, req resource.Delet
 	tflog.Trace(ctx, fmt.Sprintf("deleted vm instance group resource Id %s", data.VmInstanceGroupId.ValueString()))
 }
 
+// ImportState imports a VM instance group by "<infrastructure_id>:<vm_instance_group_id>". The group can
+// only be read through its infrastructure. Read does not refresh label, vm_type_id or os_template_id, so
+// they are set here: the type and OS template are stored on the VM instances, and are taken from the
+// group's first VM instance. Left unset, the first plan after the import would replace the group.
 func (r *VmInstanceGroupResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("vm_instance_group_id"), req, resp)
+	infrastructureId, vmInstanceGroupId, ok := parseInfrastructureChildImportId(&resp.Diagnostics, req.ID, "vm_instance_group_id")
+	if !ok {
+		return
+	}
+
+	vmInstanceGroup, response, err := r.client.VMInstanceGroupAPI.
+		GetInfrastructureVMInstanceGroup(ctx, infrastructureId, vmInstanceGroupId).
+		Execute()
+	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "read VM Instance Group for import") {
+		return
+	}
+
+	vmInstances, response, err := r.client.VMInstanceGroupAPI.
+		GetVMInstanceGroupVMInstances(ctx, infrastructureId, vmInstanceGroupId).
+		Execute()
+	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "read VM Instances for import") {
+		return
+	}
+
+	if len(vmInstances.Data) == 0 || vmInstances.Data[0].OsTemplateId == nil {
+		resp.Diagnostics.AddError(
+			"Cannot Import VM Instance Group",
+			fmt.Sprintf("VM instance group %d in infrastructure %d has no VM instance with an OS template, so vm_type_id and os_template_id cannot be determined.",
+				vmInstanceGroupId, infrastructureId),
+		)
+		return
+	}
+
+	vmInstance := vmInstances.Data[0]
+	for _, other := range vmInstances.Data[1:] {
+		if other.TypeId != vmInstance.TypeId || other.OsTemplateId == nil || *other.OsTemplateId != *vmInstance.OsTemplateId {
+			resp.Diagnostics.AddWarning(
+				"VM Instances Differ",
+				fmt.Sprintf("The VM instances of group %d do not all have the same VM type and OS template. vm_type_id and os_template_id were taken from VM instance %d.",
+					vmInstanceGroupId, vmInstance.Id),
+			)
+			break
+		}
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("infrastructure_id"), convertInt64IdToTfString(infrastructureId))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("vm_instance_group_id"), convertInt64IdToTfString(vmInstanceGroupId))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("label"), types.StringValue(vmInstanceGroup.Label))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("vm_type_id"), convertInt64IdToTfString(vmInstance.TypeId))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("os_template_id"), convertInt64IdToTfString(*vmInstance.OsTemplateId))...)
 }
 
 func (r *VmInstanceGroupResource) createVmNetworkConnection(ctx context.Context, diagnostics *diag.Diagnostics, infrastructureId int64, vmInstanceGroupId int64, connection NetworkConnectionModel) error {

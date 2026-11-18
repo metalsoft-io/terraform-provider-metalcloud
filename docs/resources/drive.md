@@ -60,9 +60,13 @@ resource "metalcloud_drive" "data01" {
 
 ## Import
 
+Import a drive with its infrastructure Id and drive Id, separated by a colon:
+
 ```sh
-terraform import metalcloud_drive.data01 <drive_id>
+terraform import metalcloud_drive.data01 <infrastructure_id>:<drive_id>
 ```
+
+`storage_pool_id` is taken from the drive. Check the first `terraform plan` after the import: a configuration that differs in `infrastructure_id` or `storage_pool_id` replaces the drive.
 
 ## Notes
 

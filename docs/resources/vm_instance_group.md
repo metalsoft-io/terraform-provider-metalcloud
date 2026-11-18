@@ -97,9 +97,13 @@ Optional:
 
 ## Import
 
+Import a VM instance group with its infrastructure Id and VM instance group Id, separated by a colon:
+
 ```sh
-terraform import metalcloud_vm_instance_group.vminst01 <vm_instance_group_id>
+terraform import metalcloud_vm_instance_group.vminst01 <infrastructure_id>:<vm_instance_group_id>
 ```
+
+`vm_type_id` and `os_template_id` are stored on the VM instances, so they are taken from the group's first VM instance; a group without VM instances cannot be imported. If the VM instances differ, the import warns. Check the first `terraform plan` after the import: a configuration that differs in any attribute other than `label`, `custom_variables` or `network_connections` replaces the group.
 
 ## Notes
 
