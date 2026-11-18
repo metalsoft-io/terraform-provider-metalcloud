@@ -265,3 +265,15 @@ func parseInfrastructureChildImportId(diagnostics *diag.Diagnostics, importId st
 	)
 	return 0, 0, false
 }
+
+// etagOrRevision returns the ETag header of response, or revision when the response has no ETag,
+// for use as the If-Match value of a following change.
+func etagOrRevision(response *http.Response, revision int64) string {
+	if response != nil {
+		if etag := response.Header.Get("ETag"); etag != "" {
+			return etag
+		}
+	}
+
+	return strconv.FormatInt(revision, 10)
+}

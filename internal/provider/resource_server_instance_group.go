@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -395,12 +394,13 @@ func (r *ServerInstanceGroupResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
-	_, response, err := r.client.ServerInstanceGroupAPI.
+	currentConfig, response, err := r.client.ServerInstanceGroupAPI.
 		GetServerInstanceGroupConfig(ctx, serverInstanceGroupId).
 		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "update Server Instance Group") {
 		return
 	}
+	ifMatch := etagOrRevision(response, currentConfig.Revision)
 
 	osTemplateId, ok := convertTfStringToPtrInt64(&resp.Diagnostics, "OS Template Id", data.OsTemplateId)
 	if !ok {
@@ -492,7 +492,7 @@ func (r *ServerInstanceGroupResource) Update(ctx context.Context, req resource.U
 	updatedConfig, response, err := r.client.ServerInstanceGroupAPI.
 		UpdateServerInstanceGroupConfig(ctx, serverInstanceGroupId).
 		ServerInstanceGroupUpdate(updates).
-		IfMatch(response.Header[http.CanonicalHeaderKey("ETag")][0]).
+		IfMatch(ifMatch).
 		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{200}, "update Server Instance Group") {
 		return
@@ -601,7 +601,7 @@ func (r *ServerInstanceGroupResource) Delete(ctx context.Context, req resource.D
 		return
 	}
 
-	_, response, err := r.client.ServerInstanceGroupAPI.
+	serverInstanceGroup, response, err := r.client.ServerInstanceGroupAPI.
 		GetServerInstanceGroup(ctx, serverInstanceGroupId).
 		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{200, 404}, "delete Server Instance Group") {
@@ -614,7 +614,7 @@ func (r *ServerInstanceGroupResource) Delete(ctx context.Context, req resource.D
 
 	response, err = r.client.ServerInstanceGroupAPI.
 		DeleteServerInstanceGroup(ctx, serverInstanceGroupId).
-		IfMatch(response.Header[http.CanonicalHeaderKey("ETag")][0]).
+		IfMatch(etagOrRevision(response, serverInstanceGroup.Revision)).
 		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{204, 404}, "delete Server Instance Group") {
 		return

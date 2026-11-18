@@ -511,14 +511,9 @@ func (r *VmInstanceGroupResource) Delete(ctx context.Context, req resource.Delet
 		return
 	}
 
-	etag := response.Header.Get("ETag")
-	if etag == "" {
-		etag = fmt.Sprintf("%d", vmInstanceGroup.Revision)
-	}
-
 	response, err = r.client.VMInstanceGroupAPI.
 		DeleteVMInstanceGroup(ctx, infrastructureId, vmInstanceGroupId).
-		IfMatch(etag).
+		IfMatch(etagOrRevision(response, vmInstanceGroup.Revision)).
 		Execute()
 	if !ensureNoError(&resp.Diagnostics, err, response, []int{204, 404}, "delete VM Instance Group") {
 		return

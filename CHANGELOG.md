@@ -32,4 +32,5 @@ BUG FIXES:
 * `metalcloud_server_instance_group`, `metalcloud_vm_instance_group`, `metalcloud_endpoint_instance_group`: fix a crash when the API returns a null `interfaceCount` for a network connection. (MS-10914)
 * `metalcloud_vm_instance_group`: fix `terraform destroy` failing with `412 Precondition Failed`. The delete sent the revision of the group's design configuration instead of the revision of the group. (MS-8649)
 * `metalcloud_server_instance_group`, `metalcloud_vm_instance_group`, `metalcloud_endpoint_instance_group`: fix `Provider returned invalid result object after apply` when a network connection without `interface_count` is created or changed, and stop sending `interfaceCount: 0` for it on update.
+* `metalcloud_server_instance_group`: fix a crash on update and delete when the API response has no `ETag` header. The object's revision is sent in `If-Match` instead.
 * Fix the Ids sent when updating network connections after the switch to the v8.0 SDK.
