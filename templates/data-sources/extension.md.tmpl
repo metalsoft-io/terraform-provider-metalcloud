@@ -16,7 +16,7 @@ data "metalcloud_extension" "my_app" {
 }
 
 resource "metalcloud_extension_instance" "app_inst1" {
-  infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+  infrastructure_id = metalcloud_infrastructure.infra.infrastructure_id
   extension_id      = data.metalcloud_extension.my_app.extension_id
   label             = "app_inst1"
 }

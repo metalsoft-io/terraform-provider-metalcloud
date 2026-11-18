@@ -24,7 +24,7 @@ data "metalcloud_logical_network_profile" "np01" {
 }
 
 resource "metalcloud_logical_network" "net1" {
-  infrastructure_id          = data.metalcloud_infrastructure.infra.infrastructure_id
+  infrastructure_id          = metalcloud_infrastructure.infra.infrastructure_id
   logical_network_profile_id = data.metalcloud_logical_network_profile.np01.logical_network_profile_id
 
   name  = "net01"

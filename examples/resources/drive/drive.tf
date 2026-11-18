@@ -49,15 +49,13 @@ data "metalcloud_os_template" "vmos1" {
     label = "vm-ubuntu-22-04-cloud"
 }
 
-data "metalcloud_infrastructure" "infra" {
+resource "metalcloud_infrastructure" "infra" {
     site_id = data.metalcloud_site.dc.site_id
     label = "my-infra01"
-
-    create_if_missing = true
 }
 
 resource "metalcloud_logical_network" "net1" {
-    infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+    infrastructure_id = metalcloud_infrastructure.infra.infrastructure_id
     logical_network_profile_id = data.metalcloud_logical_network_profile.np01.logical_network_profile_id
 
     name = "net01"
@@ -65,7 +63,7 @@ resource "metalcloud_logical_network" "net1" {
 }
 
 resource "metalcloud_logical_network" "san1" {
-    infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+    infrastructure_id = metalcloud_infrastructure.infra.infrastructure_id
     logical_network_profile_id = data.metalcloud_logical_network_profile.np01.logical_network_profile_id
 
     name = "san01"
@@ -73,7 +71,7 @@ resource "metalcloud_logical_network" "san1" {
 }
 
 resource "metalcloud_server_instance_group" "inst01" {
-    infrastructure_id =	 data.metalcloud_infrastructure.infra.infrastructure_id
+    infrastructure_id =	 metalcloud_infrastructure.infra.infrastructure_id
 
     name = "inst01"
     label = "inst01"
@@ -115,7 +113,7 @@ resource "metalcloud_server_instance_group" "inst01" {
 }
 
 resource "metalcloud_vm_instance_group" "vminst01" {
-    infrastructure_id =	 data.metalcloud_infrastructure.infra.infrastructure_id
+    infrastructure_id =	 metalcloud_infrastructure.infra.infrastructure_id
 
     label = "vminst01"
 
@@ -151,7 +149,7 @@ resource "metalcloud_vm_instance_group" "vminst01" {
 }
 
 resource "metalcloud_drive" "drive1" {
-    infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+    infrastructure_id = metalcloud_infrastructure.infra.infrastructure_id
 
     size_mbytes = 4096
     label = "drive01"
@@ -169,7 +167,7 @@ resource "metalcloud_drive" "drive1" {
 
 # Use this resource to effect deploys of the above resources.
 resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
-    infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+    infrastructure_id = metalcloud_infrastructure.infra.infrastructure_id
 
     # Set this to false to actually trigger deploys.
     prevent_deploy = true

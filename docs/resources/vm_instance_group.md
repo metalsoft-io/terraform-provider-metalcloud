@@ -22,7 +22,7 @@ data "metalcloud_os_template" "vmos1" {
 }
 
 resource "metalcloud_vm_instance_group" "vminst01" {
-  infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+  infrastructure_id = metalcloud_infrastructure.infra.infrastructure_id
 
   label = "vminst01"
 

@@ -196,6 +196,30 @@ func (r *InfrastructureResource) Read(ctx context.Context, req resource.ReadRequ
 	data.Label = types.StringValue(infrastructure.Label)
 	data.SiteId = convertInt64IdToTfString(infrastructure.SiteId)
 
+	// The deploy options exist only in Terraform. After an import they are null, so set them to
+	// their schema defaults to keep the first plan after an import free of spurious changes.
+	if data.PreventDeploy.IsNull() {
+		data.PreventDeploy = types.BoolValue(true)
+	}
+	if data.AwaitDeployFinish.IsNull() {
+		data.AwaitDeployFinish = types.BoolValue(false)
+	}
+	if data.AllowDataLoss.IsNull() {
+		data.AllowDataLoss = types.BoolValue(false)
+	}
+	if data.AttemptSoftShutdown.IsNull() {
+		data.AttemptSoftShutdown = types.BoolValue(true)
+	}
+	if data.SoftShutdownTimeoutSeconds.IsNull() {
+		data.SoftShutdownTimeoutSeconds = types.Int64Value(180)
+	}
+	if data.AttemptHardShutdown.IsNull() {
+		data.AttemptHardShutdown = types.BoolValue(true)
+	}
+	if data.ForceShutdown.IsNull() {
+		data.ForceShutdown = types.BoolValue(false)
+	}
+
 	tflog.Trace(ctx, fmt.Sprintf("read infrastructure resource Id %s", data.InfrastructureId.ValueString()))
 
 	// Save updated data into Terraform state

@@ -27,15 +27,14 @@ data "metalcloud_logical_network_profile" "l3" {
   fabric_id = data.metalcloud_fabric.wan.fabric_id
 }
 
-data "metalcloud_infrastructure" "infra" {
-  site_id           = data.metalcloud_site.dc.site_id
-  label             = "tenant1-infra"
-  create_if_missing = true
+resource "metalcloud_infrastructure" "infra" {
+  site_id = data.metalcloud_site.dc.site_id
+  label   = "tenant1-infra"
 }
 
 # The tenant L3 logical network the endpoints attach to.
 resource "metalcloud_logical_network" "tenant_l3" {
-  infrastructure_id          = data.metalcloud_infrastructure.infra.infrastructure_id
+  infrastructure_id          = metalcloud_infrastructure.infra.infrastructure_id
   logical_network_profile_id = data.metalcloud_logical_network_profile.l3.logical_network_profile_id
 
   name  = "tenant1-l3"
@@ -50,7 +49,7 @@ data "metalcloud_endpoint" "hgx" {
 
 # Attach the selected endpoints to the logical network.
 resource "metalcloud_endpoint_instance_group" "hgx_hosts" {
-  infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+  infrastructure_id = metalcloud_infrastructure.infra.infrastructure_id
   label             = "hgx-hosts"
 
   endpoint_ids = [for e in data.metalcloud_endpoint.hgx : e.endpoint_id]
@@ -69,7 +68,7 @@ resource "metalcloud_endpoint_instance_group" "hgx_hosts" {
 
 # Trigger the deploy after the attachment is in place.
 resource "metalcloud_infrastructure_deployer" "deploy" {
-  infrastructure_id   = data.metalcloud_infrastructure.infra.infrastructure_id
+  infrastructure_id   = metalcloud_infrastructure.infra.infrastructure_id
   prevent_deploy      = true
   await_deploy_finish = false
   allow_data_loss     = true

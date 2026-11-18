@@ -52,8 +52,10 @@ func (d *InfrastructureDataSource) Schema(ctx context.Context, req datasource.Sc
 				Required:            true,
 			},
 			"create_if_missing": schema.BoolAttribute{
-				MarkdownDescription: "Create infrastructure if it does not exist",
+				MarkdownDescription: "Create infrastructure if it does not exist. **Deprecated**: data sources are read during `terraform plan`, so the infrastructure is created by `plan` and is never tracked or destroyed by Terraform. Use the `metalcloud_infrastructure` resource instead, and `terraform import` an infrastructure that already exists.",
 				Optional:            true,
+				DeprecationMessage: "create_if_missing creates the infrastructure during terraform plan, and the infrastructure is never tracked or destroyed by Terraform. " +
+					"Use the metalcloud_infrastructure resource instead; to manage an infrastructure that already exists, import it with terraform import.",
 			},
 		},
 	}

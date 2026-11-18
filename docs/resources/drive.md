@@ -22,14 +22,13 @@ data "metalcloud_storage_pool" "iscsi" {
   technology = "iscsi"
 }
 
-data "metalcloud_infrastructure" "infra" {
-  site_id           = data.metalcloud_site.dc.site_id
-  label             = "my-infra01"
-  create_if_missing = true
+resource "metalcloud_infrastructure" "infra" {
+  site_id = data.metalcloud_site.dc.site_id
+  label   = "my-infra01"
 }
 
 resource "metalcloud_drive" "data01" {
-  infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+  infrastructure_id = metalcloud_infrastructure.infra.infrastructure_id
   storage_pool_id   = data.metalcloud_storage_pool.iscsi.storage_pool_id
   label             = "data01"
   size_mbytes       = 40960

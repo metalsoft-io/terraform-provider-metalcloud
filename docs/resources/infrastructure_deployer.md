@@ -18,14 +18,13 @@ Because Terraform applies resources in dependency order, list every other resour
 ## Example Usage
 
 ```hcl
-data "metalcloud_infrastructure" "infra" {
-  site_id           = data.metalcloud_site.dc.site_id
-  label             = "my-infra01"
-  create_if_missing = true
+resource "metalcloud_infrastructure" "infra" {
+  site_id = data.metalcloud_site.dc.site_id
+  label   = "my-infra01"
 }
 
 resource "metalcloud_server_instance_group" "inst01" {
-  infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+  infrastructure_id = metalcloud_infrastructure.infra.infrastructure_id
   label             = "inst01"
   instance_count    = 1
   server_type_id    = data.metalcloud_server_type.srv1.server_type_id
@@ -33,7 +32,7 @@ resource "metalcloud_server_instance_group" "inst01" {
 }
 
 resource "metalcloud_infrastructure_deployer" "deploy" {
-  infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+  infrastructure_id = metalcloud_infrastructure.infra.infrastructure_id
 
   # Set to false to trigger a deploy on every apply that changes the infrastructure.
   prevent_deploy      = true
@@ -51,7 +50,7 @@ resource "metalcloud_infrastructure_deployer" "deploy" {
 
 ```hcl
 resource "metalcloud_infrastructure_deployer" "deploy" {
-  infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+  infrastructure_id = metalcloud_infrastructure.infra.infrastructure_id
 
   prevent_deploy      = false
   await_deploy_finish = true

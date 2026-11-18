@@ -27,15 +27,13 @@ data "metalcloud_extension" "my-app" {
     label = "my-app"
 }
 
-data "metalcloud_infrastructure" "infra" {
+resource "metalcloud_infrastructure" "infra" {
     site_id = data.metalcloud_site.dc.site_id
     label = "my-infra01"
-
-    create_if_missing = true
 }
 
 resource "metalcloud_extension_instance" "app_inst1" {
-    infrastructure_id =	 data.metalcloud_infrastructure.infra.infrastructure_id
+    infrastructure_id =	 metalcloud_infrastructure.infra.infrastructure_id
     extension_id = data.metalcloud_extension.my-app.extension_id
 
     label = "app_inst1"
@@ -54,7 +52,7 @@ resource "metalcloud_extension_instance" "app_inst1" {
 
 # Use this resource to effect deploys of the above resources.
 resource "metalcloud_infrastructure_deployer" "infrastructure_deployer" {
-    infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+    infrastructure_id = metalcloud_infrastructure.infra.infrastructure_id
 
     # Set this to false to actually trigger deploys.
     prevent_deploy = true

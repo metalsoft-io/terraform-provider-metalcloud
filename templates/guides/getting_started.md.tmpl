@@ -167,7 +167,7 @@ Changes to resources inside an infrastructure stay pending until the infrastruct
 * `await_deploy_finish = true` makes Terraform wait for the deploy to finish, for up to 2 hours, and fail if a deploy job fails.
 * `metalcloud_infrastructure` with `prevent_deploy = false` deploys the deletion on `terraform destroy`. With `true`, the infrastructure is only marked for deletion and stays active. This setting is read from state, so run `terraform apply` after changing it and before `terraform destroy`.
 
-To manage resources in an infrastructure that already exists, use the [`metalcloud_infrastructure`](../data-sources/infrastructure.md) data source in place of the resource. `terraform destroy` then never deletes the infrastructure, and the deletion of the resources inside it stays pending until the infrastructure is deployed in MetalCloud.
+To manage an infrastructure that already exists, [import it](../resources/infrastructure.md#import) into the `metalcloud_infrastructure` resource. To only add resources to an existing infrastructure without Terraform ever deleting it, look it up with the [`metalcloud_infrastructure`](../data-sources/infrastructure.md) data source instead; the deletion of the resources inside it then stays pending until the infrastructure is deployed in MetalCloud. Do not use the data source's deprecated `create_if_missing` option: it creates the infrastructure during `terraform plan`.
 
 See [Deploys and destroy](../index.md#deploys-and-destroy) on the provider page for details.
 

@@ -22,14 +22,14 @@ data "metalcloud_os_template" "os1" {
 }
 
 resource "metalcloud_logical_network" "net1" {
-  infrastructure_id          = data.metalcloud_infrastructure.infra.infrastructure_id
+  infrastructure_id          = metalcloud_infrastructure.infra.infrastructure_id
   logical_network_profile_id = data.metalcloud_logical_network_profile.np01.logical_network_profile_id
   name                       = "net01"
   label                      = "net01"
 }
 
 resource "metalcloud_server_instance_group" "inst01" {
-  infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+  infrastructure_id = metalcloud_infrastructure.infra.infrastructure_id
 
   name  = "inst01"
   label = "inst01"

@@ -17,14 +17,13 @@ data "metalcloud_extension" "my_app" {
   label = "my-app"
 }
 
-data "metalcloud_infrastructure" "infra" {
-  site_id           = data.metalcloud_site.dc.site_id
-  label             = "my-infra01"
-  create_if_missing = true
+resource "metalcloud_infrastructure" "infra" {
+  site_id = data.metalcloud_site.dc.site_id
+  label   = "my-infra01"
 }
 
 resource "metalcloud_extension_instance" "app_inst1" {
-  infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+  infrastructure_id = metalcloud_infrastructure.infra.infrastructure_id
   extension_id      = data.metalcloud_extension.my_app.extension_id
   label             = "app_inst1"
 

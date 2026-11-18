@@ -13,14 +13,13 @@ A deploy is required afterwards to apply the attachment. Use [`metalcloud_infras
 ## Example Usage
 
 ```hcl
-data "metalcloud_infrastructure" "infra" {
-  site_id           = data.metalcloud_site.dc.site_id
-  label             = "tenant1-infra"
-  create_if_missing = true
+resource "metalcloud_infrastructure" "infra" {
+  site_id = data.metalcloud_site.dc.site_id
+  label   = "tenant1-infra"
 }
 
 resource "metalcloud_logical_network" "tenant_l3" {
-  infrastructure_id          = data.metalcloud_infrastructure.infra.infrastructure_id
+  infrastructure_id          = metalcloud_infrastructure.infra.infrastructure_id
   logical_network_profile_id = data.metalcloud_logical_network_profile.l3.logical_network_profile_id
   name                       = "tenant1-l3"
   label                      = "tenant1-l3"
@@ -33,7 +32,7 @@ data "metalcloud_endpoint" "hgx" {
 }
 
 resource "metalcloud_endpoint_instance_group" "hgx_hosts" {
-  infrastructure_id = data.metalcloud_infrastructure.infra.infrastructure_id
+  infrastructure_id = metalcloud_infrastructure.infra.infrastructure_id
   label             = "hgx-hosts"
 
   endpoint_ids = [for e in data.metalcloud_endpoint.hgx : e.endpoint_id]
