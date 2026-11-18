@@ -178,7 +178,7 @@ func deployInfrastructure(ctx context.Context, client *sdk.APIClient, dataInfras
 
 	if dataAwaitDeployFinish.ValueBool() {
 		// Wait for the deployment finish or timeout
-		timeout := time.After(30 * time.Minute)
+		timeout := time.After(2 * time.Hour)
 		ticker := time.NewTicker(10 * time.Second)
 		defer ticker.Stop()
 		for {

@@ -13,7 +13,7 @@ Because Terraform applies resources in dependency order, list every other resour
 ## Design vs. deploy
 
 - `prevent_deploy = true` (the default) records design changes without touching hardware. Use it while iterating on a configuration.
-- `prevent_deploy = false` triggers the deploy. With `await_deploy_finish = true` the apply blocks until the deploy finishes or 30 minutes pass.
+- `prevent_deploy = false` triggers the deploy. With `await_deploy_finish = true` the apply blocks until the deploy finishes or 2 hours pass.
 
 ## Example Usage
 
@@ -77,7 +77,7 @@ resource "metalcloud_infrastructure_deployer" "deploy" {
 - `allow_data_loss` (Boolean) Allow the deploy to perform operations that may cause data loss. Defaults to `false`.
 - `attempt_hard_shutdown` (Boolean) Force a hard power off of servers that are still running when the soft shutdown timeout expires. Defaults to `true`.
 - `attempt_soft_shutdown` (Boolean) Attempt a soft (ACPI) power off of the servers before the deploy. Defaults to `true`.
-- `await_deploy_finish` (Boolean) Wait for the deploy to finish before returning. Times out after 30 minutes. Defaults to `false`.
+- `await_deploy_finish` (Boolean) Wait for the deploy to finish before returning. Times out after 2 hours. Defaults to `false`.
 - `force_shutdown` (Boolean) Force an immediate shutdown of all servers in the infrastructure, skipping the soft shutdown sequence. Defaults to `false`.
 - `prevent_deploy` (Boolean) When `true` no deploy is triggered. Defaults to `true`.
 - `soft_shutdown_timeout_seconds` (Number) Seconds to wait for the soft shutdown before attempting a hard shutdown. Defaults to `180`.
